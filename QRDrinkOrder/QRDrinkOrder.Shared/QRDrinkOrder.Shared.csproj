@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="obj\Debug\net9.0\.NETCoreApp,Version=v9.0.AssemblyAttributes.cs" />
+    <Compile Include="obj\Debug\net9.0\QRDrinkOrder.Shared.AssemblyInfo.cs" />
+    <Compile Include="obj\Debug\net9.0\QRDrinkOrder.Shared.GlobalUsings.g.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="obj\project.assets.json" />
+    <Content Include="obj\QRDrinkOrder.Shared.csproj.nuget.dgspec.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="bin\Debug\net9.0\" />
+    <Folder Include="Constants\" />
+    <Folder Include="DTOs\Requests\" />
+    <Folder Include="DTOs\Responses\" />
+    <Folder Include="Enums\" />
+    <Folder Include="obj\Debug\net9.0\refint\" />
+    <Folder Include="obj\Debug\net9.0\ref\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="obj\Debug\net9.0\QRDrinkOrder.Shared.AssemblyInfoInputs.cache" />
+    <None Include="obj\Debug\net9.0\QRDrinkOrder.Shared.assets.cache" />
+    <None Include="obj\Debug\net9.0\QRDrinkOrder.Shared.GeneratedMSBuildEditorConfig.editorconfig" />
+    <None Include="obj\project.nuget.cache" />
+    <None Include="obj\QRDrinkOrder.Shared.csproj.nuget.g.props" />
+    <None Include="obj\QRDrinkOrder.Shared.csproj.nuget.g.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

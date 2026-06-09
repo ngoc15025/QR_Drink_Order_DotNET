@@ -1,0 +1,217 @@
+@page "/admin/orders"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Manager")]
+@using QRDrinkOrder.Shared.DTOs.Responses
+@using QRDrinkOrder.Client.Services
+@inject OrderApiClient OrderApi
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Manager")]
+@layout QRDrinkOrder.Client.Layout.AdminLayout
+
+<PageTitle>Lịch sử Đơn hàng - Ngoc UwU Coffee</PageTitle>
+
+<div>
+    <div class="admin-topbar">
+        <div class="admin-topbar-left">
+            <h1 class="admin-page-title">Tra cứu Hóa đơn / Lịch sử</h1>
+            <p class="admin-page-subtitle">Xem toàn bộ lịch sử đặt hàng và thanh toán</p>
+        </div>
+        <div class="admin-topbar-right">
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" @bind="startDate" />
+                <span class="align-self-center text-secondary">-</span>
+                <input type="date" class="form-control form-control-sm" @bind="endDate" />
+                <button class="btn-admin-action btn-action-primary" @onclick="LoadDataAsync">Lọc</button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-secondary">Đang tải dữ liệu...</div>
+        </div>
+    }
+    else if (!orders.Any())
+    {
+        <div class="alert alert-info text-center">Chưa có đơn hàng nào trong khoảng thời gian này.</div>
+    }
+    else
+    {
+        <div class="admin-table-card">
+            <table class="admin-table">
+                <thead>
+                            <tr>
+                                <th>Ngày giờ</th>
+                                <th>Khách hàng</th>
+                                <th>Tổng tiền</th>
+                                <th>Thanh toán</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Chi tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in orders)
+                            {
+                                <tr>
+                                    <td class="py-3 text-secondary small">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="py-3">
+                                        <div class="fw-bold">Bàn @order.TableNumber</div>
+                                        <div class="small text-secondary">@(string.IsNullOrEmpty(order.CustomerPhone) ? "Khách lẻ" : order.CustomerPhone)</div>
+                                    </td>
+                                    <td class="py-3 fw-bold text-danger">@order.FinalAmount.ToString("N0")đ</td>
+                                    <td class="py-3">
+                                        @if (order.Payment != null)
+                                        {
+                                            <span class="admin-badge @(order.Payment.PaymentStatus == 1 ? "badge-success" : "badge-warning")">
+                                                @order.Payment.PaymentMethodName
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="admin-badge badge-secondary">Chưa thanh toán</span>
+                                        }
+                                    </td>
+                                    <td class="py-3">
+                                        @{
+                                            var badgeClass = order.OrderStatus switch
+                                            {
+                                                0 => "badge-warning",
+                                                1 => "badge-info",
+                                                2 => "badge-success",
+                                                3 => "badge-danger",
+                                                _ => "badge-secondary"
+                                            };
+                                        }
+                                        <span class="admin-badge @badgeClass">@order.OrderStatusName</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn-admin-action btn-action-secondary btn-action-sm" @onclick="() => OpenDetailModal(order)">
+                                            Xem
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+        </div>
+    }
+</div>
+
+<!-- Modal Chi Tiết Đơn Hàng -->
+@if (selectedOrder != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom-0 pb-3">
+                    <h5 class="modal-title fw-bold">Chi tiết Đơn hàng #@selectedOrder.OrderId</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="row mt-3 mb-4">
+                        <div class="col-sm-6">
+                            <div class="text-secondary small mb-1">Thời gian đặt</div>
+                            <div class="fw-bold">@selectedOrder.OrderDate.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                        <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
+                            <div class="text-secondary small mb-1">Trạng thái</div>
+                            <div class="fw-bold text-success">@selectedOrder.OrderStatusName</div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-3">Danh sách món</h6>
+                            @foreach (var item in selectedOrder.Items)
+                            {
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="fw-bold me-2">x@item.Quantity</div>
+                                        <div>
+                                            <div class="fw-bold">@item.DrinkName</div>
+                                            <div class="small text-secondary">
+                                                Ngọt: @item.SweetnessLevel% | Đá: @item.IceLevel%
+                                                @if (!string.IsNullOrEmpty(item.ItemNote))
+                                                {
+                                                    <span> | Ghi chú: @item.ItemNote</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="fw-bold">@((item.UnitPrice * item.Quantity).ToString("N0"))đ</div>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(selectedOrder.Note))
+                            {
+                                <div class="mt-3 small">
+                                    <span class="fw-bold">Ghi chú toàn đơn:</span> @selectedOrder.Note
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row align-items-center">
+                        <div class="col-6 text-secondary">Tổng tiền:</div>
+                        <div class="col-6 text-end fw-bold">@selectedOrder.TotalAmount.ToString("N0")đ</div>
+                        
+                        @if (selectedOrder.DiscountAmount > 0)
+                        {
+                            <div class="col-6 text-success">Giảm giá:</div>
+                            <div class="col-6 text-end text-success fw-bold">-@selectedOrder.DiscountAmount.ToString("N0")đ</div>
+                        }
+                        
+                        <div class="col-6 fw-bold mt-2 fs-5">THÀNH TIỀN:</div>
+                        <div class="col-6 text-end fw-bold mt-2 fs-5 text-danger">@selectedOrder.FinalAmount.ToString("N0")đ</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private DateTime? startDate = DateTime.Today.AddDays(-7);
+    private DateTime? endDate = DateTime.Today;
+    private List<OrderDto> orders = new();
+    private OrderDto? selectedOrder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        try
+        {
+            orders = await OrderApi.GetAllOrdersAsync(startDate, endDate);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenDetailModal(OrderDto order)
+    {
+        selectedOrder = order;
+    }
+
+    private void CloseModal()
+    {
+        selectedOrder = null;
+    }
+}
+

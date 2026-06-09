@@ -1,0 +1,153 @@
+@inherits LayoutComponentBase
+@inject QRDrinkOrder.Client.Services.CartState CartState
+@inject NavigationManager NavigationManager
+@inject Microsoft.Extensions.Localization.IStringLocalizer<QRDrinkOrder.Client.SharedResource> Loc
+@inject QRDrinkOrder.Client.Services.SystemConfigApiClient ConfigApi
+@using QRDrinkOrder.Shared.Models
+@implements IDisposable
+
+<div class="page" style="display: flex; flex-direction: column; min-height: 100vh;">
+    <!-- TCH Style Header -->
+    <header class="tch-header">
+        <div class="tch-nav-container">
+            <!-- Left: Placeholder for centering -->
+            <div class="tch-header-icon d-md-none" style="min-width: 40px;"></div>
+
+            <!-- Center: Logo -->
+            <a href="/" class="text-decoration-none d-flex align-items-center justify-content-center flex-grow-1 flex-md-grow-0">
+                <img src="/images/logo.png" alt="Ngoc UwU Coffee" class="tch-header-logo" style="height: 36px; width: auto;" />
+            </a>
+
+            <!-- Desktop Navigation (Hiển thị trên máy tính/tablet lớn) -->
+            <div class="d-none d-md-flex align-items-center gap-2 mx-auto">
+                <NavLink href="/" class="tch-nav-link" Match="NavLinkMatch.All">Trang chủ</NavLink>
+                <NavLink href="/menu" class="tch-nav-link">@Loc["Menu"]</NavLink>
+                <NavLink href="/order" class="tch-nav-link">@Loc["Order"]</NavLink>
+                <NavLink href="/account" class="tch-nav-link">Tài khoản</NavLink>
+            </div>
+            
+            <!-- Right: Cart or User Info -->
+            <div class="tch-header-icon" style="min-width: 40px; display: flex; justify-content: flex-end; align-items: center;">
+                <LanguageSwitcher />
+                @if (ShouldHideCart)
+                {
+                    <AuthorizeView>
+                        <Authorized>
+                            @{
+                                var name = context.User.Claims.FirstOrDefault(c => c.Type == "FullName" || c.Type == "name" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value ?? context.User.Identity?.Name;
+                                if (string.IsNullOrEmpty(name))
+                                {
+                                    name = context.User.Claims.FirstOrDefault(c => c.Type == "email" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? "Thành viên";
+                                }
+                            }
+                            <span class="fw-bold" style="color: var(--tch-orange); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                                @name
+                            </span>
+                        </Authorized>
+                    </AuthorizeView>
+                }
+                else
+                {
+                    <a href="/cart" class="text-decoration-none text-dark position-relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" class="bi bi-bag" viewBox="0 0 16 16">
+                            <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                        </svg>
+                        @if (CartState.Items.Any())
+                        {
+                            <span class="tch-cart-badge">@CartState.GetTotalQuantity()</span>
+                        }
+                    </a>
+                }
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow-1 main-content" style="background-color: var(--tch-background); padding-bottom: 80px;">
+        <div class="container-xl p-0">
+            @Body
+        </div>
+    </main>
+
+    @if (!ShouldHideCart)
+    {
+        <footer class="mt-auto py-4 bg-white text-center text-secondary border-top d-none d-md-block" style="font-size: 0.85rem;">
+            <div class="container">
+                <p class="fw-bold mb-1 text-dark">@StoreName</p>
+                <p class="mb-1">@StoreAddress</p>
+                <p class="mb-1">Điện thoại: @StorePhone</p>
+                @if (!string.IsNullOrEmpty(StoreWifi))
+                {
+                    <p class="mb-0">WiFi: <strong>@StoreWifi</strong></p>
+                }
+            </div>
+        </footer>
+    }
+
+    <!-- Bottom Navigation for Mobile Apps -->
+    <nav class="bottom-nav d-md-none">
+        <NavLink href="/" class="nav-item" Match="NavLinkMatch.All">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10" />
+            </svg>
+            Trang chủ
+        </NavLink>
+        <NavLink href="/menu" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8c0-1.657-3.582-3-8-3S5 6.343 5 8v1a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 9v6a4 4 0 004 4h8a4 4 0 004-4V9" />
+            </svg>
+            @Loc["Menu"]
+        </NavLink>
+        <NavLink href="/order" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            @Loc["Order"]
+        </NavLink>
+        <NavLink href="/account" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Tài khoản
+        </NavLink>
+    </nav>
+</div>
+
+@code {
+    private bool ShouldHideCart => 
+        NavigationManager.Uri.Contains("/account", StringComparison.OrdinalIgnoreCase) ||
+        NavigationManager.Uri.Contains("/admin/dashboard", StringComparison.OrdinalIgnoreCase) ||
+        NavigationManager.Uri.Contains("/pos", StringComparison.OrdinalIgnoreCase);
+
+    private string StoreName = "NGOC UWU COFFEE";
+    private string StoreAddress = "Đ/c: 123 Đường Sách, TP. Hồ Chí Minh";
+    private string StorePhone = "SĐT: 0123.456.789";
+    private string StoreWifi = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        CartState.OnChange += StateHasChanged;
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        try
+        {
+            var configs = await ConfigApi.GetConfigsAsync();
+            StoreName = configs.FirstOrDefault(c => c.ConfigKey == "StoreName")?.ConfigValue ?? StoreName;
+            StoreAddress = configs.FirstOrDefault(c => c.ConfigKey == "StoreAddress")?.ConfigValue ?? StoreAddress;
+            StorePhone = configs.FirstOrDefault(c => c.ConfigKey == "StorePhone")?.ConfigValue ?? StorePhone;
+            StoreWifi = configs.FirstOrDefault(c => c.ConfigKey == "StoreWifi")?.ConfigValue ?? "";
+        }
+        catch { }
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        CartState.OnChange -= StateHasChanged;
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

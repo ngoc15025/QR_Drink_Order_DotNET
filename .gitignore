@@ -1,0 +1,63 @@
+# ==================================
+# 1. Thư mục và file hệ điều hành / IDE
+# ==================================
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.DS_Store
+Thumbs.db
+
+# ==================================
+# 2. File sau khi Build (Tuyệt đối không push)
+# ==================================
+[Bb]in/
+[Oo]bj/
+out/
+TestResults/
+
+# ==================================
+# 3. File cấu hình & Bảo mật (RẤT QUAN TRỌNG)
+# ==================================
+# Chứa chuỗi kết nối DB, JWT Secret Key, Vapid Private Key
+appsettings.json
+appsettings.*.json
+secrets.json
+
+# File biến môi trường
+.env
+*.env
+.env.*
+
+# File chứng chỉ
+*.pfx
+*.publishsettings
+*.snk
+*.key
+
+# ==================================
+# 4. File Database Local
+# ==================================
+*.mdf
+*.ldf
+*.ndf
+*.sqlite
+*.sqlite3
+*.db
+
+# ==================================
+# 5. File Log (Nhật ký chạy app)
+# ==================================
+logs/
+*.log
+
+# ==================================
+# 6. File nén và file quá nặng (Git không nên lưu)
+# ==================================
+*.rar
+*.zip
+*.tar.gz
+*.7z
+QRDrinkOrder.Client.rar

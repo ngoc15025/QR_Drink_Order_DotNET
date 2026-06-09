@@ -1,0 +1,110 @@
+@page "/admin/loyalty-config"
+@layout QRDrinkOrder.Client.Layout.AdminLayout
+@using QRDrinkOrder.Client.Services
+@using QRDrinkOrder.Shared.Models
+@inject SystemConfigApiClient SystemConfigApi
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Cấu hình Tích điểm - Ngoc UwU Coffee</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold m-0" style="color: var(--tch-dark)">Cấu hình Tích điểm</h3>
+</div>
+
+@if (configs == null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-medium">Tỷ lệ Tích điểm (Earn Rate)</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" @bind="earnRate" />
+                        <span class="input-group-text">đ = 1 điểm</span>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Ví dụ: 10000đ = 1 điểm.</small>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-medium">Tỷ lệ Đổi điểm (Redeem Rate)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">1 điểm =</span>
+                        <input type="number" class="form-control" @bind="redeemRate" />
+                        <span class="input-group-text">đ</span>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Ví dụ: 1 điểm = 1000đ khi thanh toán.</small>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-top text-end">
+                <button class="btn btn-primary px-4 py-2 fw-medium" @onclick="SaveConfigs" disabled="@isSaving" style="border-radius: 8px;">
+                    @if (isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Đang lưu...</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-save me-2"></i>Lưu cấu hình</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SystemConfig>? configs;
+    private string earnRate = "10000";
+    private string redeemRate = "1000";
+    private bool isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConfigs();
+    }
+
+    private async Task LoadConfigs()
+    {
+        configs = await SystemConfigApi.GetConfigsAsync();
+        
+        var earnConfig = configs.FirstOrDefault(c => c.ConfigKey == "EarnPointRate");
+        if (earnConfig != null) earnRate = earnConfig.ConfigValue;
+
+        var redeemConfig = configs.FirstOrDefault(c => c.ConfigKey == "RedeemPointRate");
+        if (redeemConfig != null) redeemRate = redeemConfig.ConfigValue;
+    }
+
+    private async Task SaveConfigs()
+    {
+        isSaving = true;
+        try
+        {
+            var earnConfig = configs?.FirstOrDefault(c => c.ConfigKey == "EarnPointRate") ?? new SystemConfig { ConfigKey = "EarnPointRate" };
+            earnConfig.ConfigValue = earnRate;
+            await SystemConfigApi.UpdateConfigAsync("EarnPointRate", earnConfig);
+
+            var redeemConfig = configs?.FirstOrDefault(c => c.ConfigKey == "RedeemPointRate") ?? new SystemConfig { ConfigKey = "RedeemPointRate" };
+            redeemConfig.ConfigValue = redeemRate;
+            await SystemConfigApi.UpdateConfigAsync("RedeemPointRate", redeemConfig);
+
+            await JSRuntime.InvokeVoidAsync("alert", "Lưu cấu hình thành công!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Có lỗi xảy ra: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,290 @@
+@page "/admin/coupons"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@inject QRDrinkOrder.Client.Services.CouponApiClient CouponApi
+@using QRDrinkOrder.Shared.DTOs.Requests
+@using QRDrinkOrder.Shared.DTOs.Responses
+
+@layout QRDrinkOrder.Client.Layout.AdminLayout
+
+<PageTitle>Quản lý Khuyến mãi - Ngoc UwU Coffee</PageTitle>
+
+<div>
+    <div class="admin-topbar">
+        <div class="admin-topbar-left">
+            <h1 class="admin-page-title">Quản lý Khuyến mãi</h1>
+            <p class="admin-page-subtitle">Tạo và quản lý các mã giảm giá cho khách hàng</p>
+        </div>
+        <div class="admin-topbar-right">
+            <button class="btn-admin-action btn-action-primary" @onclick="OpenCreateModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/></svg>
+                Tạo Mã mới
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-secondary">Đang tải dữ liệu...</div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-table-card">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Mã giảm giá</th>
+                        <th>Loại giảm</th>
+                        <th>Mức giảm</th>
+                        <th>Đơn tối thiểu</th>
+                        <th>Đã dùng / Giới hạn</th>
+                        <th>Hiệu lực</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                        <tbody>
+                            @if (!coupons.Any())
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-secondary">Chưa có mã giảm giá nào.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var c in coupons)
+                                {
+                                    <tr>
+                                        <td class="px-4 py-3 fw-bold text-primary">@c.CouponCode</td>
+                                        <td class="py-3">
+                                            @(c.DiscountType == 0 ? "Giảm tiền mặt" : "Giảm phần trăm")
+                                        </td>
+                                        <td class="py-3 fw-bold text-success">
+                                            @(c.DiscountType == 0 ? c.DiscountValue.ToString("N0") + "đ" : c.DiscountValue.ToString("0.##") + "%")
+                                        </td>
+                                        <td class="py-3 text-secondary">@c.MinOrderValue.ToString("N0")đ</td>
+                                        <td class="py-3">
+                                            @c.UsedCount / @(c.UsageLimit.HasValue ? c.UsageLimit.Value.ToString() : "∞")
+                                        </td>
+                                        <td class="py-3 small text-secondary">
+                                            Từ: @c.StartDate.ToString("dd/MM/yyyy")<br/>
+                                            Đến: @c.EndDate.ToString("dd/MM/yyyy")
+                                        </td>
+                                        <td class="py-3">
+                                            @if (c.IsActive && c.EndDate >= DateTime.Now && c.StartDate <= DateTime.Now && (!c.UsageLimit.HasValue || c.UsedCount < c.UsageLimit.Value))
+                                            {
+                                                <span class="admin-badge badge-success">Đang hiệu lực</span>
+                                            }
+                                            else if (!c.IsActive)
+                                            {
+                                                <span class="admin-badge badge-danger">Đã khóa</span>
+                                            }
+                                            else if (c.EndDate < DateTime.Now)
+                                            {
+                                                <span class="admin-badge badge-secondary">Hết hạn</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="admin-badge badge-warning">Chưa bắt đầu / Hết lượt</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <button class="btn-admin-action btn-action-secondary btn-action-sm" @onclick="() => OpenEditModal(c)">Sửa</button>
+                                            <button class="btn-admin-action btn-action-sm @(c.IsActive ? "btn-action-danger" : "btn-action-success")" 
+                                                    @onclick="() => ToggleStatus(c)">
+                                                @(c.IsActive ? "Khóa" : "Mở khóa")
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+        </div>
+    }
+</div>
+
+@if (showModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">@(editingId == 0 ? "Tạo Mã Khuyến Mãi Mới" : "Cập Nhật Mã Khuyến Mãi")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@model" OnValidSubmit="SaveCoupon">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Mã CODE (Viết liền không dấu) *</label>
+                                <InputText class="form-control" @bind-Value="model.CouponCode" placeholder="Vd: TCH50K" />
+                                <ValidationMessage For="@(() => model.CouponCode)" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Loại giảm giá *</label>
+                                <InputSelect class="form-select" @bind-Value="model.DiscountType">
+                                    <option value="0">Giảm tiền trực tiếp (VNĐ)</option>
+                                    <option value="1">Giảm theo phần trăm (%)</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Mức giảm *</label>
+                                <InputNumber class="form-control" @bind-Value="model.DiscountValue" placeholder="Số tiền hoặc %" />
+                                <ValidationMessage For="@(() => model.DiscountValue)" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Giảm tối đa (Chỉ dùng cho %)</label>
+                                <InputNumber class="form-control" @bind-Value="model.MaxDiscountAmount" placeholder="Để trống nếu không giới hạn" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Giá trị đơn tối thiểu (VNĐ)</label>
+                                <InputNumber class="form-control" @bind-Value="model.MinOrderValue" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Giới hạn số lượt sử dụng</label>
+                                <InputNumber class="form-control" @bind-Value="model.UsageLimit" placeholder="Để trống nếu vô hạn" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Từ ngày *</label>
+                                <InputDate class="form-control" @bind-Value="model.StartDate" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Đến ngày *</label>
+                                <InputDate class="form-control" @bind-Value="model.EndDate" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check form-switch">
+                            <InputCheckbox class="form-check-input" id="isActiveCheck" @bind-Value="model.IsActive" />
+                            <label class="form-check-label" for="isActiveCheck">Kích hoạt mã này</label>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light" @onclick="CloseModal">Hủy</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving) { <span class="spinner-border spinner-border-sm"></span> }
+                                else { <span>Lưu thay đổi</span> }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private List<CouponDto> coupons = new();
+    
+    private bool showModal = false;
+    private SaveCouponRequest model = new();
+    private int editingId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            coupons = await CouponApi.GetAllCouponsAsync(includeInactive: true);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        model = new SaveCouponRequest 
+        { 
+            IsActive = true,
+            StartDate = DateTime.Now,
+            EndDate = DateTime.Now.AddDays(7),
+            DiscountType = 0
+        };
+        editingId = 0;
+        showModal = true;
+    }
+
+    private void OpenEditModal(CouponDto c)
+    {
+        model = new SaveCouponRequest
+        {
+            CouponCode = c.CouponCode,
+            DiscountType = c.DiscountType,
+            DiscountValue = c.DiscountValue,
+            MinOrderValue = c.MinOrderValue,
+            MaxDiscountAmount = c.MaxDiscountAmount,
+            UsageLimit = c.UsageLimit,
+            StartDate = c.StartDate,
+            EndDate = c.EndDate,
+            IsActive = c.IsActive
+        };
+        editingId = c.CouponId;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private async Task SaveCoupon()
+    {
+        isSaving = true;
+        try
+        {
+            if (editingId == 0)
+                await CouponApi.CreateCouponAsync(model);
+            else
+                await CouponApi.UpdateCouponAsync(editingId, model);
+
+            CloseModal();
+            await LoadData();
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ToggleStatus(CouponDto c)
+    {
+        var request = new SaveCouponRequest
+        {
+            CouponCode = c.CouponCode,
+            DiscountType = c.DiscountType,
+            DiscountValue = c.DiscountValue,
+            MinOrderValue = c.MinOrderValue,
+            MaxDiscountAmount = c.MaxDiscountAmount,
+            UsageLimit = c.UsageLimit,
+            StartDate = c.StartDate,
+            EndDate = c.EndDate,
+            IsActive = !c.IsActive
+        };
+        await CouponApi.UpdateCouponAsync(c.CouponId, request);
+        await LoadData();
+    }
+}
+

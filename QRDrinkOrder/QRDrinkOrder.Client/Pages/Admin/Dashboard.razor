@@ -1,0 +1,382 @@
+@page "/admin/dashboard"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@layout QRDrinkOrder.Client.Layout.AdminLayout
+@inject NavigationManager NavigationManager
+@inject QRDrinkOrder.Client.Services.ReportApiClient ReportApi
+@inject Microsoft.JSInterop.IJSRuntime JS
+@using QRDrinkOrder.Shared.DTOs.Responses
+
+<PageTitle>Tổng quan - Ngoc UwU Coffee</PageTitle>
+
+<!-- Top Bar -->
+<div class="admin-topbar">
+    <div class="admin-topbar-left">
+        <h1 class="admin-page-title">Tổng quan Kinh doanh</h1>
+        <p class="admin-page-subtitle">@DateTime.Now.ToString("dddd, dd/MM/yyyy")</p>
+    </div>
+    <!-- Date Range Filter -->
+    <div class="dash-date-filter">
+        <button class="dash-date-btn @(dateRange == 0 ? "active" : "")" @onclick="() => ChangeDateRange(0)">Hôm nay</button>
+        <button class="dash-date-btn @(dateRange == 7 ? "active" : "")" @onclick="() => ChangeDateRange(7)">7 ngày</button>
+        <button class="dash-date-btn @(dateRange == 30 ? "active" : "")" @onclick="() => ChangeDateRange(30)">30 ngày</button>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <div class="admin-loading">
+        <div class="admin-loading-spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+    </div>
+}
+else if (dashboardData == null)
+{
+    <div class="admin-empty" style="padding: 3rem; text-align: center;">
+        <p>Không thể tải dữ liệu. Vui lòng thử lại.</p>
+    </div>
+}
+else
+{
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-revenue">
+            <div class="kpi-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <div class="kpi-label">Doanh thu</div>
+                <div class="kpi-value">@dashboardData.Overview.TotalRevenue.ToString("N0")đ</div>
+                <div class="kpi-sub">
+                    <span style="color:#22c55e;">@dashboardData.Overview.CompletedOrders đơn hoàn thành</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-orders">
+            <div class="kpi-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <div class="kpi-label">Tổng đơn hàng</div>
+                <div class="kpi-value">@dashboardData.Overview.TotalOrders</div>
+                <div class="kpi-sub">
+                    <span style="color:#ef4444;">@dashboardData.Overview.CancelledOrders đơn hủy</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-customers">
+            <div class="kpi-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <div class="kpi-label">Khách hàng</div>
+                <div class="kpi-value">@dashboardData.Overview.ActiveCustomersCount</div>
+                <div class="kpi-sub">lượt trong kỳ</div>
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-avg">
+            <div class="kpi-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <div class="kpi-label">Giá trị TB / đơn</div>
+                <div class="kpi-value">
+                    @(dashboardData.Overview.TotalOrders > 0
+                        ? (dashboardData.Overview.TotalRevenue / dashboardData.Overview.TotalOrders).ToString("N0") + "đ"
+                        : "—")
+                </div>
+                <div class="kpi-sub">trên đơn hoàn thành</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 1: Line Chart + Donut Chart -->
+    <div class="dash-row-2col">
+        <!-- Biểu đồ 1: Doanh thu theo ngày -->
+        <div class="admin-card dash-col-2">
+            <div class="admin-card-header">
+                <div class="admin-card-title-wrap">
+                    <h2 class="admin-card-title">Xu hướng Doanh thu</h2>
+                    <span class="admin-card-badge">@(dateRange == 0 ? "Hôm nay" : dateRange == 7 ? "7 ngày" : "30 ngày")</span>
+                </div>
+            </div>
+            <div class="admin-card-body chart-body" style="height: 240px;">
+                <canvas id="dailyRevenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Biểu đồ 3: Donut Phương thức thanh toán -->
+        <div class="admin-card dash-col-1">
+            <div class="admin-card-header">
+                <div class="admin-card-title-wrap">
+                    <h2 class="admin-card-title">Thanh toán</h2>
+                    <span class="admin-card-badge">Phân chia</span>
+                </div>
+            </div>
+            <div class="admin-card-body chart-body" style="height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;">
+                <canvas id="paymentDonutChart" style="max-width: 180px; max-height: 180px;"></canvas>
+                <div class="donut-legend">
+                    <div class="donut-legend-item">
+                        <span class="donut-legend-dot" style="background:#F5A623;"></span>
+                        <span>Tiền mặt: <strong>@dashboardData.Overview.CashRevenue.ToString("N0")đ</strong></span>
+                    </div>
+                    <div class="donut-legend-item">
+                        <span class="donut-legend-dot" style="background:#3B82F6;"></span>
+                        <span>SePay: <strong>@dashboardData.Overview.SePayRevenue.ToString("N0")đ</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Peak Hours (full width) -->
+    <div class="admin-card" style="margin-bottom: 1.25rem;">
+        <div class="admin-card-header">
+            <div class="admin-card-title-wrap">
+                <h2 class="admin-card-title">Giờ Cao điểm</h2>
+                <span class="admin-card-badge">Doanh thu &amp; Đơn hàng theo giờ</span>
+            </div>
+        </div>
+        <div class="admin-card-body chart-body" style="height: 220px;">
+            <canvas id="peakHoursChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Row 3: Top Drinks + Coupon Stats -->
+    <div class="dash-row-2col">
+        <!-- Biểu đồ 4: Top 5 Món Bán Chạy -->
+        <div class="admin-card dash-col-1">
+            <div class="admin-card-header">
+                <div class="admin-card-title-wrap">
+                    <h2 class="admin-card-title">Món Bán Chạy</h2>
+                    <span class="admin-card-badge">Top 5</span>
+                </div>
+            </div>
+            <div class="admin-card-body" style="padding: 0.5rem 1rem 1rem;">
+                @if (dashboardData.TopDrinks.Any())
+                {
+                    var maxQty = dashboardData.TopDrinks.Max(d => d.QuantitySold);
+                    var rank = 1;
+                    @foreach (var drink in dashboardData.TopDrinks.Take(5))
+                    {
+                        var pct = maxQty > 0 ? (double)drink.QuantitySold / maxQty * 100 : 0;
+                        <div class="top-drink-bar-item">
+                            <div class="tdb-rank @(rank == 1 ? "rank-gold" : rank == 2 ? "rank-silver" : rank == 3 ? "rank-bronze" : "rank-normal")">#@rank</div>
+                            <img src="@drink.ImageUrl" class="tdb-img" onerror="this.onerror=null; this.src='https://placehold.co/40x40/f9f9f9/ccc?text=?';" alt="@drink.DrinkName" />
+                            <div class="tdb-info">
+                                <div class="tdb-name">@drink.DrinkName</div>
+                                <div class="tdb-bar-wrap">
+                                    <div class="tdb-bar" style="width: @pct.ToString("F0")%; background: @(rank == 1 ? "#EA8025" : rank == 2 ? "#F5A623" : "#fcd34d");"></div>
+                                </div>
+                            </div>
+                            <div class="tdb-qty">@drink.QuantitySold <small>ly</small></div>
+                        </div>
+                        rank++;
+                    }
+                }
+                else
+                {
+                    <div class="admin-empty"><p>Chưa có dữ liệu</p></div>
+                }
+            </div>
+        </div>
+
+        <!-- Biểu đồ 5: Coupon Stats -->
+        <div class="admin-card dash-col-1">
+            <div class="admin-card-header">
+                <div class="admin-card-title-wrap">
+                    <h2 class="admin-card-title">Hiệu quả Coupon</h2>
+                    <span class="admin-card-badge">Mã được dùng nhiều nhất</span>
+                </div>
+            </div>
+            <div class="admin-card-body" style="padding: 0.5rem 1rem 1rem;">
+                @if (dashboardData.CouponStats.Any())
+                {
+                    <div class="chart-body" style="height: 200px;">
+                        <canvas id="couponChart"></canvas>
+                    </div>
+                }
+                else
+                {
+                    <div class="admin-empty" style="padding: 2rem 0;">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                            <line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                        <p>Chưa có mã giảm giá nào được dùng trong kỳ này</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="admin-card quick-actions-card">
+        <div class="admin-card-header">
+            <div class="admin-card-title-wrap">
+                <h2 class="admin-card-title">Truy cập Nhanh</h2>
+            </div>
+        </div>
+        <div class="admin-card-body quick-actions-grid">
+            <a href="/admin/menu" class="quick-action-item">
+                <div class="qa-icon qa-orange">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                    </svg>
+                </div>
+                <div class="qa-content">
+                    <div class="qa-title">Thực đơn (Menu)</div>
+                    <div class="qa-desc">Cập nhật món, giá, hết hàng</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="qa-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="/admin/coupons" class="quick-action-item">
+                <div class="qa-icon qa-purple">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                </div>
+                <div class="qa-content">
+                    <div class="qa-title">Coupon &amp; Khuyến mãi</div>
+                    <div class="qa-desc">Tạo mã giảm giá mới</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="qa-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="/admin/promotions" class="quick-action-item">
+                <div class="qa-icon qa-blue">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                </div>
+                <div class="qa-content">
+                    <div class="qa-title">Banners &amp; Tin tức</div>
+                    <div class="qa-desc">Quản lý banner trang chủ</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="qa-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="/admin/accounts" class="quick-action-item">
+                <div class="qa-icon qa-green">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <div class="qa-content">
+                    <div class="qa-title">Quản lý Nhân sự</div>
+                    <div class="qa-desc">Tạo tài khoản, phân quyền</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="qa-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="/admin/orders" class="quick-action-item">
+                <div class="qa-icon qa-amber">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <div class="qa-content">
+                    <div class="qa-title">Lịch sử Đơn hàng</div>
+                    <div class="qa-desc">Tra cứu hóa đơn đã bán</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="qa-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+    private DashboardDto? dashboardData;
+    private bool isLoading = true;
+    private int dateRange = 7; // default: 7 ngày
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        dashboardData = null;
+        StateHasChanged();
+
+        var end = DateTime.Today;
+        var start = dateRange == 0 ? DateTime.Today : DateTime.Today.AddDays(-dateRange + 1);
+        dashboardData = await ReportApi.GetDashboardDataAsync(start, end.AddDays(1).AddTicks(-1));
+
+        isLoading = false;
+        StateHasChanged();
+
+        // Render charts sau khi re-render DOM
+        await Task.Delay(100);
+        await RenderCharts();
+    }
+
+    private async Task ChangeDateRange(int days)
+    {
+        dateRange = days;
+        await LoadData();
+    }
+
+    private async Task RenderCharts()
+    {
+        if (dashboardData == null) return;
+
+        // Chart 1: Daily Revenue Line Chart
+        if (dashboardData.DailyRevenue.Any())
+        {
+            var labels = dashboardData.DailyRevenue.Select(d => d.DateStr).ToArray();
+            var revenues = dashboardData.DailyRevenue.Select(d => d.Revenue).ToArray();
+            var orders = dashboardData.DailyRevenue.Select(d => d.OrderCount).ToArray();
+            try { await JS.InvokeVoidAsync("dashCharts.renderDailyRevenue", "dailyRevenueChart", labels, revenues, orders); } catch { }
+        }
+
+        // Chart 2: Payment Donut
+        try
+        {
+            await JS.InvokeVoidAsync("dashCharts.renderPaymentDonut", "paymentDonutChart",
+                dashboardData.Overview.CashRevenue,
+                dashboardData.Overview.SePayRevenue);
+        }
+        catch { }
+
+        // Chart 3: Peak Hours Bar+Line
+        if (dashboardData.PeakHours.Any())
+        {
+            var sorted = dashboardData.PeakHours.OrderBy(h => h.Hour).ToList();
+            var labels = sorted.Select(h => $"{h.Hour}:00").ToArray();
+            var revenues = sorted.Select(h => h.Revenue).ToArray();
+            var orderCounts = sorted.Select(h => h.OrderCount).ToArray();
+            try { await JS.InvokeVoidAsync("dashCharts.renderPeakHours", "peakHoursChart", labels, revenues, orderCounts); } catch { }
+        }
+
+        // Chart 4: Coupon Bar (only if data exists)
+        if (dashboardData.CouponStats.Any())
+        {
+            var labels = dashboardData.CouponStats.Select(c => c.CouponCode).ToArray();
+            var timesUsed = dashboardData.CouponStats.Select(c => c.TimesUsed).ToArray();
+            var discounts = dashboardData.CouponStats.Select(c => c.TotalDiscountGiven).ToArray();
+            try { await JS.InvokeVoidAsync("dashCharts.renderCoupon", "couponChart", labels, timesUsed, discounts); } catch { }
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Charts are rendered via LoadData -> RenderCharts
+    }
+}

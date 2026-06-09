@@ -1,0 +1,589 @@
+@page "/"
+@implements IDisposable
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+@inject QRDrinkOrder.Client.Services.MenuApiClient MenuApi
+@inject QRDrinkOrder.Client.Services.CartState CartState
+@using QRDrinkOrder.Shared.DTOs.Responses
+@using QRDrinkOrder.Client.Services
+@using QRDrinkOrder.Client.Components.UI
+
+<PageTitle>Trang chủ - Ngoc UwU Coffee</PageTitle>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <div class="home-container" style="display: flex; flex-direction: column; height: calc(100vh - 60px);">
+        <!-- Nội dung chính có thể cuộn toàn bộ -->
+        <div class="home-scroll-area" id="menu-content-scroll" style="overflow-y: auto; flex: 1; background-color: #f5f6fa;">
+            
+            <!-- TIN TỨC (Promotions) -->
+            @if (promotions.Any())
+            {
+                <h4 class="fw-bold px-3 pt-3 mb-2" style="color: #000033; font-size: 1.2rem;">TIN TỨC</h4>
+                <div class="promo-carousel-wrapper mx-3" id="promoCarouselWrapper" style="border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <!-- Slides -->
+                    <div class="promo-slides" id="promoSlides">
+                        @for (int i = 0; i < promotions.Count; i++)
+                        {
+                            var promo = promotions[i];
+                            var idx = i;
+                            <div class="promo-slide" @onclick="() => OpenPromoModal(idx)">
+                                <img src="@promo.ImageUrl" alt="@promo.Title"
+                                     onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                                <!-- Tên chương trình + mã giảm giá nổi lên -->
+                                <div class="promo-slide-footer">
+                                    @if (!string.IsNullOrEmpty(promo.Title))
+                                    {
+                                        <p class="promo-slide-title">@promo.Title</p>
+                                    }
+                                    @if (!string.IsNullOrEmpty(promo.CouponCode))
+                                    {
+                                        <div class="promo-slide-code" @onclick:stopPropagation>
+                                            <span class="promo-code-label">Nhập mã</span>
+                                            <strong class="promo-code-text">@promo.CouponCode</strong>
+                                            <button class="promo-copy-btn" @onclick="() => CopyPromoCode(promo.CouponCode)">
+                                                @if (copiedCode == promo.CouponCode)
+                                                {
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/></svg>
+                                                }
+                                                else
+                                                {
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                                                }
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <!-- Dots navigation -->
+                    @if (promotions.Count > 1)
+                    {
+                        <div class="promo-dots">
+                            @for (int i = 0; i < promotions.Count; i++)
+                            {
+                                var idx = i;
+                                <span class="promo-dot @(currentPromoIndex == idx ? "active" : "")" @onclick="() => GoToSlide(idx)"></span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Modal chi tiết khuyến mãi -->
+            @if (isPromoModalOpen && selectedPromo != null)
+            {
+                <div class="promo-detail-backdrop" @onclick="ClosePromoModal">
+                    <div class="promo-detail-modal" @onclick:stopPropagation>
+                        <button class="promo-detail-close" @onclick="ClosePromoModal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+                        </button>
+                        <img src="@selectedPromo.ImageUrl" alt="@selectedPromo.Title" class="promo-detail-img"
+                             onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                        <div class="promo-detail-body">
+                            @if (!string.IsNullOrEmpty(selectedPromo.Title))
+                            {
+                                <h2 class="promo-detail-title">@selectedPromo.Title</h2>
+                            }
+                            @if (!string.IsNullOrEmpty(selectedPromo.Description))
+                            {
+                                <p class="promo-detail-desc">@selectedPromo.Description</p>
+                            }
+                            @if (selectedPromo.StartDate.HasValue || selectedPromo.EndDate.HasValue)
+                            {
+                                <div class="promo-detail-dates">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/></svg>
+                                    <span>
+                                        @if (selectedPromo.StartDate.HasValue)
+                                        { <text>Từ @selectedPromo.StartDate.Value.ToString("dd/MM/yyyy")</text> }
+                                        @if (selectedPromo.EndDate.HasValue)
+                                        { <text> đến @selectedPromo.EndDate.Value.ToString("dd/MM/yyyy")</text> }
+                                    </span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(selectedPromo.CouponCode))
+                            {
+                                <div class="promo-detail-coupon">
+                                    <div class="promo-detail-coupon-info">
+                                        <span class="promo-detail-coupon-label">Mã khuyến mãi</span>
+                                        <strong class="promo-detail-coupon-code">@selectedPromo.CouponCode</strong>
+                                        @if (selectedPromo.DiscountValue.HasValue)
+                                        {
+                                            <span class="promo-detail-discount">
+                                                @if (selectedPromo.DiscountType == 1)
+                                                { <text>Giảm @selectedPromo.DiscountValue.Value.ToString("N0")đ</text> }
+                                                else
+                                                { <text>Giảm @selectedPromo.DiscountValue.Value%</text> }
+                                            </span>
+                                        }
+                                    </div>
+                                    <button class="promo-detail-copy-btn" @onclick="() => CopyPromoCode(selectedPromo.CouponCode)">
+                                        @if (copiedCode == selectedPromo.CouponCode)
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/></svg>
+                                            <text>Đã copy!</text>
+                                        }
+                                        else
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                                            <text>Sao chép mã</text>
+                                        }
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Thanh tìm kiếm (Sticky) -->
+            <div class="px-3 pt-3 pb-3 bg-white sticky-top" style="z-index: 10;">
+                <div class="input-group" style="border: 1px solid #e0e0e0; border-radius: 24px; overflow: hidden; background: #fff;">
+                    <span class="input-group-text bg-white border-0 ps-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-search text-secondary" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+                    </span>
+                    <input type="text" class="form-control border-0 py-2 shadow-none" placeholder="Tìm món" @bind="searchQuery" @bind:event="oninput" style="font-size: 15px;" />
+                </div>
+            </div>
+
+            <!-- Vùng Menu 2 cột: Sidebar và List -->
+            <div class="d-flex position-relative" style="background-color: #f5f6fa;">
+                <!-- Sidebar -->
+                <div class="menu-sidebar" style="position: sticky; top: 70px; height: calc(100vh - 70px); border-right: none;">
+                    <div class="sidebar-item @(selectedCategoryId == null ? "active" : "")" @onclick="() => SelectCategory(null)">
+                        <div class="sidebar-text">Tất cả</div>
+                    </div>
+                    @foreach (var cat in categories)
+                    {
+                        <div class="sidebar-item @(selectedCategoryId == cat.CategoryId ? "active" : "")" 
+                             @onclick="() => SelectCategory(cat.CategoryId)">
+                            @if (selectedCategoryId == cat.CategoryId)
+                            {
+                                var firstDrink = allDrinks.FirstOrDefault(d => d.CategoryId == cat.CategoryId && !string.IsNullOrEmpty(d.ImageUrl));
+                                if (firstDrink != null)
+                                {
+                                    <img src="@firstDrink.ImageUrl" class="sidebar-img" onerror="this.onerror=null; this.style.display='none';" />
+                                }
+                            }
+                            <div class="sidebar-text">@cat.CategoryName</div>
+                        </div>
+                    }
+                    <!-- Spacer để scroll không bị che bởi bottom nav -->
+                    <div style="height: 80px; flex-shrink: 0;"></div>
+                </div>
+
+                <!-- Danh sách món -->
+                <div class="flex-grow-1 px-3 pt-3" style="min-width: 0;">
+                @if (FilteredCategories.Any())
+                {
+                    @foreach (var group in FilteredCategories)
+                    {
+                        var drinksInGroup = FilteredDrinks.Where(d => d.CategoryId == group.CategoryId).ToList();
+                        if (drinksInGroup.Any())
+                        {
+                            <!-- Category Header -->
+                            <div class="category-header sticky-top shadow-sm" style="top: 60px;" id="cat-@group.CategoryId">
+                                @group.CategoryName
+                            </div>
+
+                            <!-- Món ăn ngang -->
+                            <div class="drink-list">
+                                @foreach (var drink in drinksInGroup)
+                                {
+                                    <div class="drink-item-card" @onclick="() => OpenDrinkModal(drink)">
+                                        <div class="drink-item-img">
+                                            <img src="@(string.IsNullOrEmpty(drink.ImageUrl) ? "/images/placeholder.png" : drink.ImageUrl)" alt="@drink.DrinkName" class="w-100 h-100 object-fit-cover" loading="lazy" onerror="this.onerror=null; this.src='/images/placeholder.png';">
+                                            @if (!drink.IsActive)
+                                            {
+                                                <div class="out-of-stock-overlay">
+                                                    <span class="badge bg-secondary">Hết</span>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="drink-item-info">
+                                            <div class="drink-item-name">@drink.DrinkName</div>
+                                            <div class="drink-item-price">@drink.BasePrice.ToString("N0")đ</div>
+                                        </div>
+                                        <div class="drink-item-action">
+                                            @if (drink.IsActive)
+                                            {
+                                                <button class="btn-add-plus">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                                    </svg>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5 text-secondary">
+                        Không tìm thấy món nào!
+                    </div>
+                }
+                <!-- Spacer để thẻ cuối cùng không bị che bởi bottom nav -->
+                <div style="height: 100px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Drawer for Customization (Lấy từ Menu) -->
+    <div class="drawer-overlay @(isModalOpen ? "open" : "")" @onclick="CloseModal"></div>
+    <div class="customization-drawer glass-panel @(isModalOpen ? "open" : "")">
+        @if (selectedDrink != null)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Thêm món mới</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal"></button>
+            </div>
+            
+            <div class="d-flex mb-4 align-items-center">
+                <img src="@(string.IsNullOrEmpty(selectedDrink.ImageUrl) ? "/images/placeholder.png" : selectedDrink.ImageUrl)" 
+                     class="rounded" style="width: 70px; height: 70px; object-fit: cover;" alt="@selectedDrink.DrinkName" onerror="this.onerror=null; this.src='/images/placeholder.png';">
+                <div class="ms-3">
+                    <h6 class="fw-bold mb-1" style="font-size: 1.1rem;">@selectedDrink.DrinkName</h6>
+                    <div class="fw-bold" style="font-size: 1.1rem; color: var(--tch-orange);">@selectedDrink.BasePrice.ToString("N0")đ</div>
+                </div>
+            </div>
+
+            <hr style="border-top: 1px solid var(--tch-border);" />
+
+            @if (!string.IsNullOrEmpty(selectedDrink.Description))
+            {
+                <div class="text-secondary mb-4" style="font-size: 0.9rem; line-height: 1.5;">@selectedDrink.Description</div>
+            }
+
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">ĐỘ NGỌT</label>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn @(sweetness == 0 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 0">0%</button>
+                    <button class="btn @(sweetness == 30 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 30">30%</button>
+                    <button class="btn @(sweetness == 50 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 50">50%</button>
+                    <button class="btn @(sweetness == 70 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 70">70%</button>
+                    <button class="btn @(sweetness == 100 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 100">100%</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">LƯỢNG ĐÁ</label>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn @(ice == 0 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => ice = 0">0%</button>
+                    <button class="btn @(ice == 50 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => ice = 50">50%</button>
+                    <button class="btn @(ice == 100 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => ice = 100">100%</button>
+                </div>
+            </div>
+
+            @if (allSizes.Any())
+            {
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">KÍCH CỠ</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        @foreach (var size in allSizes)
+                        {
+                            <button class="btn @(selectedSize?.SizeId == size.SizeId ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" 
+                                    @onclick="() => selectedSize = size">
+                                @size.Name 
+                                @if(size.PriceOffset > 0)
+                                {
+                                    <span class="small fw-normal ms-1">(+@size.PriceOffset.ToString("N0")đ)</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (allToppings.Any())
+            {
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">TOPPING</label>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var topping in allToppings)
+                        {
+                            <div class="form-check d-flex align-items-center bg-light rounded px-3 py-2 border @(selectedToppings.Any(t => t.ToppingId == topping.ToppingId) ? "border-primary" : "border-0")" 
+                                 @onclick="() => ToggleTopping(topping)" style="cursor: pointer;">
+                                <input class="form-check-input mt-0 me-2" type="checkbox" checked="@(selectedToppings.Any(t => t.ToppingId == topping.ToppingId))" />
+                                <label class="form-check-label flex-grow-1 fw-medium" style="pointer-events: none;">@topping.Name</label>
+                                <span class="text-orange fw-bold">+@topping.Price.ToString("N0")đ</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">YÊU CẦU KHÁC</label>
+                <input type="text" class="form-control bg-light border-0 py-2 rounded-pill px-3" placeholder="Ghi chú thêm cho quán..." @bind="note" />
+            </div>
+
+            <div class="d-flex align-items-center mt-3 pt-3" style="border-top: 1px solid var(--tch-border);">
+                <div class="d-flex align-items-center me-3 bg-light rounded-pill px-2 py-1">
+                    <button class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="DecreaseQuantity">-</button>
+                    <span class="px-3 fw-bold fs-5">@quantity</span>
+                    <button class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="IncreaseQuantity">+</button>
+                </div>
+                <button class="btn btn-primary flex-grow-1 py-3 fw-bold fs-6" style="border-radius: 24px;" @onclick="AddToCart">
+                    Thêm - @((GetUnitPrice() * quantity).ToString("N0"))đ
+                </button>
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    private bool isLoading = true;
+    private List<CategoryDto> categories = new();
+    private List<DrinkDto> allDrinks = new();
+    private List<PromotionDto> promotions = new();
+    private List<QRDrinkOrder.Shared.Models.Size> allSizes = new();
+    private List<QRDrinkOrder.Shared.Models.Topping> allToppings = new();
+    private int? selectedCategoryId = null;
+    private string searchQuery = "";
+
+    // Trạng thái cho Drawer
+    private bool isModalOpen = false;
+    private DrinkDto? selectedDrink;
+    private byte sweetness = 100;
+    private byte ice = 100;
+    private int quantity = 1;
+    private string note = "";
+    private QRDrinkOrder.Shared.Models.Size? selectedSize;
+    private List<QRDrinkOrder.Shared.Models.Topping> selectedToppings = new();
+
+    private decimal GetUnitPrice()
+    {
+        if (selectedDrink == null) return 0;
+        decimal basePrice = selectedDrink.BasePrice;
+        decimal sizeOffset = selectedSize?.PriceOffset ?? 0;
+        decimal toppingTotal = selectedToppings.Sum(t => t.Price);
+        return basePrice + sizeOffset + toppingTotal;
+    }
+
+    private void ToggleTopping(QRDrinkOrder.Shared.Models.Topping topping)
+    {
+        var existing = selectedToppings.FirstOrDefault(t => t.ToppingId == topping.ToppingId);
+        if (existing != null)
+            selectedToppings.Remove(existing);
+        else
+            selectedToppings.Add(topping);
+    }
+
+    // Trạng thái cho Promotion Carousel
+    private int currentPromoIndex = 0;
+    private bool isPromoModalOpen = false;
+    private PromotionDto? selectedPromo;
+    private System.Threading.CancellationTokenSource? _promoTimerCts;
+
+    private IEnumerable<CategoryDto> FilteredCategories
+    {
+        get
+        {
+            var cats = categories.AsEnumerable();
+            // Không lọc theo selectedCategoryId để ScrollSpy hoạt động
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                var matchingCategoryIds = allDrinks
+                    .Where(d => d.DrinkName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                    .Select(d => d.CategoryId)
+                    .Distinct();
+                cats = cats.Where(c => matchingCategoryIds.Contains(c.CategoryId));
+            }
+            return cats;
+        }
+    }
+
+    private IEnumerable<DrinkDto> FilteredDrinks 
+    {
+        get
+        {
+            var query = allDrinks.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                query = query.Where(d => d.DrinkName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+            }
+            return query;
+        }
+    }
+
+    private DotNetObjectReference<Home>? objRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("menuScrollSpy.initialize", objRef);
+            StartAutoSlide();
+        }
+    }
+
+    [JSInvokable]
+    public void UpdateActiveCategory(int id)
+    {
+        if (selectedCategoryId != id)
+        {
+            selectedCategoryId = id;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        _promoTimerCts?.Cancel();
+        _promoTimerCts?.Dispose();
+        objRef?.Dispose();
+        try { _ = JSRuntime.InvokeVoidAsync("menuScrollSpy.dispose"); } catch {}
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            isLoading = true;
+            categories = await MenuApi.GetCategoriesAsync();
+            allDrinks = await MenuApi.GetDrinksAsync();
+            promotions = await MenuApi.GetPromotionsAsync();
+            allSizes = await MenuApi.GetSizesAsync();
+            allToppings = await MenuApi.GetToppingsAsync();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+            await Task.Delay(50);
+            try {
+                await JSRuntime.InvokeVoidAsync("gsapHelpers.staggerLoad", ".drink-item-card");
+            } catch {}
+        }
+    }
+
+    private async Task SelectCategory(int? id)
+    {
+        selectedCategoryId = id;
+        searchQuery = "";
+        if (id.HasValue)
+        {
+            await JSRuntime.InvokeVoidAsync("menuScrollSpy.scrollToCategory", id.Value);
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("menuScrollSpy.scrollToTop");
+        }
+    }
+
+    private void OpenDrinkModal(DrinkDto drink)
+    {
+        if (!drink.IsActive) return;
+        selectedDrink = drink;
+        sweetness = 100;
+        ice = 100;
+        quantity = 1;
+        note = "";
+        selectedSize = allSizes.FirstOrDefault(); // default first size
+        selectedToppings.Clear();
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private void IncreaseQuantity() => quantity++;
+    private void DecreaseQuantity()
+    {
+        if (quantity > 1) quantity--;
+    }
+
+    private async Task AddToCart(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (selectedDrink != null)
+        {
+            CartState.AddToCart(selectedDrink, quantity, sweetness, ice, note, selectedSize, selectedToppings);
+            try {
+                await JSRuntime.InvokeVoidAsync("animateAddToCart", selectedDrink.ImageUrl, e.ClientX, e.ClientY);
+            } catch {}
+            CloseModal();
+        }
+    }
+
+    private string copiedCode = "";
+    private async Task CopyPromoCode(string code)
+    {
+        if (string.IsNullOrEmpty(code)) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", code);
+            copiedCode = code;
+            StateHasChanged();
+            await Task.Delay(2000);
+            if (copiedCode == code)
+            {
+                copiedCode = "";
+                StateHasChanged();
+            }
+        }
+        catch { }
+    }
+
+    private void GoToSlide(int idx)
+    {
+        currentPromoIndex = idx;
+        var slidePercent = idx * 100;
+        JSRuntime.InvokeVoidAsync("promoCarousel.goTo", slidePercent);
+    }
+
+    private void OpenPromoModal(int idx)
+    {
+        selectedPromo = promotions[idx];
+        isPromoModalOpen = true;
+    }
+
+    private void ClosePromoModal()
+    {
+        isPromoModalOpen = false;
+        selectedPromo = null;
+    }
+
+    private void StartAutoSlide()
+    {
+        if (promotions.Count <= 1) return;
+        _promoTimerCts?.Cancel();
+        _promoTimerCts = new System.Threading.CancellationTokenSource();
+        var token = _promoTimerCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(4000, token);
+                if (token.IsCancellationRequested) break;
+                await InvokeAsync(() =>
+                {
+                    currentPromoIndex = (currentPromoIndex + 1) % promotions.Count;
+                    var slidePercent = currentPromoIndex * 100;
+                    JSRuntime.InvokeVoidAsync("promoCarousel.goTo", slidePercent);
+                    StateHasChanged();
+                });
+            }
+        }, token);
+    }
+}
+
