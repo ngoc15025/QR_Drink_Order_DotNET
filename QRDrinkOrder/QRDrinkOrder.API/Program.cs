@@ -76,7 +76,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+
 
 // Kích hoạt phục vụ file tĩnh trong wwwroot (ảnh đồ uống, ảnh review)
 app.UseStaticFiles();
