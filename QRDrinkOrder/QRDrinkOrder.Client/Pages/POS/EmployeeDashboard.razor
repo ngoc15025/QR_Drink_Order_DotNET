@@ -7,9 +7,10 @@
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Shared.Models
 @using Microsoft.AspNetCore.SignalR.Client
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @implements IAsyncDisposable
 
-<PageTitle>POS Kanban - Ngoc UwU Coffee</PageTitle>
+<PageTitle>POS - Ngoc UwU Coffee</PageTitle>
 
 <div class="pos-wrapper">
     <!-- POS Header -->
@@ -26,29 +27,29 @@
             </div>
             <div>
                 <h1 class="pos-title">Màn hình POS</h1>
-                <p class="pos-subtitle">Ngoc UwU Coffee · Quản lý đơn thời gian thực</p>
+                <p class="pos-subtitle">Ngoc UwU Coffee · Quản lý đơn đặt</p>
             </div>
         </div>
         <div class="pos-header-right">
             <div class="pos-stats-pill">
                 <span class="pos-stat-item">
                     <span class="pos-stat-dot dot-warning"></span>
-                    <span>@PendingOrders.Count chờ</span>
+                    <span>@PendingOrders.Count Chờ xử lý</span>
                 </span>
                 <div class="pos-stat-divider"></div>
                 <span class="pos-stat-item">
                     <span class="pos-stat-dot dot-info"></span>
-                    <span>@PaidOrders.Count đã thanh toán</span>
+                    <span>@PaidOrders.Count Đã thanh toán</span>
                 </span>
                 <div class="pos-stat-divider"></div>
                 <span class="pos-stat-item">
                     <span class="pos-stat-dot dot-info"></span>
-                    <span>@PreparingOrders.Count đang làm</span>
+                    <span>@PreparingOrders.Count Đang pha chế</span>
                 </span>
                 <div class="pos-stat-divider"></div>
                 <span class="pos-stat-item">
                     <span class="pos-stat-dot dot-success"></span>
-                    <span>@CompletedOrders.Count xong</span>
+                    <span>@CompletedOrders.Count Hoàn thành</span>
                 </span>
             </div>
             <div class="pos-connection-badge @(isConnected ? "connected" : "disconnected")">
@@ -428,9 +429,9 @@
 
     private async Task SetupSignalR()
     {
-        var apiBaseUrl = "http://localhost:5153";
+        var apiBaseUrl = Config["BackendApiUrl"] ?? "http://localhost:5153";
         hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl}/orderhub")
+            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/orderhub")
             .WithAutomaticReconnect()
             .Build();
 
