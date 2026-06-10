@@ -32,8 +32,8 @@ public class PaymentService : IPaymentService
             return false;
         }
 
-        // 2. Phân tích nội dung chuyển khoản tìm Order ID (ví dụ: QRORDER15 hoặc QR15)
-        var match = Regex.Match(content, @"(?:QRORDER|QR)(\d+)", RegexOptions.IgnoreCase);
+        // 2. Phân tích nội dung chuyển khoản tìm Order ID (ví dụ: UwU15)
+        var match = Regex.Match(content, @"(?:UwU)(\d+)", RegexOptions.IgnoreCase);
         if (!match.Success)
             return false;
 
