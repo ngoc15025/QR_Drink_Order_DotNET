@@ -28,6 +28,12 @@ builder.Services.AddScoped<ICouponService, CouponService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+// Đăng ký HttpClient và MemoryCache cho AI Service
+builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IWeatherService, WeatherService>();
+builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
+
 // 4. Đăng ký SignalR để xử lý thông báo thời gian thực
 builder.Services.AddSignalR();
 

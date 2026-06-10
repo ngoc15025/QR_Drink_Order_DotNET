@@ -1,9 +1,11 @@
 @page "/menu"
 @implements IDisposable
 @inject QRDrinkOrder.Client.Services.MenuApiClient MenuApi
+@inject QRDrinkOrder.Client.Services.Interfaces.IAiRecommendationApiClient AiApi
 @inject QRDrinkOrder.Client.Services.CartState CartState
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Client.Services
+@using QRDrinkOrder.Shared.Models
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <PageTitle>Thực đơn - Ngoc UwU Coffee</PageTitle>
@@ -51,6 +53,43 @@ else
                     </span>
                     <input type="text" class="form-control bg-light border-0" placeholder="Tìm kiếm món..." @bind="searchQuery" @bind:event="oninput" />
                 </div>
+            </div>
+
+            <div class="px-3 pb-3">
+                <button class="btn w-100 fw-bold d-flex align-items-center justify-content-center gap-2" style="background-color: #FFF3E0; color: var(--tch-orange); border: 1px solid rgba(234, 128, 37, 0.5); border-radius: 12px; padding: 12px;" @onclick="GetAiSuggestions" disabled="@isAiLoading">
+                    @if (isAiLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span>Đang phân tích thời tiết...</span>
+                    }
+                    else
+                    {
+                        <span style="font-size: 1.2rem;">🤖</span>
+                        <span>Bạn ơi, hãy gợi ý cho tôi</span>
+                    }
+                </button>
+
+                @if (aiResult != null && aiDrinks.Any())
+                {
+                    <div class="mt-3 p-3 rounded-4 glass-panel" style="background: rgba(250, 140, 22, 0.1); border: 1px solid rgba(250, 140, 22, 0.2);">
+                        <div class="d-flex mb-2">
+                            <span class="fs-4 me-2">✨</span>
+                            <p class="mb-0 fw-medium" style="color: #d86900; font-size: 0.95rem; line-height: 1.5;">@aiResult.Message</p>
+                        </div>
+                        <div class="d-flex overflow-auto pb-2 gap-2" style="scroll-snap-type: x mandatory;">
+                            @foreach (var drink in aiDrinks)
+                            {
+                                <div class="card border-0 rounded-4 shadow-sm" style="min-width: 140px; scroll-snap-align: start;" @onclick="() => OpenDrinkModal(drink)">
+                                    <img src="@(string.IsNullOrEmpty(drink.ImageUrl) ? "/images/placeholder.png" : drink.ImageUrl)" class="card-img-top rounded-top-4 object-fit-cover" style="height: 100px;" alt="@drink.DrinkName" onerror="this.onerror=null; this.src='/images/placeholder.png';">
+                                    <div class="card-body p-2 text-center">
+                                        <div class="fw-bold small text-truncate">@drink.DrinkName</div>
+                                        <div class="text-orange fw-bold small">@drink.BasePrice.ToString("N0")đ</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
 
             <div class="px-3">
@@ -225,6 +264,11 @@ else
     private int? selectedCategoryId = null;
     private string searchQuery = "";
 
+    // AI Variables
+    private bool isAiLoading = false;
+    private AiRecommendationResult? aiResult;
+    private List<DrinkDto> aiDrinks = new();
+
     // Trạng thái cho Drawer tùy chỉnh món
     private bool isModalOpen = false;
     private DrinkDto? selectedDrink;
@@ -389,6 +433,28 @@ else
                 await JSRuntime.InvokeVoidAsync("animateAddToCart", selectedDrink.ImageUrl, e.ClientX, e.ClientY);
             } catch {}
             CloseModal();
+        }
+    }
+
+    private async Task GetAiSuggestions()
+    {
+        try
+        {
+            isAiLoading = true;
+            aiResult = await AiApi.GetSmartSuggestionsAsync();
+            if (aiResult != null && aiResult.DrinkIds != null)
+            {
+                aiDrinks = allDrinks.Where(d => aiResult.DrinkIds.Contains(d.DrinkId)).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting AI suggestions: {ex.Message}");
+        }
+        finally
+        {
+            isAiLoading = false;
+            StateHasChanged();
         }
     }
 }
