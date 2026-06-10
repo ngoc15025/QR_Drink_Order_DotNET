@@ -264,7 +264,7 @@
             await hubConnection.StartAsync();
             if (order != null)
             {
-                await hubConnection.InvokeAsync("JoinCustomerGroup", order.SessionId.ToString());
+                await hubConnection.InvokeAsync("JoinCustomerSessionGroup", order.SessionId.ToString());
             }
             isConnecting = false;
             await InvokeAsync(StateHasChanged);
