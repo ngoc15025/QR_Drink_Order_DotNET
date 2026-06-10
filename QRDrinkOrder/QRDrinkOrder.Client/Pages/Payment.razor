@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
 @inject Microsoft.JSInterop.IJSRuntime JS
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @implements IAsyncDisposable
 
 <PageTitle>Thanh toán - Ngoc UwU Coffee</PageTitle>
@@ -117,7 +118,7 @@
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-secondary small">Nội dung CK:</span>
-                    <strong class="text-success fs-6">QRORDER@(order.OrderId)</strong>
+                    <strong class="text-success fs-6">UwU@(order.OrderId)</strong>
                 </div>
             </div>
 
@@ -235,13 +236,12 @@
 
     private async Task ConnectSignalR()
     {
-        // Lấy domain hiện tại, xoá part URL
-        var currentHost = NavigationManager.BaseUri.TrimEnd('/'); 
+        var backendUrl = Config["BackendApiUrl"] ?? "http://localhost:5153";
         
         try
         {
             hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{currentHost}:5153/orderhub") // Gọi tới cổng của API server
+                .WithUrl($"{backendUrl.TrimEnd('/')}/orderhub") // Gọi tới cổng của API server
                 .WithAutomaticReconnect()
                 .Build();
 
