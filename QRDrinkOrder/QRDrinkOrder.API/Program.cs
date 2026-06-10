@@ -35,7 +35,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true) // Cho phép bất kỳ nguồn gốc dev nào kết nối linh hoạt
+        policy.WithOrigins(
+                "https://qr-drink-order-dot-qoxgmh61u-ngoc-uw-u.vercel.app"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Bắt buộc cho SignalR kết nối thời gian thực
