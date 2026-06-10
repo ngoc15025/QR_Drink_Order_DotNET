@@ -6,6 +6,7 @@ using QRDrinkOrder.API.Services.Implementations;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.Models;
 using System.Text;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +36,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-                policy.SetIsOriginAllowed(_ => true)
+        policy.SetIsOriginAllowed(_ => true) // Cho phép bất kỳ nguồn gốc dev nào kết nối linh hoạt
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Bắt buộc cho SignalR kết nối thời gian thực
@@ -68,6 +69,15 @@ builder.Services.AddAuthentication(options =>
 // 7. Đăng ký OpenAPI/Swagger để kiểm thử API
 builder.Services.AddOpenApi();
 
+// 8. Cấu hình Forwarded Headers để nhận đúng Scheme (HTTPS) từ Render Proxy
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Xóa danh sách mạng mặc định để nhận diện proxy của Render
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // Cấu hình đường ống HTTP (Request Pipeline)
@@ -76,7 +86,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// app.UseHttpsRedirection(); // Tắt dòng này khi deploy lên Render vì Render đã xử lý HTTPS
 
+app.UseForwardedHeaders();
 
 // Kích hoạt phục vụ file tĩnh trong wwwroot (ảnh đồ uống, ảnh review)
 app.UseStaticFiles();
