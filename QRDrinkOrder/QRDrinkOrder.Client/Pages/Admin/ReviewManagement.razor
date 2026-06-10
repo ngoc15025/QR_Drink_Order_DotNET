@@ -5,12 +5,12 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @using QRDrinkOrder.Shared.DTOs.Responses
-
-<PageTitle>Đánh giá & Phản hồi - Ngoc UwU Coffee</PageTitle>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+<PageTitle>Đánh giá và Phản hồi - Ngoc UwU Coffee</PageTitle>
 
 <div class="admin-topbar">
     <div class="admin-topbar-left">
-        <h1 class="admin-page-title">Khách hàng & Đánh giá</h1>
+        <h1 class="admin-page-title">Khách hàng và Đánh giá</h1>
         <p class="admin-page-subtitle">Quản lý phản hồi và nâng cao chất lượng dịch vụ</p>
     </div>
     
@@ -95,7 +95,7 @@ else
                     <div class="review-images">
                         @foreach (var img in review.ImageUrls)
                         {
-                            <img src="@(img.StartsWith("http") ? img : $"http://localhost:5153{img}")" class="review-img-thumb" alt="Hình ảnh đánh giá" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                            <img src="@(img.StartsWith("http") ? img : $"{backendUrl}{img}")" class="review-img-thumb" alt="Hình ảnh đánh giá" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
                         }
                     </div>
                 }
@@ -123,8 +123,11 @@ else
     private bool isLoading = true;
     private int filterMode = 0; // 0: All, 5: 5 sao, 3: Dưới 3 sao
 
+    private string backendUrl = "";
+
     protected override async Task OnInitializedAsync()
     {
+        backendUrl = (Config["BackendApiUrl"] ?? "http://localhost:5153").TrimEnd('/');
         isLoading = true;
         allReviews = await ReviewApi.GetAllReviewsAsync();
         ApplyFilter();
