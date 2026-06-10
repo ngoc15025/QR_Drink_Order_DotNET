@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Tải và cài đặt .NET 9 SDK vào thư mục cục bộ ./dotnet9
+# 1. Cài đặt .NET 9
 curl -sSL https://dot.net/v1/dotnet-install.sh > dotnet-install.sh
 chmod +x dotnet-install.sh
 ./dotnet-install.sh -c 9.0 -InstallDir ./dotnet
 
-# Hiển thị phiên bản để kiểm tra
-./dotnet/dotnet --version
+# 2. Xóa sạch các thư mục rác (bin, obj) từ Windows
+find . -type d \( -name "bin" -o -name "obj" \) -prune -exec rm -rf {} +
 
-# Publish Frontend (Blazor WebAssembly) ra thư mục output
-./dotnet/dotnet publish QRDrinkOrder/QRDrinkOrder.Client/QRDrinkOrder.Client.csproj -c Release -o output
+# 3. Tự động tìm đúng file .csproj để Build
+./dotnet/dotnet publish $(find . -name "QRDrinkOrder.Client.csproj" | head -n 1) -c Release -o output
