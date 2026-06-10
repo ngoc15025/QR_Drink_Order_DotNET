@@ -13,7 +13,7 @@ public class Program
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
         builder.RootComponents.Add<App>("#app");
 
-        string backendApiUrl = "http://localhost:5153";
+        string backendApiUrl = builder.Configuration["BackendApiUrl"] ?? "http://localhost:5153";
 
         // HttpClient dùng cho toàn bộ hệ thống
         builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(backendApiUrl) });
