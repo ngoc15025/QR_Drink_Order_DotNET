@@ -9,4 +9,4 @@ chmod +x dotnet-install.sh
 ./dotnet/dotnet --version
 
 # Publish Frontend (Blazor WebAssembly) ra thư mục output
-./dotnet/dotnet publish Backend/QRDrinkOrder/QRDrinkOrder.Client/QRDrinkOrder.Client.csproj -c Release -o output
+./dotnet/dotnet publish QRDrinkOrder/QRDrinkOrder.Client/QRDrinkOrder.Client.csproj -c Release -o output
