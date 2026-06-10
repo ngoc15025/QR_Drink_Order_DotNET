@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Components.Forms
 @inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @implements IAsyncDisposable
 
 <PageTitle>Theo dõi Đơn hàng - Ngoc UwU Coffee</PageTitle>
@@ -225,11 +226,10 @@
         await LoadOrder();
 
         // Kết nối SignalR để nhận cập nhật trạng thái realtime
-        var baseUrl = NavigationManager.BaseUri.Replace(NavigationManager.Uri.Replace(NavigationManager.BaseUri, ""), ""); // Lấy host của client. Trong thực tế sẽ trỏ tới API Host.
-        var apiBaseUrl = "http://localhost:5153"; // Hardcode API host cho dev
+        var apiBaseUrl = Config["BackendApiUrl"] ?? "http://localhost:5153";
 
         hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl}/orderhub")
+            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/orderhub")
             .WithAutomaticReconnect()
             .Build();
 
