@@ -42,14 +42,12 @@ public class PaymentsController : ControllerBase
             var expectedToken = _configuration["SePay:WebhookToken"];
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
 
+            // Nếu chưa cấu hình token trên server thì cho phép pass luôn (dành cho môi trường test/demo)
             if (string.IsNullOrEmpty(expectedToken) || expectedToken.StartsWith("YOUR_"))
             {
-                // Chưa cấu hình token trên server
-                _logger.LogError("[SePay Webhook Error] Webhook token is not configured on the server.");
-                return StatusCode(500, new { Status = "error", Message = "Server configuration error." });
+                _logger.LogWarning("[SePay Webhook] Webhook token is not configured. Bypassing auth check for demo/testing.");
             }
-
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.Contains(expectedToken))
+            else if (string.IsNullOrEmpty(authHeader) || !authHeader.Contains(expectedToken))
             {
                 _logger.LogWarning($"[SePay Webhook Warning] Unauthorized request. Header received: {authHeader}");
                 return Unauthorized(new { Status = "unauthorized", Message = "Invalid or missing webhook token." });
