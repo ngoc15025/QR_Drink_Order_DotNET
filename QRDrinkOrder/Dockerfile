@@ -34,5 +34,9 @@ COPY --from=build /app/publish .
 # Render sử dụng biến môi trường PORT để chỉ định cổng
 ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
 
+ENV DOTNET_USE_POLLING_FILE_WATCHER=1
+ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
+
+
 # Chạy ứng dụng
 ENTRYPOINT ["dotnet", "QRDrinkOrder.API.dll"]
