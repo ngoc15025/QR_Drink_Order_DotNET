@@ -430,10 +430,18 @@ else
         {
             isAiLoading = true;
             smartSuggestion = await AiApi.GetLatestRecommendationAsync();
-            if (smartSuggestion != null && !string.IsNullOrEmpty(smartSuggestion.RecommendationText))
+            if (smartSuggestion != null)
             {
-                var drinkNames = smartSuggestion.RecommendationText.Split(',');
-                aiDrinks = allDrinks.Where(d => drinkNames.Any(name => d.DrinkName.Contains(name.Trim(), StringComparison.OrdinalIgnoreCase))).ToList();
+                if (smartSuggestion.DrinkIds != null && smartSuggestion.DrinkIds.Any())
+                {
+                    aiDrinks = allDrinks.Where(d => smartSuggestion.DrinkIds.Contains(d.DrinkId)).ToList();
+                    smartSuggestion.RecommendationText = smartSuggestion.Message; // Populate text for UI to display
+                }
+                else if (!string.IsNullOrEmpty(smartSuggestion.RecommendationText))
+                {
+                    var drinkNames = smartSuggestion.RecommendationText.Split(',');
+                    aiDrinks = allDrinks.Where(d => drinkNames.Any(name => d.DrinkName.Contains(name.Trim(), StringComparison.OrdinalIgnoreCase))).ToList();
+                }
             }
         }
         catch (Exception ex)

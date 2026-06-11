@@ -17,7 +17,7 @@ public class AiRecommendationApiClient : IAiRecommendationApiClient
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<AiRecommendationResultDto>("api/ai-recommendation/latest");
+            return await _httpClient.GetFromJsonAsync<AiRecommendationResultDto>("api/Recommendations/smart-suggest");
         }
         catch (Exception ex)
         {
