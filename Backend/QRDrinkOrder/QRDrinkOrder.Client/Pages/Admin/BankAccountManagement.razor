@@ -1,0 +1,372 @@
+@page "/admin/bank-accounts"
+@attribute [Authorize(Roles = "Admin")]
+@layout QRDrinkOrder.Client.Layout.AdminLayout
+@using QRDrinkOrder.Shared.DTOs.Responses
+@using QRDrinkOrder.Shared.DTOs.Requests
+@using QRDrinkOrder.Client.Services
+@inject BankAccountApiClient BankAccountApi
+@inject NavigationManager NavigationManager
+@inject Microsoft.JSInterop.IJSRuntime JS
+
+<PageTitle>Thanh toán - Ngoc UwU Coffee</PageTitle>
+        <div class="admin-topbar">
+            <div class="admin-topbar-left">
+                <h1 class="admin-page-title">Cấu hình Thanh toán</h1>
+                <p class="admin-page-subtitle">Quản lý tài khoản ngân hàng để nhận tiền qua VietQR / SePay</p>
+            </div>
+            <button class="admin-action-btn" @onclick="ShowAddModal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Thêm tài khoản
+            </button>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="admin-loading">
+                <div class="admin-loading-spinner"></div>
+                <p>Đang tải dữ liệu...</p>
+            </div>
+        }
+        else if (!bankAccounts.Any())
+        {
+            <div class="bank-empty-state">
+                <div class="bank-empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                </div>
+                <h3>Chưa có tài khoản ngân hàng</h3>
+                <p>Thêm tài khoản để khách hàng có thể thanh toán chuyển khoản qua mã QR</p>
+                <button class="admin-action-btn" @onclick="ShowAddModal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Thêm ngay
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="bank-cards-grid">
+                @foreach (var acc in bankAccounts)
+                {
+                    var bank = vietqrBanks.FirstOrDefault(b => b.Code == acc.BankCode);
+                    <div class="bank-card @(acc.IsActive ? "bank-card-active" : "")">
+                        <div class="bank-card-header">
+                            <div class="bank-logo-wrap">
+                                @if (bank != null && !string.IsNullOrEmpty(bank.Logo))
+                                {
+                                    <img src="@bank.Logo" alt="@bank.ShortName" class="bank-logo-img" />
+                                }
+                                else
+                                {
+                                    <div class="bank-logo-placeholder">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                                    </div>
+                                }
+                            </div>
+                            <div class="bank-info">
+                                <span class="bank-name">@(bank?.ShortName ?? acc.BankCode)</span>
+                                <span class="bank-fullname">@(bank?.Name ?? "")</span>
+                            </div>
+                            @if (acc.IsActive)
+                            {
+                                <span class="bank-active-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Mặc định
+                                </span>
+                            }
+                        </div>
+                        <div class="bank-card-body">
+                            <div class="bank-detail-row">
+                                <span class="bank-detail-label">Số tài khoản</span>
+                                <span class="bank-detail-value bank-acct-number">@acc.AccountNumber</span>
+                            </div>
+                            <div class="bank-detail-row">
+                                <span class="bank-detail-label">Chủ tài khoản</span>
+                                <span class="bank-detail-value">@acc.AccountName</span>
+                            </div>
+                        </div>
+                        <div class="bank-card-footer">
+                            <button class="bank-btn bank-btn-qr" @onclick="() => PreviewQr(acc, bank)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                                Xem QR
+                            </button>
+                            @if (!acc.IsActive)
+                            {
+                                <button class="bank-btn bank-btn-activate" @onclick="() => ActivateAccount(acc.BankAccountId)">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Đặt mặc định
+                                </button>
+                            }
+                            <button class="bank-btn bank-btn-delete" @onclick="() => DeleteAccount(acc.BankAccountId)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+<!-- Modal Form -->
+@if (showModal)
+{
+    <div class="modal-overlay" @onclick="HideModal">
+        <div class="bank-modal" @onclick:stopPropagation>
+            <div class="bank-modal-header">
+                <h5>Thêm tài khoản ngân hàng</h5>
+                <button class="bank-modal-close" @onclick="HideModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="bank-modal-body">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="bank-alert-error">@errorMessage</div>
+                }
+
+                <!-- Chọn Ngân hàng (Dropdown) -->
+                <div class="bank-form-group">
+                    <label class="bank-form-label">Ngân hàng</label>
+                    <div class="bank-select-wrap">
+                        <input type="text" class="bank-form-input" placeholder="Tìm ngân hàng..." 
+                               @bind="bankSearchText" @bind:event="oninput" @onfocus="() => showBankDropdown = true" />
+                        @if (showBankDropdown && filteredBanks.Any())
+                        {
+                            <div class="bank-dropdown">
+                                @foreach (var bank in filteredBanks.Take(8))
+                                {
+                                    <div class="bank-dropdown-item" @onclick="() => SelectBank(bank)">
+                                        @if (!string.IsNullOrEmpty(bank.Logo))
+                                        {
+                                            <img src="@bank.Logo" alt="@bank.ShortName" class="bank-dropdown-logo" />
+                                        }
+                                        <div class="bank-dropdown-info">
+                                            <span class="bank-dropdown-code">@bank.ShortName</span>
+                                            <span class="bank-dropdown-name">@bank.Name</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    @if (selectedBank != null)
+                    {
+                        <div class="bank-selected-chip">
+                            @if (!string.IsNullOrEmpty(selectedBank.Logo))
+                            {
+                                <img src="@selectedBank.Logo" alt="" class="bank-chip-logo" />
+                            }
+                            <span>@selectedBank.ShortName</span>
+                            <button class="bank-chip-remove" @onclick="ClearSelectedBank">×</button>
+                        </div>
+                    }
+                </div>
+
+                <!-- Số tài khoản -->
+                <div class="bank-form-group">
+                    <label class="bank-form-label">Số tài khoản</label>
+                    <input type="text" class="bank-form-input" @bind="currentModel.AccountNumber" placeholder="Nhập số tài khoản ngân hàng" />
+                </div>
+
+                <!-- Tên chủ tài khoản -->
+                <div class="bank-form-group">
+                    <label class="bank-form-label">Tên chủ tài khoản</label>
+                    <input type="text" class="bank-form-input" @bind="currentModel.AccountName" placeholder="VD: NGUYEN VAN A (viết hoa, không dấu)" />
+                    <span class="bank-form-hint">Nhập tên in hoa, không dấu, giống tên hiển thị trên tài khoản ngân hàng.</span>
+                </div>
+
+                <!-- Đặt mặc định -->
+                <label class="bank-checkbox-wrap">
+                    <input type="checkbox" @bind="currentModel.IsActive" />
+                    <span class="bank-checkbox-label">Đặt làm tài khoản nhận tiền mặc định</span>
+                </label>
+
+                <!-- QR Preview -->
+                @if (selectedBank != null && !string.IsNullOrEmpty(currentModel.AccountNumber))
+                {
+                    <div class="bank-qr-preview-inline">
+                        <span class="bank-form-label">Xem trước QR</span>
+                        <img src="@($"https://img.vietqr.io/image/{selectedBank.Bin}-{currentModel.AccountNumber}-compact.jpg?amount=0&addInfo=Preview&accountName={Uri.EscapeDataString(currentModel.AccountName ?? "")}")" 
+                             class="bank-qr-preview-img" alt="QR Preview" />
+                    </div>
+                }
+            </div>
+            <div class="bank-modal-footer">
+                <button class="bank-btn bank-btn-cancel" @onclick="HideModal">Hủy</button>
+                <button class="bank-btn bank-btn-save" @onclick="SaveAccount" disabled="@isSaving">
+                    @if (isSaving) { <span class="bank-spinner"></span> }
+                    Lưu tài khoản
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- QR Preview Modal -->
+@if (showQrModal && previewAccount != null)
+{
+    <div class="modal-overlay" @onclick="HideQrModal">
+        <div class="bank-qr-modal" @onclick:stopPropagation>
+            <div class="bank-qr-modal-header">
+                @if (previewBank != null && !string.IsNullOrEmpty(previewBank.Logo))
+                {
+                    <img src="@previewBank.Logo" alt="" class="bank-qr-modal-logo" />
+                }
+                <div>
+                    <h5>@(previewBank?.ShortName ?? previewAccount.BankCode)</h5>
+                    <p>@previewAccount.AccountNumber · @previewAccount.AccountName</p>
+                </div>
+            </div>
+            <img src="@($"https://img.vietqr.io/image/{previewBank?.Bin ?? previewAccount.BankCode}-{previewAccount.AccountNumber}-compact.jpg?amount=0&addInfo=QRDrinkOrder&accountName={Uri.EscapeDataString(previewAccount.AccountName)}")" 
+                 class="bank-qr-modal-img" alt="QR Code" />
+            <button class="bank-btn bank-btn-cancel w-100" @onclick="HideQrModal">Đóng</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isSaving = false;
+    private string errorMessage = "";
+
+    private List<BankAccountDto> bankAccounts = new();
+    private SaveBankAccountRequest currentModel = new();
+
+    private bool showQrModal = false;
+    private BankAccountDto? previewAccount;
+    private VietQRBank? previewBank;
+
+    // VietQR Bank List
+    private List<VietQRBank> vietqrBanks = new();
+    private string bankSearchText = "";
+    private bool showBankDropdown = false;
+    private VietQRBank? selectedBank;
+
+    private List<VietQRBank> filteredBanks => string.IsNullOrWhiteSpace(bankSearchText)
+        ? vietqrBanks.Where(b => b.TransferSupported == 1).ToList()
+        : vietqrBanks.Where(b => b.TransferSupported == 1 &&
+            (b.ShortName.Contains(bankSearchText, StringComparison.OrdinalIgnoreCase) ||
+             b.Name.Contains(bankSearchText, StringComparison.OrdinalIgnoreCase) ||
+             b.Code.Contains(bankSearchText, StringComparison.OrdinalIgnoreCase))).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBanks();
+        await LoadData();
+    }
+
+    private async Task LoadBanks()
+    {
+        try
+        {
+            using var http = new HttpClient();
+            var response = await http.GetFromJsonAsync<VietQRBankResponse>("https://api.vietqr.io/v2/banks");
+            if (response?.Data != null)
+            {
+                vietqrBanks = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load VietQR banks: {ex.Message}");
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try { bankAccounts = await BankAccountApi.GetBankAccountsAsync(); }
+        catch (Exception ex) { Console.WriteLine($"Error loading bank accounts: {ex.Message}"); bankAccounts = new(); }
+        finally { isLoading = false; }
+    }
+
+    private void ShowAddModal()
+    {
+        currentModel = new SaveBankAccountRequest();
+        selectedBank = null;
+        bankSearchText = "";
+        showBankDropdown = false;
+        errorMessage = "";
+        showModal = true;
+    }
+
+    private void HideModal() => showModal = false;
+
+    private void SelectBank(VietQRBank bank)
+    {
+        selectedBank = bank;
+        currentModel.BankCode = bank.Code;
+        bankSearchText = "";
+        showBankDropdown = false;
+    }
+
+    private void ClearSelectedBank()
+    {
+        selectedBank = null;
+        currentModel.BankCode = "";
+        bankSearchText = "";
+    }
+
+    private void PreviewQr(BankAccountDto acc, VietQRBank? bank)
+    {
+        previewAccount = acc;
+        previewBank = bank;
+        showQrModal = true;
+    }
+
+    private void HideQrModal() => showQrModal = false;
+
+    private async Task SaveAccount()
+    {
+        if (selectedBank == null)
+        { errorMessage = "Vui lòng chọn ngân hàng."; return; }
+        if (string.IsNullOrWhiteSpace(currentModel.AccountNumber))
+        { errorMessage = "Vui lòng nhập số tài khoản."; return; }
+        if (string.IsNullOrWhiteSpace(currentModel.AccountName))
+        { errorMessage = "Vui lòng nhập tên chủ tài khoản."; return; }
+
+        isSaving = true;
+        errorMessage = "";
+        try
+        {
+            bool success = await BankAccountApi.CreateBankAccountAsync(currentModel);
+            if (success) { showModal = false; await LoadData(); }
+            else { errorMessage = "Có lỗi xảy ra."; }
+        }
+        catch (Exception ex) { errorMessage = ex.Message; }
+        finally { isSaving = false; }
+    }
+
+    private async Task ActivateAccount(int id)
+    {
+        await BankAccountApi.ActivateBankAccountAsync(id);
+        await LoadData();
+    }
+
+    private async Task DeleteAccount(int id)
+    {
+        await BankAccountApi.DeleteBankAccountAsync(id);
+        await LoadData();
+    }
+
+    private void GoBack() => NavigationManager.NavigateTo("/account");
+
+    // VietQR Models
+    public class VietQRBankResponse
+    {
+        public int Code { get; set; }
+        public string Desc { get; set; } = "";
+        public List<VietQRBank> Data { get; set; } = new();
+    }
+
+    public class VietQRBank
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Code { get; set; } = "";
+        public string Bin { get; set; } = "";
+        public string ShortName { get; set; } = "";
+        public string Logo { get; set; } = "";
+        public int TransferSupported { get; set; }
+        public int LookupSupported { get; set; }
+    }
+}

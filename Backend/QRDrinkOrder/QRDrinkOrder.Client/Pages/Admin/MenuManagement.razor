@@ -1,0 +1,370 @@
+@page "/admin/menu"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@inject QRDrinkOrder.Client.Services.MenuApiClient MenuApi
+@using QRDrinkOrder.Shared.DTOs.Requests
+@using QRDrinkOrder.Shared.DTOs.Responses
+@using QRDrinkOrder.Client.Components.Specific.Menu
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+@layout QRDrinkOrder.Client.Layout.AdminLayout
+
+<PageTitle>Quản lý Thực đơn - Ngoc UwU Coffee</PageTitle>
+
+<div>
+    <div class="admin-topbar">
+        <div class="admin-topbar-left">
+            <h1 class="admin-page-title">Quản lý Thực đơn</h1>
+            <p class="admin-page-subtitle">Thiết lập danh mục và món nước cho cửa hàng</p>
+        </div>
+        <div class="admin-topbar-right">
+            @if (activeTab == "drinks")
+            {
+                <button class="btn-admin-action btn-action-primary" @onclick="OpenCreateDrinkModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/></svg>
+                    Thêm món mới
+                </button>
+            }
+            else if (activeTab == "categories")
+            {
+                <button class="btn-admin-action btn-action-primary" @onclick="OpenCreateCategoryModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/></svg>
+                    Thêm danh mục
+                </button>
+            }
+            else if (activeTab == "toppings")
+            {
+                <button class="btn-admin-action btn-action-primary" @onclick="OpenCreateToppingModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/></svg>
+                    Thêm Topping
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-4">
+        <ul class="nav nav-pills premium-tabs">
+            <li class="nav-item">
+                <button class="nav-link @(activeTab == "drinks" ? "active" : "")" @onclick='() => activeTab = "drinks"'>Món nước</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(activeTab == "categories" ? "active" : "")" @onclick='() => activeTab = "categories"'>Danh mục</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(activeTab == "toppings" ? "active" : "")" @onclick='() => activeTab = "toppings"'>Topping</button>
+            </li>
+        </ul>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-secondary">Đang tải dữ liệu...</div>
+        </div>
+    }
+    else
+    {
+        @if (activeTab == "drinks")
+        {
+            <DrinkListTable Drinks="drinks" Categories="categories" OnEditDrink="OpenEditDrinkModal" OnToggleStatus="ToggleDrinkStatus" />
+        }
+        else if (activeTab == "categories")
+        {
+            <CategoryListTable Categories="categories" OnEditCategory="OpenEditCategoryModal" />
+        }
+        else if (activeTab == "toppings")
+        {
+            <ToppingListTable Toppings="toppings" OnEdit="OpenEditToppingModal" OnDelete="DeleteTopping" />
+        }
+    }
+</div>
+
+@if (showDrinkModal)
+{
+    <DrinkFormModal Model="drinkModel" 
+                    Categories="categories" 
+                    EditingDrinkId="editingDrinkId" 
+                    IsSaving="isSaving" 
+                    OnClose="CloseModals" 
+                    OnSave="SaveDrink" />
+}
+
+@if (showCategoryModal)
+{
+    <CategoryFormModal Model="categoryModel" 
+                       EditingCategoryId="editingCategoryId" 
+                       IsSaving="isSaving" 
+                       OnClose="CloseModals" 
+                       OnSave="SaveCategory" />
+}
+
+@if (showToppingModal)
+{
+    <ToppingFormModal Model="toppingModel" 
+                      IsSaving="isSaving" 
+                      OnClose="CloseModals" 
+                      OnSave="SaveTopping" />
+}
+
+@code {
+    private string activeTab = "drinks";
+    private bool isLoading = true;
+    private bool isSaving = false;
+
+    private List<CategoryDto> categories = new();
+    private List<DrinkDto> drinks = new();
+
+    // Models for modals
+    private bool showDrinkModal = false;
+    private SaveDrinkRequest drinkModel = new();
+    private int editingDrinkId = 0;
+
+    private bool showCategoryModal = false;
+    private SaveCategoryRequest categoryModel = new();
+    private int editingCategoryId = 0;
+
+    private bool showToppingModal = false;
+    private ToppingDto toppingModel = new();
+    private List<ToppingDto> toppings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            // includeInactive = true to show hidden items to manager
+            categories = await MenuApi.GetCategoriesAsync("vi", true);
+            drinks = await MenuApi.GetDrinksAsync("vi", null, true);
+            toppings = await MenuApi.GetToppingsAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void CloseModals()
+    {
+        showDrinkModal = false;
+        showCategoryModal = false;
+        showToppingModal = false;
+    }
+
+    private void OpenCreateDrinkModal()
+    {
+        drinkModel = new SaveDrinkRequest { IsActive = true };
+        editingDrinkId = 0;
+        showDrinkModal = true;
+    }
+
+    private void OpenEditDrinkModal(DrinkDto drink)
+    {
+        var nameVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.DrinkName ?? drink.DrinkName;
+        var nameEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.DrinkName ?? "";
+        var descVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.Description ?? drink.Description;
+        var descEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.Description ?? "";
+
+        drinkModel = new SaveDrinkRequest
+        {
+            CategoryId = drink.CategoryId,
+            ImageUrl = drink.ImageUrl ?? "",
+            BasePrice = drink.BasePrice,
+            TemperatureType = drink.TemperatureType,
+            IsActive = drink.IsActive,
+            NameVi = nameVi, 
+            NameEn = nameEn,
+            DescriptionVi = descVi,
+            DescriptionEn = descEn
+        };
+        editingDrinkId = drink.DrinkId;
+        showDrinkModal = true;
+    }
+
+    private async Task SaveDrink(SaveDrinkRequest request)
+    {
+        if (request.CategoryId == 0) return;
+
+        isSaving = true;
+        try
+        {
+            bool success;
+            if (editingDrinkId == 0)
+                success = await MenuApi.CreateDrinkAsync(request);
+            else
+                success = await MenuApi.UpdateDrinkAsync(editingDrinkId, request);
+
+            if (success)
+            {
+                CloseModals();
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Lưu thất bại! Vui lòng kiểm tra lại dữ liệu.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ToggleDrinkStatus(DrinkDto drink)
+    {
+        var nameVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.DrinkName ?? drink.DrinkName;
+        var nameEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.DrinkName ?? drink.DrinkName;
+        var descVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.Description ?? drink.Description;
+        var descEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.Description ?? drink.Description;
+
+        var request = new SaveDrinkRequest
+        {
+            CategoryId = drink.CategoryId,
+            ImageUrl = drink.ImageUrl ?? "",
+            BasePrice = drink.BasePrice,
+            TemperatureType = drink.TemperatureType,
+            IsActive = !drink.IsActive,
+            NameVi = nameVi,
+            NameEn = nameEn,
+            DescriptionVi = descVi,
+            DescriptionEn = descEn
+        };
+        await MenuApi.UpdateDrinkAsync(drink.DrinkId, request);
+        await LoadData();
+    }
+
+    private void OpenCreateCategoryModal()
+    {
+        categoryModel = new SaveCategoryRequest { IsActive = true, DisplayOrder = categories.Count + 1 };
+        editingCategoryId = 0;
+        showCategoryModal = true;
+    }
+
+    private void OpenEditCategoryModal(CategoryDto cat)
+    {
+        var nameVi = cat.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.CategoryName ?? cat.CategoryName;
+        var nameEn = cat.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.CategoryName ?? "";
+
+        categoryModel = new SaveCategoryRequest
+        {
+            IsActive = cat.IsActive,
+            DisplayOrder = cat.DisplayOrder,
+            NameVi = nameVi,
+            NameEn = nameEn
+        };
+        editingCategoryId = cat.CategoryId;
+        showCategoryModal = true;
+    }
+
+    private async Task SaveCategory(SaveCategoryRequest request)
+    {
+        isSaving = true;
+        try
+        {
+            bool success;
+            if (editingCategoryId == 0)
+                success = await MenuApi.CreateCategoryAsync(request);
+            else
+                success = await MenuApi.UpdateCategoryAsync(editingCategoryId, request);
+
+            if (success)
+            {
+                CloseModals();
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Lưu thất bại! Vui lòng kiểm tra lại dữ liệu.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void OpenCreateToppingModal()
+    {
+        toppingModel = new ToppingDto();
+        showToppingModal = true;
+    }
+
+    private void OpenEditToppingModal(ToppingDto topping)
+    {
+        toppingModel = new ToppingDto
+        {
+            ToppingId = topping.ToppingId,
+            Name = topping.Name,
+            Price = topping.Price
+        };
+        showToppingModal = true;
+    }
+
+    private async Task SaveTopping()
+    {
+        isSaving = true;
+        try
+        {
+            bool success;
+            if (toppingModel.ToppingId == 0)
+                success = await MenuApi.CreateToppingAsync(toppingModel);
+            else
+                success = await MenuApi.UpdateToppingAsync(toppingModel.ToppingId, toppingModel);
+
+            if (success)
+            {
+                CloseModals();
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Lưu thất bại!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteTopping(int toppingId)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa Topping này không?");
+        if (confirmed)
+        {
+            try
+            {
+                bool success = await MenuApi.DeleteToppingAsync(toppingId);
+                if (success)
+                {
+                    await LoadData();
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Xóa thất bại!");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+            }
+        }
+    }
+}

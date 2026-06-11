@@ -1,0 +1,211 @@
+@page "/account"
+@inject QRDrinkOrder.Client.Services.AuthApiClient AuthApi
+@inject QRDrinkOrder.Client.Services.LocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@using QRDrinkOrder.Shared.DTOs.Requests
+@using QRDrinkOrder.Client.Services
+@using System.Security.Claims
+
+<PageTitle>Tài khoản - Ngoc UwU Coffee</PageTitle>
+
+<div class="mb-4">
+    <h4 class="fw-bold">Tài khoản</h4>
+</div>
+
+<AuthorizeView Context="authContext">
+    <Authorized>
+        <!-- Giao diện khi ĐÃ đăng nhập (Nhân viên/Quản lý) -->
+        <div class="bg-white p-4 rounded text-center mb-4" style="border: 1px solid #f0f0f0;">
+            <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="var(--tch-orange)" class="bi bi-person-circle" viewBox="0 0 16 16">
+                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                    <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                </svg>
+            </div>
+            <h5 class="fw-bold">@authContext.User.Identity?.Name</h5>
+            <div class="text-secondary mb-4">
+                Chức vụ: <span class="badge bg-warning text-dark">@GetRoleName(authContext.User)</span>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" @onclick="GoToDashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid me-2" viewBox="0 0 16 16">
+                        <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 15 10.5v3a1.5 1.5 0 0 1-13.5 15h-3a1.5 1.5 0 0 1-9-13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
+                    </svg>
+                    Khu vực Làm việc
+                </button>
+                <button class="btn btn-outline-danger" @onclick="Logout">
+                    Đăng xuất
+                </button>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <!-- Giao diện Khách hàng & Cổng đăng nhập nhân viên -->
+        <div class="order-type-tabs mb-4 bg-white rounded overflow-hidden d-flex" style="border: 1px solid #f0f0f0;">
+            <button class="order-type-tab @(activeTab == "customer" ? "active" : "") border-0 flex-fill py-3" 
+                    @onclick='() => activeTab = "customer"'>
+                Khách hàng
+            </button>
+            <button class="order-type-tab @(activeTab == "staff" ? "active" : "") border-0 flex-fill py-3" 
+                    @onclick='() => activeTab = "staff"'>
+                Nhân viên
+            </button>
+        </div>
+
+        @if (activeTab == "customer")
+        {
+            <div class="bg-white p-4 rounded" style="border: 1px solid #f0f0f0;">
+                <div class="text-center mb-4">
+                    <img src="/images/placeholder.png" alt="Search Order" width="120" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                    <h5 class="fw-bold mt-3">Tra cứu đơn hàng</h5>
+                    <p class="text-secondary small">Nhập số điện thoại để xem lịch sử và trạng thái đơn hàng của bạn.</p>
+                </div>
+                <div class="mb-3">
+                    <input type="tel" class="form-control py-2" placeholder="Nhập số điện thoại..." @bind="customerPhone" @onkeyup="HandleKeyUp" />
+                </div>
+                <button class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 24px;" @onclick="SearchOrder">Tra cứu ngay</button>
+            </div>
+        }
+        else
+        {
+            <div class="bg-white p-4 rounded" style="border: 1px solid #f0f0f0;">
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold text-dark">Đăng nhập Nội bộ</h5>
+                    <p class="text-secondary small">Dành riêng cho Quản lý và Nhân viên pha chế.</p>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger small py-2">@errorMessage</div>
+                }
+ 
+                <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">Email</label>
+                        <InputText class="form-control py-2" @bind-Value="loginModel.Email" />
+                        <ValidationMessage For="@(() => loginModel.Email)" class="text-danger small" />
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-dark">Mật khẩu</label>
+                        <InputText type="password" class="form-control py-2" @bind-Value="loginModel.Password" placeholder="••••••••" />
+                        <ValidationMessage For="@(() => loginModel.Password)" class="text-danger small" />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 24px;" disabled="@isLoggingIn">
+                        @if (isLoggingIn)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span> <span>Đang xử lý...</span>
+                        }
+                        else
+                        {
+                            <span>Đăng nhập</span>
+                        }
+                    </button>
+                </EditForm>
+            </div>
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string activeTab = "customer";
+    private string customerPhone = "";
+    private LoginRequest loginModel = new();
+    private bool isLoggingIn = false;
+    private string errorMessage = "";
+
+    private void SearchOrder()
+    {
+        if (!string.IsNullOrWhiteSpace(customerPhone))
+        {
+            NavigationManager.NavigateTo($"/order?phone={customerPhone}");
+        }
+    }
+
+    private void HandleKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SearchOrder();
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            isLoggingIn = true;
+            errorMessage = "";
+            var response = await AuthApi.LoginAsync(loginModel);
+            
+            if (response != null && !string.IsNullOrEmpty(response.Token))
+            {
+                await LocalStorage.SetItemAsync("authToken", response.Token);
+                ((CustomAuthenticationStateProvider)AuthStateProvider).MarkUserAsAuthenticated(response.Token);
+                
+                // Redirect immediately after login based on role
+                var role = response.RoleName.ToLower();
+                if (role == "admin" || role == "manager")
+                {
+                    NavigationManager.NavigateTo("/admin/dashboard");
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("/pos");
+                }
+            }
+            else
+            {
+                errorMessage = "Email hoặc mật khẩu không chính xác.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Lỗi kết nối máy chủ: " + ex.Message;
+        }
+        finally
+        {
+            isLoggingIn = false;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await LocalStorage.RemoveItemAsync("authToken");
+        ((CustomAuthenticationStateProvider)AuthStateProvider).MarkUserAsLoggedOut();
+        NavigationManager.NavigateTo("/account");
+    }
+
+    private async Task GoToDashboard()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // So sánh với giá trị thực trong JWT claim (Employee / Admin / Manager)
+        if (user.IsInRole("Employee"))
+        {
+            NavigationManager.NavigateTo("/pos");
+        }
+        else if (user.IsInRole("Admin") || user.IsInRole("Manager"))
+        {
+            NavigationManager.NavigateTo("/admin/dashboard");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/pos"); // fallback
+        }
+    }
+
+    private string GetRoleName(ClaimsPrincipal user)
+    {
+        if (user.IsInRole("Admin"))    return "Admin";
+        if (user.IsInRole("Manager"))  return "Quản lý";
+        if (user.IsInRole("Employee")) return "Nhân viên";
+
+        var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
+        return roleClaim?.Value ?? "Nhân viên";
+    }
+}
+

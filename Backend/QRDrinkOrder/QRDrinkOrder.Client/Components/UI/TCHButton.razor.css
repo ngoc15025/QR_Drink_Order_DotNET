@@ -1,0 +1,43 @@
+/* Base Styles */
+.tch-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--tch-font-family);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 24px;
+  border-radius: var(--tch-radius-pill);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+
+/* Biến thể Primary (Đặt hàng ngay) */
+.tch-button--primary {
+  background-color: var(--tch-primary-color);
+  color: white;
+}
+
+.tch-button--primary:hover {
+  background-color: var(--tch-primary-hover);
+  box-shadow: 0 4px 8px rgba(234, 128, 37, 0.3);
+}
+
+/* Biến thể Outline (Xem thêm) */
+.tch-button--outline {
+  background-color: transparent;
+  border: 1.5px solid var(--tch-primary-color);
+  color: var(--tch-primary-color);
+}
+
+.tch-button--outline:hover {
+  background-color: var(--tch-primary-color);
+  color: white;
+}
+
+.tch-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
