@@ -267,7 +267,7 @@
             await hubConnection.StartAsync();
             if (order != null)
             {
-                await hubConnection.InvokeAsync("JoinCustomerGroup", order.SessionId.ToString());
+                await hubConnection.InvokeAsync("JoinCustomerSessionGroup", order.SessionId.ToString());
             }
             isConnecting = false;
             await InvokeAsync(StateHasChanged);
@@ -326,7 +326,7 @@
             {
                 if (order != null)
                 {
-                    await hubConnection.InvokeAsync("LeaveCustomerGroup", order.SessionId.ToString());
+                    await hubConnection.InvokeAsync("LeaveCustomerSessionGroup", order.SessionId.ToString());
                 }
                 await hubConnection.DisposeAsync();
             }
