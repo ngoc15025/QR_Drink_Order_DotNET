@@ -18,6 +18,12 @@ public class OrderHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, $"Customer_{sessionId}");
     }
 
+    // Rời nhóm cho Khách hàng cụ thể
+    public async Task LeaveCustomerSessionGroup(string sessionId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Customer_{sessionId}");
+    }
+
     // Gửi thông báo có đơn hàng mới đã thanh toán/được tạo tới toàn bộ nhân viên
     public async Task NotifyNewOrder(object orderDto)
     {
