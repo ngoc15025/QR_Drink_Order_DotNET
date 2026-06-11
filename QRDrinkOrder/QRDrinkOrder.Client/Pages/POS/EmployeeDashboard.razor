@@ -5,9 +5,11 @@
 @inject QRDrinkOrder.Client.Services.SystemConfigApiClient ConfigApi
 @inject IJSRuntime JSRuntime
 @using QRDrinkOrder.Shared.DTOs.Responses
-@using QRDrinkOrder.Shared.Models
+@using QRDrinkOrder.Shared.DTOs.Responses
 @using Microsoft.AspNetCore.SignalR.Client
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
+@inject ILogger<EmployeeDashboard> Logger
+@inject QRDrinkOrder.Client.Services.LocalStorageService LocalStorage
 @implements IAsyncDisposable
 
 <PageTitle>POS - Ngoc UwU Coffee</PageTitle>
@@ -391,7 +393,7 @@
     private bool isConnected = false;
     private List<OrderDto> activeOrders = new();
     private HubConnection? hubConnection;
-    private List<SystemConfig> configs = new();
+    private List<SystemConfigDto> configs = new();
 
     private List<OrderDto> PendingOrders => activeOrders.Where(o => o.OrderStatus == 0 && (o.Payment == null || o.Payment.PaymentStatus == 0)).ToList();
     private List<OrderDto> PaidOrders => activeOrders.Where(o => o.OrderStatus == 0 && o.Payment != null && o.Payment.PaymentStatus == 1).ToList();
@@ -411,7 +413,10 @@
         {
             configs = await ConfigApi.GetConfigsAsync();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Lỗi khi tải cấu hình");
+        }
     }
 
     private async Task LoadOrders()
@@ -430,8 +435,16 @@
     private async Task SetupSignalR()
     {
         var apiBaseUrl = Config["BackendApiUrl"] ?? "http://localhost:5153";
+        var token = await LocalStorage.GetItemAsync("authToken");
+
         hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/orderhub")
+            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/orderhub", options =>
+            {
+                if (!string.IsNullOrEmpty(token))
+                {
+                    options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+                }
+            })
             .WithAutomaticReconnect()
             .Build();
 
@@ -470,7 +483,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"SignalR Error: {ex.Message}");
+            Logger.LogError(ex, "Lỗi khi kết nối SignalR");
             isConnected = false;
         }
     }

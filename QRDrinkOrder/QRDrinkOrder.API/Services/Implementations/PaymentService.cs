@@ -4,7 +4,7 @@ using QRDrinkOrder.API.Hubs;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 using System.Text.RegularExpressions;
 
 namespace QRDrinkOrder.API.Services.Implementations;

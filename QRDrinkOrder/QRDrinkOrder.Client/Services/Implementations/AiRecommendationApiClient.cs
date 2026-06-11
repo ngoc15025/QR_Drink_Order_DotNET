@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using QRDrinkOrder.Client.Services.Interfaces;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.Shared.DTOs;
 
 namespace QRDrinkOrder.Client.Services.Implementations;
 
@@ -13,11 +13,11 @@ public class AiRecommendationApiClient : IAiRecommendationApiClient
         _httpClient = httpClient;
     }
 
-    public async Task<AiRecommendationResult?> GetSmartSuggestionsAsync()
+    public async Task<AiRecommendationResultDto?> GetLatestRecommendationAsync()
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<AiRecommendationResult>("api/Recommendations/smart-suggest");
+            return await _httpClient.GetFromJsonAsync<AiRecommendationResultDto>("api/ai-recommendation/latest");
         }
         catch (Exception ex)
         {

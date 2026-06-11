@@ -1,6 +1,6 @@
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.Shared.DTOs.Requests;
 
 namespace QRDrinkOrder.Client.Services;
 
@@ -22,7 +22,7 @@ public class PushNotificationService
             var subscription = await _jsRuntime.InvokeAsync<PushSubscriptionJs>("blazorPushNotifications.requestSubscription");
             if (subscription != null)
             {
-                var subModel = new PushSubscription
+                var subModel = new PushSubscriptionDto
                 {
                     Phone = phone,
                     Endpoint = subscription.Url,

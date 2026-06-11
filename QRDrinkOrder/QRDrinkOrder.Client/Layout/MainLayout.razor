@@ -3,7 +3,8 @@
 @inject NavigationManager NavigationManager
 @inject Microsoft.Extensions.Localization.IStringLocalizer<QRDrinkOrder.Client.SharedResource> Loc
 @inject QRDrinkOrder.Client.Services.SystemConfigApiClient ConfigApi
-@using QRDrinkOrder.Shared.Models
+@using QRDrinkOrder.Shared.DTOs.Responses
+@inject ILogger<MainLayout> Logger
 @implements IDisposable
 
 <div class="page" style="display: flex; flex-direction: column; min-height: 100vh;">
@@ -137,7 +138,7 @@
             StorePhone = configs.FirstOrDefault(c => c.ConfigKey == "StorePhone")?.ConfigValue ?? StorePhone;
             StoreWifi = configs.FirstOrDefault(c => c.ConfigKey == "StoreWifi")?.ConfigValue ?? "";
         }
-        catch { }
+        catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi tải cấu hình hệ thống"); }
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)

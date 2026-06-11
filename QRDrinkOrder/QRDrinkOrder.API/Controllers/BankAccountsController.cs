@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Controllers;
 

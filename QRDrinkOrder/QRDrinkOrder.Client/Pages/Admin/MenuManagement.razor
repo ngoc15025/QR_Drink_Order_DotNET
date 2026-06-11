@@ -125,8 +125,8 @@
     private int editingCategoryId = 0;
 
     private bool showToppingModal = false;
-    private QRDrinkOrder.Shared.Models.Topping toppingModel = new();
-    private List<QRDrinkOrder.Shared.Models.Topping> toppings = new();
+    private ToppingDto toppingModel = new();
+    private List<ToppingDto> toppings = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -298,13 +298,13 @@
 
     private void OpenCreateToppingModal()
     {
-        toppingModel = new QRDrinkOrder.Shared.Models.Topping();
+        toppingModel = new ToppingDto();
         showToppingModal = true;
     }
 
-    private void OpenEditToppingModal(QRDrinkOrder.Shared.Models.Topping topping)
+    private void OpenEditToppingModal(ToppingDto topping)
     {
-        toppingModel = new QRDrinkOrder.Shared.Models.Topping
+        toppingModel = new ToppingDto
         {
             ToppingId = topping.ToppingId,
             Name = topping.Name,

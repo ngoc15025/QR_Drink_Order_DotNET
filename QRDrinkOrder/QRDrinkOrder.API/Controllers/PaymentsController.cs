@@ -9,10 +9,14 @@ namespace QRDrinkOrder.API.Controllers;
 public class PaymentsController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(IPaymentService paymentService)
+    public PaymentsController(IPaymentService paymentService, IConfiguration configuration, ILogger<PaymentsController> logger)
     {
         _paymentService = paymentService;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     // SePay Webhook Payload
@@ -34,8 +38,25 @@ public class PaymentsController : ControllerBase
     {
         try
         {
+            // Xác thực Webhook bằng Token
+            var expectedToken = _configuration["SePay:WebhookToken"];
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(expectedToken) || expectedToken.StartsWith("YOUR_"))
+            {
+                // Chưa cấu hình token trên server
+                _logger.LogError("[SePay Webhook Error] Webhook token is not configured on the server.");
+                return StatusCode(500, new { Status = "error", Message = "Server configuration error." });
+            }
+
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.Contains(expectedToken))
+            {
+                _logger.LogWarning($"[SePay Webhook Warning] Unauthorized request. Header received: {authHeader}");
+                return Unauthorized(new { Status = "unauthorized", Message = "Invalid or missing webhook token." });
+            }
+
             // Ghi log để chẩn đoán
-            Console.WriteLine($"[SePay Webhook Received] ID: {payload.Id}, Content: '{payload.Content}', Amount: {payload.TransferAmount}, Ref: {payload.ReferenceCode}");
+            _logger.LogInformation($"[SePay Webhook Received] ID: {payload.Id}, Content: '{payload.Content}', Amount: {payload.TransferAmount}, Ref: {payload.ReferenceCode}");
 
             if (payload.TransferType != null && payload.TransferType.ToLower() == "out")
             {
@@ -53,8 +74,8 @@ public class PaymentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SePay Webhook Error] {ex}");
-            return StatusCode(500, new { Status = "error", Message = ex.Message });
+            _logger.LogError(ex, "[SePay Webhook Error] Process failed");
+            return StatusCode(500, new { Status = "error", Message = "Đã xảy ra lỗi hệ thống khi xử lý thanh toán." });
         }
     }
 
@@ -80,7 +101,8 @@ public class PaymentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error confirming cash payment for Order {OrderId}", orderId);
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi xác nhận thanh toán." });
         }
     }
 }

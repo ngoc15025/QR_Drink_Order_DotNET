@@ -11,10 +11,12 @@ namespace QRDrinkOrder.API.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
+    private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(IOrderService orderService)
+    public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
     {
         _orderService = orderService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -43,8 +45,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            var msg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-            return BadRequest(new { Message = msg });
+            _logger.LogError(ex, "Error creating order");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi tạo đơn hàng." });
         }
     }
 
@@ -59,7 +61,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error getting active orders");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi lấy danh sách đơn hàng." });
         }
     }
 
@@ -76,7 +79,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error getting order history");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi tra cứu đơn hàng." });
         }
     }
 
@@ -93,7 +97,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error getting order by id");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi lấy thông tin đơn hàng." });
         }
     }
 
@@ -120,9 +125,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.IO.File.WriteAllText("error.log", ex.ToString());
-            Console.WriteLine("UpdateStatus Error: " + ex.ToString());
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "UpdateStatus Error");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi cập nhật trạng thái." });
         }
     }
 
@@ -142,7 +146,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error cancelling order");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi hủy đơn hàng." });
         }
     }
 
@@ -162,7 +167,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error updating payment method");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi cập nhật phương thức thanh toán." });
         }
     }
 
@@ -177,7 +183,8 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Error getting all orders");
+            return BadRequest(new { Message = "Đã xảy ra lỗi hệ thống khi lấy danh sách đơn hàng." });
         }
     }
 }

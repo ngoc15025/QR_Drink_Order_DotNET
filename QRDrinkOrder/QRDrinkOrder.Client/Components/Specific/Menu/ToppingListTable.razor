@@ -1,4 +1,4 @@
-@using QRDrinkOrder.Shared.Models
+@using QRDrinkOrder.Shared.DTOs.Responses
 
 <div class="table-responsive">
     <table class="table table-hover align-middle premium-table">
@@ -43,7 +43,7 @@
 </div>
 
 @code {
-    [Parameter] public List<Topping> Toppings { get; set; } = new();
-    [Parameter] public EventCallback<Topping> OnEdit { get; set; }
+    [Parameter] public List<ToppingDto> Toppings { get; set; } = new();
+    [Parameter] public EventCallback<ToppingDto> OnEdit { get; set; }
     [Parameter] public EventCallback<int> OnDelete { get; set; }
 }

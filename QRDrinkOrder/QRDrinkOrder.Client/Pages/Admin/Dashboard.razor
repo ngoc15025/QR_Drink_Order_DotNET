@@ -5,6 +5,7 @@
 @inject QRDrinkOrder.Client.Services.ReportApiClient ReportApi
 @inject Microsoft.JSInterop.IJSRuntime JS
 @using QRDrinkOrder.Shared.DTOs.Responses
+@inject ILogger<Dashboard> Logger
 
 <PageTitle>Tổng quan - Ngoc UwU Coffee</PageTitle>
 
@@ -343,7 +344,8 @@ else
             var labels = dashboardData.DailyRevenue.Select(d => d.DateStr).ToArray();
             var revenues = dashboardData.DailyRevenue.Select(d => d.Revenue).ToArray();
             var orders = dashboardData.DailyRevenue.Select(d => d.OrderCount).ToArray();
-            try { await JS.InvokeVoidAsync("dashCharts.renderDailyRevenue", "dailyRevenueChart", labels, revenues, orders); } catch { }
+            try { await JS.InvokeVoidAsync("dashCharts.renderDailyRevenue", "dailyRevenueChart", labels, revenues, orders); } 
+            catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi render biểu đồ doanh thu ngày"); }
         }
 
         // Chart 2: Payment Donut
@@ -353,7 +355,7 @@ else
                 dashboardData.Overview.CashRevenue,
                 dashboardData.Overview.SePayRevenue);
         }
-        catch { }
+        catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi render biểu đồ thanh toán"); }
 
         // Chart 3: Peak Hours Bar+Line
         if (dashboardData.PeakHours.Any())
@@ -362,7 +364,8 @@ else
             var labels = sorted.Select(h => $"{h.Hour}:00").ToArray();
             var revenues = sorted.Select(h => h.Revenue).ToArray();
             var orderCounts = sorted.Select(h => h.OrderCount).ToArray();
-            try { await JS.InvokeVoidAsync("dashCharts.renderPeakHours", "peakHoursChart", labels, revenues, orderCounts); } catch { }
+            try { await JS.InvokeVoidAsync("dashCharts.renderPeakHours", "peakHoursChart", labels, revenues, orderCounts); } 
+            catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi render biểu đồ giờ cao điểm"); }
         }
 
         // Chart 4: Coupon Bar (only if data exists)
@@ -371,7 +374,8 @@ else
             var labels = dashboardData.CouponStats.Select(c => c.CouponCode).ToArray();
             var timesUsed = dashboardData.CouponStats.Select(c => c.TimesUsed).ToArray();
             var discounts = dashboardData.CouponStats.Select(c => c.TotalDiscountGiven).ToArray();
-            try { await JS.InvokeVoidAsync("dashCharts.renderCoupon", "couponChart", labels, timesUsed, discounts); } catch { }
+            try { await JS.InvokeVoidAsync("dashCharts.renderCoupon", "couponChart", labels, timesUsed, discounts); } 
+            catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi render biểu đồ coupon"); }
         }
     }
 

@@ -5,7 +5,7 @@ using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -17,12 +17,14 @@ public class AuthService : IAuthService
     private readonly QrdrinkOrderDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly PasswordHasher<string> _passwordHasher;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(QrdrinkOrderDbContext context, IConfiguration configuration)
+    public AuthService(QrdrinkOrderDbContext context, IConfiguration configuration, ILogger<AuthService> logger)
     {
         _context = context;
         _configuration = configuration;
         _passwordHasher = new PasswordHasher<string>();
+        _logger = logger;
     }
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest request)
@@ -110,8 +112,9 @@ public class AuthService : IAuthService
             await transaction.CommitAsync();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi xảy ra trong quá trình đăng ký tài khoản");
             await transaction.RollbackAsync();
             throw;
         }
@@ -197,7 +200,12 @@ public class AuthService : IAuthService
     private string GenerateJwtToken(Account account)
     {
         var jwtSettings = _configuration.GetSection("Jwt");
-        var secretKey = jwtSettings["SecretKey"] ?? "a_very_long_and_extremely_secure_key_of_32_characters_at_least";
+        var secretKey = jwtSettings["SecretKey"];
+
+        if (string.IsNullOrEmpty(secretKey) || secretKey.StartsWith("YOUR_"))
+        {
+            throw new InvalidOperationException("JWT SecretKey is missing or invalid in configuration. Please configure it properly in appsettings.json or environment variables.");
+        }
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

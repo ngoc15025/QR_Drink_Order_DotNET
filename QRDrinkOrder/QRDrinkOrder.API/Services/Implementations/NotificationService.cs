@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Services.Interfaces;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
+using QRDrinkOrder.Shared.DTOs.Requests;
 using System.Text.Json;
 using WebPush;
 
@@ -19,12 +20,19 @@ public class NotificationService : INotificationService
         _webPushClient = new WebPushClient();
     }
 
-    public async Task SubscribeAsync(QRDrinkOrder.Shared.Models.PushSubscription subscription)
+    public async Task SubscribeAsync(PushSubscriptionDto subscription)
     {
         var existing = await _context.PushSubscriptions.FirstOrDefaultAsync(s => s.Endpoint == subscription.Endpoint);
         if (existing == null)
         {
-            _context.PushSubscriptions.Add(subscription);
+            var newSub = new QRDrinkOrder.API.Models.PushSubscription
+            {
+                Phone = subscription.Phone,
+                Endpoint = subscription.Endpoint,
+                P256DH = subscription.P256DH,
+                Auth = subscription.Auth
+            };
+            _context.PushSubscriptions.Add(newSub);
         }
         else
         {

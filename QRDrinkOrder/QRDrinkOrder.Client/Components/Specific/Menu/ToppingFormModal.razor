@@ -1,4 +1,4 @@
-@using QRDrinkOrder.Shared.Models
+@using QRDrinkOrder.Shared.DTOs.Responses
 
 <div class="modal-backdrop fade show"></div>
 <div class="modal fade show d-block" tabindex="-1">
@@ -46,7 +46,7 @@
 </div>
 
 @code {
-    [Parameter] public Topping Model { get; set; } = new();
+    [Parameter] public ToppingDto Model { get; set; } = new();
     [Parameter] public bool IsSaving { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QRDrinkOrder.API.Services.Interfaces;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
+using QRDrinkOrder.Shared.DTOs.Requests;
 
 namespace QRDrinkOrder.API.Controllers;
 
@@ -16,7 +17,7 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpPost("subscribe")]
-    public async Task<IActionResult> Subscribe([FromBody] PushSubscription subscription)
+    public async Task<IActionResult> Subscribe([FromBody] PushSubscriptionDto subscription)
     {
         if (string.IsNullOrEmpty(subscription.Phone) || string.IsNullOrEmpty(subscription.Endpoint))
             return BadRequest("Thông tin thuê bao không hợp lệ");

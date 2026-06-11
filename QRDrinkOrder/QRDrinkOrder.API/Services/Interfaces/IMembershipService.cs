@@ -1,4 +1,4 @@
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Interfaces;
 

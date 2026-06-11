@@ -1,6 +1,5 @@
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.Shared.Models;
 using System.Net.Http.Json;
 
 namespace QRDrinkOrder.Client.Services;
@@ -110,18 +109,18 @@ public class MenuApiClient
     }
 
     // --- Size Methods ---
-    public async Task<List<Size>> GetSizesAsync()
+    public async Task<List<SizeDto>> GetSizesAsync()
     {
-        return await _httpClient.GetFromJsonAsync<List<Size>>("api/sizes") ?? new List<Size>();
+        return await _httpClient.GetFromJsonAsync<List<SizeDto>>("api/sizes") ?? new List<SizeDto>();
     }
 
-    public async Task<bool> CreateSizeAsync(Size size)
+    public async Task<bool> CreateSizeAsync(SizeDto size)
     {
         var response = await _httpClient.PostAsJsonAsync("api/sizes", size);
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> UpdateSizeAsync(int id, Size size)
+    public async Task<bool> UpdateSizeAsync(int id, SizeDto size)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/sizes/{id}", size);
         return response.IsSuccessStatusCode;
@@ -134,18 +133,18 @@ public class MenuApiClient
     }
 
     // --- Topping Methods ---
-    public async Task<List<Topping>> GetToppingsAsync()
+    public async Task<List<ToppingDto>> GetToppingsAsync()
     {
-        return await _httpClient.GetFromJsonAsync<List<Topping>>("api/toppings") ?? new List<Topping>();
+        return await _httpClient.GetFromJsonAsync<List<ToppingDto>>("api/toppings") ?? new List<ToppingDto>();
     }
 
-    public async Task<bool> CreateToppingAsync(Topping topping)
+    public async Task<bool> CreateToppingAsync(ToppingDto topping)
     {
         var response = await _httpClient.PostAsJsonAsync("api/toppings", topping);
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> UpdateToppingAsync(int id, Topping topping)
+    public async Task<bool> UpdateToppingAsync(int id, ToppingDto topping)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/toppings/{id}", topping);
         return response.IsSuccessStatusCode;

@@ -40,7 +40,7 @@ public class CartState
         }
     }
 
-    public void AddToCart(DrinkDto drink, int quantity, byte? sweetness, byte? ice, string? note, QRDrinkOrder.Shared.Models.Size? size, List<QRDrinkOrder.Shared.Models.Topping> toppings)
+    public void AddToCart(DrinkDto drink, int quantity, byte? sweetness, byte? ice, string? note, SizeDto? size, List<ToppingDto> toppings)
     {
         var existingItem = Items.FirstOrDefault(i => 
             i.Drink.DrinkId == drink.DrinkId && 
@@ -103,8 +103,8 @@ public class CartItem
     public byte? SweetnessLevel { get; set; }
     public byte? IceLevel { get; set; }
     public string? ItemNote { get; set; }
-    public QRDrinkOrder.Shared.Models.Size? SelectedSize { get; set; }
-    public List<QRDrinkOrder.Shared.Models.Topping> SelectedToppings { get; set; } = new();
+    public SizeDto? SelectedSize { get; set; }
+    public List<ToppingDto> SelectedToppings { get; set; } = new();
 
     public decimal UnitPrice => Drink.BasePrice + (SelectedSize?.PriceOffset ?? 0) + SelectedToppings.Sum(t => t.Price);
     public decimal TotalPrice => UnitPrice * Quantity;

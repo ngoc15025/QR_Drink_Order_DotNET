@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
+using QRDrinkOrder.Shared.DTOs;
 using QRDrinkOrder.Shared.DTOs.Responses;
 
 namespace QRDrinkOrder.API.Controllers;
@@ -19,12 +20,17 @@ public class SystemConfigsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetConfigs()
     {
-        var configs = await _context.SystemConfigs.AsNoTracking().ToListAsync();
+        var configs = await _context.SystemConfigs.AsNoTracking().Select(c => new SystemConfigDto
+        {
+            ConfigKey = c.ConfigKey,
+            ConfigValue = c.ConfigValue,
+            Description = c.Description
+        }).ToListAsync();
         return Ok(configs);
     }
 
     [HttpPut("{key}")]
-    public async Task<IActionResult> UpdateConfig(string key, [FromBody] SystemConfig update)
+    public async Task<IActionResult> UpdateConfig(string key, [FromBody] SystemConfigDto update)
     {
         var config = await _context.SystemConfigs.FindAsync(key);
         if (config == null) return NotFound();
@@ -35,6 +41,11 @@ public class SystemConfigsController : ControllerBase
             config.Description = update.Description;
 
         await _context.SaveChangesAsync();
-        return Ok(config);
+        return Ok(new SystemConfigDto
+        {
+            ConfigKey = config.ConfigKey,
+            ConfigValue = config.ConfigValue,
+            Description = config.Description
+        });
     }
 }

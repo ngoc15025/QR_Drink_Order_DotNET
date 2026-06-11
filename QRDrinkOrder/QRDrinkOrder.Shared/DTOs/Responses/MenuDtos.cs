@@ -64,3 +64,17 @@ public class PromotionDto
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
 }
+
+public class SizeDto
+{
+    public int SizeId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal PriceOffset { get; set; }
+}
+
+public class ToppingDto
+{
+    public int ToppingId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}

@@ -4,9 +4,11 @@ using Microsoft.IdentityModel.Tokens;
 using QRDrinkOrder.API.Hubs;
 using QRDrinkOrder.API.Services.Implementations;
 using QRDrinkOrder.API.Services.Interfaces;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,18 +42,34 @@ builder.Services.AddSignalR();
 // 5. Cấu hình CORS để cho phép ứng dụng Blazor WebAssembly kết nối
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true) // Cho phép bất kỳ nguồn gốc dev nào kết nối linh hoạt
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); // Bắt buộc cho SignalR kết nối thời gian thực
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials(); // Bắt buộc cho SignalR kết nối thời gian thực
+        }
+        else
+        {
+            // Dự phòng cho môi trường dev chưa cấu hình
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
     });
 });
 
 // 6. Cấu hình xác thực JWT Bearer
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSettings["SecretKey"] ?? "QRDrinkOrderSecureKey2026_LongEnoughToMeetRequirements_MustBeAtLeast32Bytes";
+var secretKey = jwtSettings["SecretKey"];
+
+if (string.IsNullOrEmpty(secretKey) || secretKey.StartsWith("YOUR_"))
+{
+    throw new InvalidOperationException("JWT SecretKey is missing or invalid in configuration. Please configure it in appsettings.json or environment variables.");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -70,6 +88,19 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"] ?? "QRDrinkOrderClient",
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/orderhub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // 7. Đăng ký OpenAPI/Swagger để kiểm thử API
@@ -82,6 +113,33 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     // Xóa danh sách mạng mặc định để nhận diện proxy của Render
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
+});
+
+// 9. Cấu hình Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+
+    options.AddPolicy("LoginLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 5,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+    options.RejectionStatusCode = 429;
 });
 
 var app = builder.Build();
@@ -101,6 +159,8 @@ app.UseStaticFiles();
 
 // Áp dụng CORS trước Authentication & Authorization
 app.UseCors("CorsPolicy");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

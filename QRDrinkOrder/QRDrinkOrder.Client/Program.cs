@@ -13,6 +13,7 @@ public class Program
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
         builder.RootComponents.Add<App>("#app");
 
+        // Đọc URL Backend từ appsettings.json (dễ thay đổi khi deploy mà không cần recompile)
         string backendApiUrl = builder.Configuration["BackendApiUrl"] ?? "http://localhost:5153";
 
         // HttpClient dùng cho toàn bộ hệ thống
@@ -35,7 +36,7 @@ public class Program
         builder.Services.AddScoped<MembershipApiClient>();
         builder.Services.AddScoped<PushNotificationService>();
         builder.Services.AddScoped<SystemConfigApiClient>();
-		builder.Services.AddScoped<QRDrinkOrder.Client.Services.Interfaces.IAiRecommendationApiClient, QRDrinkOrder.Client.Services.Implementations.AiRecommendationApiClient>();
+        builder.Services.AddScoped<QRDrinkOrder.Client.Services.Interfaces.IAiRecommendationApiClient, QRDrinkOrder.Client.Services.Implementations.AiRecommendationApiClient>();
 
         // Đăng ký trạng thái giỏ hàng toàn cục
         builder.Services.AddScoped<CartState>();

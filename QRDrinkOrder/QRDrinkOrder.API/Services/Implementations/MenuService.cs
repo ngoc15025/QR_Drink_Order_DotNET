@@ -1,18 +1,21 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
 public class MenuService : IMenuService
 {
     private readonly QrdrinkOrderDbContext _context;
+    private readonly ILogger<MenuService> _logger;
 
-    public MenuService(QrdrinkOrderDbContext context)
+    public MenuService(QrdrinkOrderDbContext context, ILogger<MenuService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<List<CategoryDto>> GetCategoriesAsync(string langCode, bool includeInactive = false)
@@ -85,8 +88,9 @@ public class MenuService : IMenuService
             category.CategoryTranslations = new List<CategoryTranslation> { viTranslation, enTranslation };
             return MapToCategoryDto(category, "vi");
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi khi tạo danh mục mới.");
             await transaction.RollbackAsync();
             throw;
         }
@@ -125,8 +129,9 @@ public class MenuService : IMenuService
 
             return MapToCategoryDto(category, "vi");
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi khi cập nhật danh mục {CategoryId}.", id);
             await transaction.RollbackAsync();
             throw;
         }
@@ -236,8 +241,9 @@ public class MenuService : IMenuService
 
             return MapToDrinkDto(loadedDrink, "vi");
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi khi tạo sản phẩm mới.");
             await transaction.RollbackAsync();
             throw;
         }
@@ -295,8 +301,9 @@ public class MenuService : IMenuService
 
             return MapToDrinkDto(loadedDrink, "vi");
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi khi cập nhật sản phẩm {DrinkId}.", id);
             await transaction.RollbackAsync();
             throw;
         }
@@ -510,8 +517,9 @@ public class MenuService : IMenuService
                 Description = request.ContentVi
             };
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi khi tạo khuyến mãi mới.");
             await transaction.RollbackAsync();
             throw;
         }
@@ -567,8 +575,9 @@ public class MenuService : IMenuService
                 Description = request.ContentVi
             };
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi khi cập nhật khuyến mãi {PromotionId}.", id);
             await transaction.RollbackAsync();
             throw;
         }

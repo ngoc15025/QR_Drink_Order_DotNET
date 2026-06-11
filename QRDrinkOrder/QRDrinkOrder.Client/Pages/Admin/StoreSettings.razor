@@ -239,7 +239,7 @@
     private string errorMessage = "";
     private bool showSuccess = false;
 
-    private List<QRDrinkOrder.Shared.Models.SystemConfig> configs = new();
+    private List<SystemConfigDto> configs = new();
 
     private string storeName = "";
     private string storeAddress = "";
@@ -279,10 +279,10 @@
 
         try
         {
-            await ConfigApi.UpdateConfigAsync("StoreName", new QRDrinkOrder.Shared.Models.SystemConfig { ConfigKey = "StoreName", ConfigValue = storeName });
-            await ConfigApi.UpdateConfigAsync("StoreAddress", new QRDrinkOrder.Shared.Models.SystemConfig { ConfigKey = "StoreAddress", ConfigValue = storeAddress });
-            await ConfigApi.UpdateConfigAsync("StorePhone", new QRDrinkOrder.Shared.Models.SystemConfig { ConfigKey = "StorePhone", ConfigValue = storePhone });
-            await ConfigApi.UpdateConfigAsync("StoreWifi", new QRDrinkOrder.Shared.Models.SystemConfig { ConfigKey = "StoreWifi", ConfigValue = storeWifi });
+            await ConfigApi.UpdateConfigAsync("StoreName", new SystemConfigDto { ConfigKey = "StoreName", ConfigValue = storeName, Description = "Tên cửa hàng" });
+            await ConfigApi.UpdateConfigAsync("StoreAddress", new SystemConfigDto { ConfigKey = "StoreAddress", ConfigValue = storeAddress, Description = "Địa chỉ cửa hàng" });
+            await ConfigApi.UpdateConfigAsync("StorePhone", new SystemConfigDto { ConfigKey = "StorePhone", ConfigValue = storePhone, Description = "Số điện thoại liên hệ" });
+            await ConfigApi.UpdateConfigAsync("StoreWifi", new SystemConfigDto { ConfigKey = "StoreWifi", ConfigValue = storeWifi, Description = "Lời chào cuối hóa đơn" });
             
             showSuccess = true;
             StateHasChanged();

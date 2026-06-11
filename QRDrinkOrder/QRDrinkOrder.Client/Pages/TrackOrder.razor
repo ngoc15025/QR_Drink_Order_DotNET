@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
+@inject ILogger<TrackOrder> Logger
 @implements IAsyncDisposable
 
 <PageTitle>Theo dõi Đơn hàng - Ngoc UwU Coffee</PageTitle>
@@ -256,7 +257,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"SignalR Connection Error: {ex.Message}");
+            Logger.LogError(ex, "Lỗi kết nối SignalR");
         }
     }
 
@@ -319,6 +320,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Lỗi khi xử lý ảnh đánh giá");
             reviewError = "Lỗi khi xử lý ảnh: " + ex.Message;
         }
     }
@@ -348,6 +350,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Lỗi khi gửi đánh giá");
             reviewError = ex.Message;
         }
         finally

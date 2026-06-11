@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace QRDrinkOrder.API.Hubs;
 
 public class OrderHub : Hub
 {
     // Tham gia nhóm cho Nhân viên (để nhận đơn mới)
+    [Authorize(Roles = "Employee")]
     public async Task JoinStaffGroup()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "Staff");

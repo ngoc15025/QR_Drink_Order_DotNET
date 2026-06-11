@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 using System.Text.RegularExpressions;
 
 namespace QRDrinkOrder.API.Services.Implementations;

@@ -1,7 +1,7 @@
 @page "/admin/loyalty-config"
 @layout QRDrinkOrder.Client.Layout.AdminLayout
 @using QRDrinkOrder.Client.Services
-@using QRDrinkOrder.Shared.Models
+@using QRDrinkOrder.Shared.DTOs
 @inject SystemConfigApiClient SystemConfigApi
 @inject IJSRuntime JSRuntime
 
@@ -62,7 +62,7 @@ else
 }
 
 @code {
-    private List<SystemConfig>? configs;
+    private List<SystemConfigDto>? configs;
     private string earnRate = "10000";
     private string redeemRate = "1000";
     private bool isSaving = false;
@@ -88,11 +88,11 @@ else
         isSaving = true;
         try
         {
-            var earnConfig = configs?.FirstOrDefault(c => c.ConfigKey == "EarnPointRate") ?? new SystemConfig { ConfigKey = "EarnPointRate" };
+            var earnConfig = configs?.FirstOrDefault(c => c.ConfigKey == "EarnPointRate") ?? new SystemConfigDto { ConfigKey = "EarnPointRate" };
             earnConfig.ConfigValue = earnRate;
             await SystemConfigApi.UpdateConfigAsync("EarnPointRate", earnConfig);
 
-            var redeemConfig = configs?.FirstOrDefault(c => c.ConfigKey == "RedeemPointRate") ?? new SystemConfig { ConfigKey = "RedeemPointRate" };
+            var redeemConfig = configs?.FirstOrDefault(c => c.ConfigKey == "RedeemPointRate") ?? new SystemConfigDto { ConfigKey = "RedeemPointRate" };
             redeemConfig.ConfigValue = redeemRate;
             await SystemConfigApi.UpdateConfigAsync("RedeemPointRate", redeemConfig);
 

@@ -6,7 +6,7 @@ using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
-using QRDrinkOrder.Shared.Models;
+using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -15,12 +15,14 @@ public class OrderService : IOrderService
     private readonly QrdrinkOrderDbContext _context;
     private readonly IHubContext<OrderHub> _hubContext;
     private readonly INotificationService _notificationService;
+    private readonly ILogger<OrderService> _logger;
 
-    public OrderService(QrdrinkOrderDbContext context, IHubContext<OrderHub> hubContext, INotificationService notificationService)
+    public OrderService(QrdrinkOrderDbContext context, IHubContext<OrderHub> hubContext, INotificationService notificationService, ILogger<OrderService> logger)
     {
         _context = context;
         _hubContext = hubContext;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<OrderDto> CreateOrderAsync(Guid sessionId, CreateOrderRequest request)
@@ -58,74 +60,10 @@ public class OrderService : IOrderService
             var sizes = await _context.Sizes.ToDictionaryAsync(s => s.SizeId);
             var toppings = await _context.Toppings.ToDictionaryAsync(t => t.ToppingId);
 
-            decimal totalAmount = 0;
-            foreach (var item in request.Items)
-            {
-                if (!drinks.TryGetValue(item.DrinkId, out var drink))
-                    throw new Exception($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
-
-                decimal unitPrice = drink.BasePrice;
-                if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size))
-                {
-                    unitPrice += size.PriceOffset;
-                }
-
-                if (item.ToppingIds != null)
-                {
-                    foreach (var tId in item.ToppingIds)
-                    {
-                        if (toppings.TryGetValue(tId, out var topping))
-                        {
-                            unitPrice += topping.Price;
-                        }
-                    }
-                }
-
-                totalAmount += item.Quantity * unitPrice;
-            }
-
-            decimal discountAmount = 0;
-            Coupon? coupon = null;
-            bool isCouponApplied = false;
+            decimal totalAmount = CalculateTotalAmount(request.Items, drinks, sizes, toppings);
 
             // 3. Áp dụng Mã giảm giá (nếu có)
-            if (!string.IsNullOrEmpty(request.CouponCode))
-            {
-                if (string.IsNullOrEmpty(request.Phone))
-                    throw new Exception("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
-
-                coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponCode == request.CouponCode && c.IsActive == true);
-                if (coupon == null || DateTime.Now < coupon.StartDate || DateTime.Now > coupon.EndDate)
-                    throw new Exception(ErrorMessages.InvalidCoupon);
-
-                if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-                    throw new Exception(ErrorMessages.CouponLimitReached);
-
-                if (totalAmount < coupon.MinOrderValue)
-                    throw new Exception(ErrorMessages.MinOrderNotMet);
-
-                // Chặn lạm dụng mã theo SĐT
-                var hasUsed = await _context.CouponUsages.AnyAsync(cu => cu.CouponId == coupon.CouponId && cu.Phone == request.Phone);
-                if (hasUsed)
-                    throw new Exception(ErrorMessages.CouponAlreadyUsed);
-
-                // Tính toán số tiền giảm
-                if (coupon.DiscountType == (byte)DiscountType.Fixed)
-                {
-                    discountAmount = coupon.DiscountValue;
-                }
-                else if (coupon.DiscountType == (byte)DiscountType.Percentage)
-                {
-                    discountAmount = totalAmount * (coupon.DiscountValue / 100m);
-                    if (coupon.MaxDiscountAmount.HasValue)
-                    {
-                        discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
-                    }
-                }
-
-                discountAmount = Math.Min(discountAmount, totalAmount);
-                isCouponApplied = true;
-            }
+            var (discountAmount, coupon, isCouponApplied) = await CalculateCouponDiscountAsync(request.Phone, request.CouponCode, totalAmount);
 
             // 4. Áp dụng ưu đãi nhân viên (nếu nhân viên gọi món hộ và chưa dùng mã giảm giá khác)
             bool isEmployeeBenefitApplied = false;
@@ -291,17 +229,17 @@ public class OrderService : IOrderService
 
             return result!;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi xảy ra trong quá trình tạo đơn hàng");
             await transaction.RollbackAsync();
             throw;
         }
     }
 
-    public async Task<List<OrderDto>> GetActiveOrdersAsync()
+    private IQueryable<Order> IncludeOrderDetails(IQueryable<Order> query)
     {
-        var orders = await _context.Orders
-            .AsNoTracking()
+        return query
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Drink)
                     .ThenInclude(d => d.DrinkTranslations)
@@ -314,7 +252,13 @@ public class OrderService : IOrderService
             .Include(o => o.Employee)
             .Include(o => o.Session)
             .Include(o => o.Review)
-            .AsSplitQuery()
+            .Include(o => o.Coupon);
+    }
+
+    public async Task<List<OrderDto>> GetActiveOrdersAsync()
+    {
+        var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
+        var orders = await query
             .Where(o => o.OrderStatus != (byte)OrderStatus.Completed && o.OrderStatus != (byte)OrderStatus.Cancelled)
             .OrderByDescending(o => o.OrderDate)
             .ToListAsync();
@@ -324,21 +268,8 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetOrderHistoryByPhoneAsync(string phone)
     {
-        var orders = await _context.Orders
-            .AsNoTracking()
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Drink)
-                    .ThenInclude(d => d.DrinkTranslations)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Size)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.OrderItemToppings)
-                    .ThenInclude(oit => oit.Topping)
-            .Include(o => o.Payment)
-            .Include(o => o.Employee)
-            .Include(o => o.Session)
-            .Include(o => o.Review)
-            .AsSplitQuery()
+        var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
+        var orders = await query
             .Where(o => o.Session.Phone == phone)
             .OrderByDescending(o => o.OrderDate)
             .ToListAsync();
@@ -348,23 +279,8 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
     {
-        var order = await _context.Orders
-            .AsNoTracking()
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Drink)
-                    .ThenInclude(d => d.DrinkTranslations)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Size)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.OrderItemToppings)
-                    .ThenInclude(oit => oit.Topping)
-            .Include(o => o.Payment)
-            .Include(o => o.Employee)
-            .Include(o => o.Session)
-            .Include(o => o.Coupon)
-            .Include(o => o.Review)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+        var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
+        var order = await query.FirstOrDefaultAsync(o => o.OrderId == orderId);
 
         if (order == null)
             return null;
@@ -534,8 +450,9 @@ public class OrderService : IOrderService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Lỗi xảy ra trong quá trình hủy đơn hàng {OrderId}", orderId);
             await transaction.RollbackAsync();
             throw;
         }
@@ -609,6 +526,75 @@ public class OrderService : IOrderService
         };
     }
 
+    private decimal CalculateTotalAmount(List<OrderItemRequest> items, Dictionary<int, Drink> drinks, Dictionary<int, Size> sizes, Dictionary<int, Topping> toppings)
+    {
+        decimal totalAmount = 0;
+        foreach (var item in items)
+        {
+            if (!drinks.TryGetValue(item.DrinkId, out var drink))
+                throw new Exception($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
+
+            decimal unitPrice = drink.BasePrice;
+            if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size))
+            {
+                unitPrice += size.PriceOffset;
+            }
+
+            if (item.ToppingIds != null)
+            {
+                foreach (var tId in item.ToppingIds)
+                {
+                    if (toppings.TryGetValue(tId, out var topping))
+                    {
+                        unitPrice += topping.Price;
+                    }
+                }
+            }
+
+            totalAmount += item.Quantity * unitPrice;
+        }
+        return totalAmount;
+    }
+
+    private async Task<(decimal discountAmount, Coupon? coupon, bool isApplied)> CalculateCouponDiscountAsync(string? phone, string? couponCode, decimal totalAmount)
+    {
+        if (string.IsNullOrEmpty(couponCode)) return (0, null, false);
+        if (string.IsNullOrEmpty(phone)) throw new Exception("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
+
+        var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponCode == couponCode && c.IsActive == true);
+        if (coupon == null || DateTime.Now < coupon.StartDate || DateTime.Now > coupon.EndDate)
+            throw new Exception(ErrorMessages.InvalidCoupon);
+
+        if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
+            throw new Exception(ErrorMessages.CouponLimitReached);
+
+        if (totalAmount < coupon.MinOrderValue)
+            throw new Exception(ErrorMessages.MinOrderNotMet);
+
+        // Chặn lạm dụng mã theo SĐT
+        var hasUsed = await _context.CouponUsages.AnyAsync(cu => cu.CouponId == coupon.CouponId && cu.Phone == phone);
+        if (hasUsed)
+            throw new Exception(ErrorMessages.CouponAlreadyUsed);
+
+        // Tính toán số tiền giảm
+        decimal discountAmount = 0;
+        if (coupon.DiscountType == (byte)DiscountType.Fixed)
+        {
+            discountAmount = coupon.DiscountValue;
+        }
+        else if (coupon.DiscountType == (byte)DiscountType.Percentage)
+        {
+            discountAmount = totalAmount * (coupon.DiscountValue / 100m);
+            if (coupon.MaxDiscountAmount.HasValue)
+            {
+                discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
+            }
+        }
+
+        discountAmount = Math.Min(discountAmount, totalAmount);
+        return (discountAmount, coupon, true);
+    }
+
     private static OrderDto MapToOrderDto(Order order)
     {
         return new OrderDto
@@ -663,21 +649,7 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetAllOrdersAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var query = _context.Orders
-            .AsNoTracking()
-            .Include(o => o.Session)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Drink)
-                    .ThenInclude(d => d.DrinkTranslations)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Size)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.OrderItemToppings)
-                    .ThenInclude(oit => oit.Topping)
-            .Include(o => o.Payment)
-            .Include(o => o.Review)
-            .AsSplitQuery()
-            .AsQueryable();
+        var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
 
         if (startDate.HasValue)
         {
