@@ -218,13 +218,10 @@ public class OrderService : IOrderService
 
             var result = await GetOrderByIdAsync(order.OrderId);
 
-            // Gửi thông báo SignalR (nếu thanh toán tiền mặt thì báo nhân viên duyệt ngay, VietQR chờ webhook)
+            // Gửi thông báo SignalR báo có đơn mới tới POS cho TẤT CẢ các phương thức thanh toán
             if (result != null)
             {
-                if (request.PaymentMethod == (byte)PaymentMethod.Cash)
-                {
-                    await _hubContext.Clients.Group("Staff").SendAsync("ReceiveNewOrder", result);
-                }
+                await _hubContext.Clients.Group("Staff").SendAsync("ReceiveNewOrder", result);
             }
 
             return result!;
