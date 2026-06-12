@@ -15,9 +15,16 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Đăng ký Controllers
 builder.Services.AddControllers();
 
-// 2. Đăng ký Database Context (SQL Server)
-builder.Services.AddDbContext<QrdrinkOrderDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// 2. Đăng ký Database Context (SQL Server) và Interceptor
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<QRDrinkOrder.API.Interceptors.AuditLogInterceptor>();
+
+builder.Services.AddDbContext<QrdrinkOrderDbContext>((sp, options) =>
+{
+    var interceptor = sp.GetRequiredService<QRDrinkOrder.API.Interceptors.AuditLogInterceptor>();
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .AddInterceptors(interceptor);
+});
 
 // 3. Đăng ký các dịch vụ Nghiệp vụ (Business Services)
 builder.Services.AddScoped<IAuthService, AuthService>();

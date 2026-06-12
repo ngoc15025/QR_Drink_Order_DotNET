@@ -49,6 +49,17 @@ CREATE TABLE Employees (
     FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
 );
 
+-- 4.1 Bảng Nhật ký hoạt động (AuditLogs)
+CREATE TABLE AuditLogs (
+    LogID INT PRIMARY KEY IDENTITY(1,1),
+    AccountID INT NULL,
+    Action NVARCHAR(100) NOT NULL,
+    TableName NVARCHAR(100) NULL,
+    Description NVARCHAR(MAX) NULL,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+
 -- ==========================================
 -- PHÂN HỆ 2: THỰC ĐƠN & ĐA NGÔN NGỮ
 -- ==========================================

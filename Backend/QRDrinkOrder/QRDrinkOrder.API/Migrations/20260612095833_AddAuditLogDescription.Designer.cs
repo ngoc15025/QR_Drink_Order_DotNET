@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QRDrinkOrder.API.Models;
 
@@ -11,9 +12,11 @@ using QRDrinkOrder.API.Models;
 namespace QRDrinkOrder.API.Migrations
 {
     [DbContext(typeof(QrdrinkOrderDbContext))]
-    partial class QrdrinkOrderDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260612095833_AddAuditLogDescription")]
+    partial class AddAuditLogDescription
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -36,6 +36,7 @@ public class Program
         builder.Services.AddScoped<MembershipApiClient>();
         builder.Services.AddScoped<PushNotificationService>();
         builder.Services.AddScoped<SystemConfigApiClient>();
+        builder.Services.AddScoped<AuditLogApiClient>();
         builder.Services.AddScoped<QRDrinkOrder.Client.Services.Interfaces.IAiRecommendationApiClient, QRDrinkOrder.Client.Services.Implementations.AiRecommendationApiClient>();
 
         // Đăng ký trạng thái giỏ hàng toàn cục

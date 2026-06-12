@@ -107,6 +107,7 @@ public partial class QrdrinkOrderDbContext : DbContext
             entity.Property(e => e.Action).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.TableName).HasMaxLength(100);
+            entity.Property(e => e.Description).HasColumnType("nvarchar(max)");
 
             entity.HasOne(d => d.Account).WithMany(p => p.AuditLogs)
                 .HasForeignKey(d => d.AccountId)
