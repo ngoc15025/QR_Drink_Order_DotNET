@@ -38,19 +38,21 @@ public class PaymentsController : ControllerBase
     {
         try
         {
-            // Xác thực Webhook bằng Token
+            // 1. Xác thực Webhook bằng Token
             var expectedToken = _configuration["SePay:WebhookToken"];
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
 
-            // Nếu chưa cấu hình token trên server thì cho phép pass luôn (dành cho môi trường test/demo)
-            if (string.IsNullOrEmpty(expectedToken) || expectedToken.StartsWith("YOUR_"))
-            {
-                _logger.LogWarning("[SePay Webhook] Webhook token is not configured. Bypassing auth check for demo/testing.");
-            }
-            else if (string.IsNullOrEmpty(authHeader) || !authHeader.Contains(expectedToken))
+            if (string.IsNullOrEmpty(expectedToken) || string.IsNullOrEmpty(authHeader) || !authHeader.Contains(expectedToken))
             {
                 _logger.LogWarning($"[SePay Webhook Warning] Unauthorized request. Header received: {authHeader}");
                 return Unauthorized(new { Status = "unauthorized", Message = "Invalid or missing webhook token." });
+            }
+
+            // 2. Chống lỗi 500 do thiếu dữ liệu từ SePay
+            if (string.IsNullOrEmpty(payload.Content) || string.IsNullOrEmpty(payload.AccountNumber))
+            {
+                _logger.LogWarning("[SePay Webhook] Bỏ qua - Thiếu nội dung hoặc số tài khoản.");
+                return BadRequest(new { Status = "invalid", Message = "Missing content or account number." });
             }
 
             // Ghi log để chẩn đoán
@@ -62,7 +64,7 @@ public class PaymentsController : ControllerBase
                 return Ok(new { Status = "ignored", Message = "Transfer out type is ignored." });
             }
 
-            var success = await _paymentService.ProcessSePayWebhookAsync(payload.Content, payload.TransferAmount, payload.ReferenceCode, payload.AccountNumber);
+            var success = await _paymentService.ProcessSePayWebhookAsync(payload.Content, payload.TransferAmount, payload.ReferenceCode ?? "", payload.AccountNumber);
             if (success)
             {
                 return Ok(new { Status = "success", Message = "Payment processed successfully." });
