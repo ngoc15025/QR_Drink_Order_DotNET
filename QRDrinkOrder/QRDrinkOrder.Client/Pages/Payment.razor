@@ -187,9 +187,9 @@
                 {
                     bankName = activeBank.BankCode;
                     accountNumber = activeBank.AccountNumber;
-                    accountName = activeBank.AccountName;
-                    
-                    qrUrl = $"https://img.vietqr.io/image/{activeBank.BankCode}-{activeBank.AccountNumber}-compact.png?amount={order.TotalAmount}&addInfo=UwU{order.OrderId}&accountName={Uri.EscapeDataString(activeBank.AccountName)}";
+                    // Chuyển TotalAmount thành số nguyên (bỏ phần thập phân) để VietQR tự động điền số tiền
+                    long amountStr = (long)order.TotalAmount;
+                    qrUrl = $"https://img.vietqr.io/image/{activeBank.BankCode}-{activeBank.AccountNumber}-compact.png?amount={amountStr}&addInfo=UwU{order.OrderId}&accountName={Uri.EscapeDataString(activeBank.AccountName)}";
                 }
                 
                 StartTimer();
