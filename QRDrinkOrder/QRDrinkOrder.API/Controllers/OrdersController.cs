@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace QRDrinkOrder.API.Controllers;
 
@@ -67,6 +68,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("history")]
+    [EnableRateLimiting("LoginLimiter")]
     public async Task<IActionResult> GetOrderHistoryByPhone([FromQuery] string phone)
     {
         try
