@@ -10,6 +10,8 @@ public partial class AuditLog
 
     public string? TableName { get; set; }
 
+    public string? Description { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public virtual Account? Account { get; set; }
