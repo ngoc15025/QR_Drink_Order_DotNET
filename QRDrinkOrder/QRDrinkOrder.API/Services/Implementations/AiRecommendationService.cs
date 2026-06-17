@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using QRDrinkOrder.API.Models.External;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.API.Models;
@@ -14,23 +15,32 @@ public class AiRecommendationService : IAiRecommendationService
     private readonly IWeatherService _weatherService;
     private readonly QrdrinkOrderDbContext _context;
     private readonly ILogger<AiRecommendationService> _logger;
+    private readonly IMemoryCache _cache;
 
     public AiRecommendationService(
         HttpClient httpClient,
         IConfiguration configuration,
         IWeatherService weatherService,
         QrdrinkOrderDbContext context,
-        ILogger<AiRecommendationService> logger)
+        ILogger<AiRecommendationService> logger,
+        IMemoryCache cache)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _weatherService = weatherService;
         _context = context;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task<AiRecommendationResult> GetDrinkRecommendationsAsync()
     {
+        const string cacheKey = "AiRecommendation_Latest";
+        if (_cache.TryGetValue(cacheKey, out AiRecommendationResult? cachedResult) && cachedResult != null)
+        {
+            return cachedResult;
+        }
+
         var result = new AiRecommendationResult();
         
         try
@@ -122,6 +132,8 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
                         
                         if (parsedResult != null)
                         {
+                            // Lưu vào cache 15 phút
+                            _cache.Set(cacheKey, parsedResult, TimeSpan.FromMinutes(15));
                             return parsedResult;
                         }
                     }
