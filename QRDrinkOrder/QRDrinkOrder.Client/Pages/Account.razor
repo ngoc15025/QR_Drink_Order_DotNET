@@ -9,10 +9,6 @@
 
 <PageTitle>Tài khoản - Ngoc UwU Coffee</PageTitle>
 
-<div class="mb-4">
-    <h4 class="fw-bold">Tài khoản</h4>
-</div>
-
 <AuthorizeView Context="authContext">
     <Authorized>
         <!-- Giao diện khi ĐÃ đăng nhập (Nhân viên/Quản lý) -->
@@ -73,7 +69,6 @@
             <div class="bg-white p-4 rounded" style="border: 1px solid #f0f0f0;">
                 <div class="text-center mb-4">
                     <h5 class="fw-bold text-dark">Đăng nhập Nội bộ</h5>
-                    <p class="text-secondary small">Dành riêng cho Quản lý và Nhân viên pha chế.</p>
                 </div>
                 
                 @if (!string.IsNullOrEmpty(errorMessage))

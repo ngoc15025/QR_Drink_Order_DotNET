@@ -11,24 +11,23 @@
     <!-- TCH Style Header -->
     <header class="tch-header">
         <div class="tch-nav-container">
-            <!-- Left: Placeholder for centering -->
-            <div class="tch-header-icon d-md-none" style="min-width: 40px;"></div>
-
-            <!-- Center: Logo -->
-            <a href="/" class="text-decoration-none d-flex align-items-center justify-content-center flex-grow-1 flex-md-grow-0">
-                <img src="/images/logo.png" alt="Ngoc UwU Coffee" class="tch-header-logo" style="height: 36px; width: auto;" />
-            </a>
+            <!-- Left: Logo -->
+            <div class="d-flex align-items-center" style="flex: 1;">
+                <a href="/" class="text-decoration-none">
+                    <img src="/images/logo.png" alt="Ngoc UwU Coffee" class="tch-header-logo" style="height: 36px; width: auto;" />
+                </a>
+            </div>
 
             <!-- Desktop Navigation (Hiển thị trên máy tính/tablet lớn) -->
-            <div class="d-none d-md-flex align-items-center gap-2 mx-auto">
+            <div class="d-none d-md-flex align-items-center justify-content-center gap-2" style="flex: 1; white-space: nowrap;">
                 <NavLink href="/" class="tch-nav-link" Match="NavLinkMatch.All">Trang chủ</NavLink>
                 <NavLink href="/menu" class="tch-nav-link">@Loc["Menu"]</NavLink>
-                <NavLink href="/order" class="tch-nav-link">@Loc["Order"]</NavLink>
+                <NavLink href="/order" class="tch-nav-link">Đơn hàng</NavLink>
                 <NavLink href="/account" class="tch-nav-link">Tài khoản</NavLink>
             </div>
             
             <!-- Right: Cart or User Info -->
-            <div class="tch-header-icon" style="min-width: 40px; display: flex; justify-content: flex-end; align-items: center;">
+            <div class="tch-header-icon" style="flex: 1; display: flex; justify-content: flex-end; align-items: center;">
                 <LanguageSwitcher />
                 @if (ShouldHideCart)
                 {
@@ -103,7 +102,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            @Loc["Order"]
+            Đơn hàng
         </NavLink>
         <NavLink href="/account" class="nav-item">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
