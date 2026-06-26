@@ -17,6 +17,7 @@ public class ToppingsController : ControllerBase
         _context = context;
     }
 
+    [HttpGet]
     public async Task<IActionResult> GetToppings()
     {
         var toppings = await _context.Toppings.AsNoTracking().Select(t => new ToppingDto

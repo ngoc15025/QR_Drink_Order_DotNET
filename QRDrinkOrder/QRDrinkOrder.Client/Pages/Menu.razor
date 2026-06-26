@@ -47,22 +47,27 @@ else
 {
     <div class="menu-layout">
         <!-- Sidebar Danh mục (Left) -->
-        <div class="menu-sidebar" style="position: sticky; top: 70px; height: calc(100vh - 70px);">
-            <div class="sidebar-item @(selectedCategoryId == null ? "active" : "")" @onclick="() => SelectCategory(null)">
+        <div class="menu-sidebar" style="position: sticky; top: 70px; height: calc(100vh - 70px);" id="sidebar-container">
+            <div class="sidebar-item @(selectedCategoryId == null ? "active" : "")" id="sidebar-cat-all" @onclick="() => SelectCategory(null)">
+                @if (selectedCategoryId == null)
+                {
+                    <div class="sidebar-img-wrapper">
+                        <img src="/images/logo.png" class="sidebar-img" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                    </div>
+                }
                 <div class="sidebar-text">Tất cả</div>
             </div>
             @foreach (var cat in categories)
             {
-                <div class="sidebar-item @(selectedCategoryId == cat.CategoryId ? "active" : "")" 
+                var catImg = GetCategoryImageUrl(cat.CategoryId);
+                var isActive = selectedCategoryId == cat.CategoryId;
+                <div class="sidebar-item @(isActive ? "active" : "")" id="sidebar-cat-@cat.CategoryId"
                      @onclick="() => SelectCategory(cat.CategoryId)">
-                    <!-- Dùng ảnh placeholder chung hoặc ảnh đại diện của món đầu tiên trong danh mục -->
-                    @if (selectedCategoryId == cat.CategoryId)
+                    @if (isActive)
                     {
-                        var firstDrink = allDrinks.FirstOrDefault(d => d.CategoryId == cat.CategoryId && !string.IsNullOrEmpty(d.ImageUrl));
-                        if (firstDrink != null)
-                        {
-                            <img src="@firstDrink.ImageUrl" class="sidebar-img" onerror="this.onerror=null; this.style.display='none';" />
-                        }
+                        <div class="sidebar-img-wrapper">
+                            <img src="@catImg" class="sidebar-img" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                        </div>
                     }
                     <div class="sidebar-text">@cat.CategoryName</div>
                 </div>
@@ -274,6 +279,16 @@ else
 
 
 @code {
+    private string GetCategoryImageUrl(int? categoryId)
+    {
+        if (categoryId == null)
+        {
+            return "/images/logo.png";
+        }
+        var firstDrink = allDrinks.FirstOrDefault(d => d.CategoryId == categoryId);
+        return string.IsNullOrEmpty(firstDrink?.ImageUrl) ? "/images/placeholder.png" : firstDrink.ImageUrl;
+    }
+
     private bool isLoading = true;
     private List<CategoryDto> categories = new();
     private List<DrinkDto> allDrinks = new();
@@ -354,15 +369,10 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            objRef = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("menuScrollSpy.initialize", objRef);
-        }
     }
 
     [JSInvokable]
-    public void UpdateActiveCategory(int id)
+    public void UpdateActiveCategory(int? id)
     {
         if (selectedCategoryId != id)
         {
@@ -392,7 +402,11 @@ else
         {
             isLoading = false;
             StateHasChanged();
-            await Task.Delay(50);
+            await Task.Delay(150);
+            try {
+                objRef = DotNetObjectReference.Create(this);
+                await JSRuntime.InvokeVoidAsync("menuScrollSpy.initialize", objRef);
+            } catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi initialize scrollSpy"); }
             try {
                 await JSRuntime.InvokeVoidAsync("gsapHelpers.staggerLoad", ".drink-item-card");
             } catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi gọi gsapHelpers.staggerLoad"); }

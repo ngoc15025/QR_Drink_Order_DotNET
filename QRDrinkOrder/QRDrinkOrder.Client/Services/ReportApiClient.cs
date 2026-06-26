@@ -28,7 +28,15 @@ public class ReportApiClient
 
         try
         {
-            return await _httpClient.GetFromJsonAsync<DashboardDto>(url);
+            var data = await _httpClient.GetFromJsonAsync<DashboardDto>(url);
+            if (data?.TopDrinks != null)
+            {
+                foreach (var drink in data.TopDrinks)
+                {
+                    drink.ImageUrl = ImageUrlResolver.Resolve(drink.ImageUrl, _httpClient.BaseAddress?.ToString());
+                }
+            }
+            return data;
         }
         catch (Exception)
         {
@@ -36,3 +44,4 @@ public class ReportApiClient
         }
     }
 }
+

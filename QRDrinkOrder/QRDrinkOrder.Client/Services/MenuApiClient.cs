@@ -27,19 +27,37 @@ public class MenuApiClient
         {
             url += $"&categoryId={categoryId.Value}";
         }
-        return await _httpClient.GetFromJsonAsync<List<DrinkDto>>(url) ?? new List<DrinkDto>();
+        var drinks = await _httpClient.GetFromJsonAsync<List<DrinkDto>>(url) ?? new List<DrinkDto>();
+        foreach (var drink in drinks)
+        {
+            drink.ImageUrl = ImageUrlResolver.Resolve(drink.ImageUrl, _httpClient.BaseAddress?.ToString());
+        }
+        return drinks;
     }
 
     public async Task<WeatherRecommendationDto?> GetWeatherRecommendationsAsync(string? lang = null, string weather = "nắng nóng")
     {
         lang ??= System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-        return await _httpClient.GetFromJsonAsync<WeatherRecommendationDto>($"api/menu/weather-recommendations?lang={lang}&weather={weather}");
+        var result = await _httpClient.GetFromJsonAsync<WeatherRecommendationDto>($"api/menu/weather-recommendations?lang={lang}&weather={weather}");
+        if (result?.RecommendedDrinks != null)
+        {
+            foreach (var drink in result.RecommendedDrinks)
+            {
+                drink.ImageUrl = ImageUrlResolver.Resolve(drink.ImageUrl, _httpClient.BaseAddress?.ToString());
+            }
+        }
+        return result;
     }
 
     public async Task<List<PromotionDto>> GetPromotionsAsync(string? lang = null, bool includeInactive = false)
     {
         lang ??= System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-        return await _httpClient.GetFromJsonAsync<List<PromotionDto>>($"api/menu/promotions?lang={lang}&includeInactive={includeInactive.ToString().ToLower()}") ?? new List<PromotionDto>();
+        var promotions = await _httpClient.GetFromJsonAsync<List<PromotionDto>>($"api/menu/promotions?lang={lang}&includeInactive={includeInactive.ToString().ToLower()}") ?? new List<PromotionDto>();
+        foreach (var promo in promotions)
+        {
+            promo.ImageUrl = ImageUrlResolver.Resolve(promo.ImageUrl, _httpClient.BaseAddress?.ToString());
+        }
+        return promotions;
     }
 
     // --- Admin/Manager Methods ---
@@ -103,7 +121,7 @@ public class MenuApiClient
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
-            return result?.Url;
+            return ImageUrlResolver.Resolve(result?.Url ?? "", _httpClient.BaseAddress?.ToString());
         }
         return null;
     }

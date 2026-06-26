@@ -22,7 +22,9 @@ public class OrderApiClient
         var response = await _httpClient.SendAsync(httpRequest);
         if (response.IsSuccessStatusCode)
         {
-            return await response.Content.ReadFromJsonAsync<OrderDto>();
+            var order = await response.Content.ReadFromJsonAsync<OrderDto>();
+            ResolveOrderImages(order);
+            return order;
         }
 
         var errorContent = await response.Content.ReadAsStringAsync();
@@ -41,17 +43,23 @@ public class OrderApiClient
 
     public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
     {
-        return await _httpClient.GetFromJsonAsync<OrderDto>($"api/orders/{orderId}");
+        var order = await _httpClient.GetFromJsonAsync<OrderDto>($"api/orders/{orderId}");
+        ResolveOrderImages(order);
+        return order;
     }
 
     public async Task<List<OrderDto>> GetActiveOrdersAsync()
     {
-        return await _httpClient.GetFromJsonAsync<List<OrderDto>>("api/orders/active") ?? new List<OrderDto>();
+        var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>("api/orders/active") ?? new List<OrderDto>();
+        ResolveOrderImages(orders);
+        return orders;
     }
 
     public async Task<List<OrderDto>> GetOrderHistoryByPhoneAsync(string phone)
     {
-        return await _httpClient.GetFromJsonAsync<List<OrderDto>>($"api/orders/history?phone={phone}") ?? new List<OrderDto>();
+        var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>($"api/orders/history?phone={phone}") ?? new List<OrderDto>();
+        ResolveOrderImages(orders);
+        return orders;
     }
 
     public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status)
@@ -99,6 +107,26 @@ public class OrderApiClient
         if (queryParams.Count > 0)
             url += "?" + string.Join("&", queryParams);
 
-        return await _httpClient.GetFromJsonAsync<List<OrderDto>>(url) ?? new List<OrderDto>();
+        var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>(url) ?? new List<OrderDto>();
+        ResolveOrderImages(orders);
+        return orders;
+    }
+
+    private void ResolveOrderImages(OrderDto? order)
+    {
+        if (order?.Items == null) return;
+        foreach (var item in order.Items)
+        {
+            item.ImageUrl = ImageUrlResolver.Resolve(item.ImageUrl, _httpClient.BaseAddress?.ToString());
+        }
+    }
+
+    private void ResolveOrderImages(List<OrderDto> orders)
+    {
+        if (orders == null) return;
+        foreach (var order in orders)
+        {
+            ResolveOrderImages(order);
+        }
     }
 }

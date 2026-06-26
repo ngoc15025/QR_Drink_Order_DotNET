@@ -17,6 +17,7 @@ public class SizesController : ControllerBase
         _context = context;
     }
 
+    [HttpGet]
     public async Task<IActionResult> GetSizes()
     {
         var sizes = await _context.Sizes.AsNoTracking().Select(s => new SizeDto

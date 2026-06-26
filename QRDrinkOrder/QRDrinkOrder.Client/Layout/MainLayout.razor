@@ -7,7 +7,7 @@
 @inject ILogger<MainLayout> Logger
 @implements IDisposable
 
-<div class="page" style="display: flex; flex-direction: column; min-height: 100vh;">
+<div class="page @(IsCustomerPage ? "customer-theme" : "")" style="display: flex; flex-direction: column; min-height: 100vh;">
     <!-- TCH Style Header -->
     <header class="tch-header">
         <div class="tch-nav-container">
@@ -62,10 +62,17 @@
         </div>
     </header>
 
-    <main class="flex-grow-1 main-content" style="background-color: var(--tch-background); padding-bottom: 80px;">
-        <div class="container-xl p-0">
+    <main class="flex-grow-1 main-content" style="background-color: transparent; padding-bottom: 80px;">
+        @if (IsCustomerPage)
+        {
             @Body
-        </div>
+        }
+        else
+        {
+            <div class="container-xl p-0">
+                @Body
+            </div>
+        }
     </main>
 
     @if (!ShouldHideCart)
@@ -118,6 +125,10 @@
         NavigationManager.Uri.Contains("/account", StringComparison.OrdinalIgnoreCase) ||
         NavigationManager.Uri.Contains("/admin/dashboard", StringComparison.OrdinalIgnoreCase) ||
         NavigationManager.Uri.Contains("/pos", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsCustomerPage =>
+        !NavigationManager.Uri.Contains("/admin", StringComparison.OrdinalIgnoreCase) &&
+        !NavigationManager.Uri.Contains("/pos", StringComparison.OrdinalIgnoreCase);
 
     private string StoreName = "NGOC UWU COFFEE";
     private string StoreAddress = "Đ/c: 123 Đường Sách, TP. Hồ Chí Minh";
