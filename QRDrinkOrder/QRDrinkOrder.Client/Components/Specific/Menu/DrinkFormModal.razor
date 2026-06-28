@@ -158,7 +158,7 @@
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
                 content.Add(fileContent, "file", file.Name);
 
-                var imageUrl = await MenuApi.UploadImageAsync(content);
+                var imageUrl = await MenuApi.UploadImageAsync(content, "Menu");
                 
                 if (!string.IsNullOrEmpty(imageUrl))
                 {

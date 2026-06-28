@@ -3,6 +3,7 @@ using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.API.Models;
+using QRDrinkOrder.Shared.Exceptions;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -37,6 +38,12 @@ public class CouponService : ICouponService
 
     public async Task<CouponDto> CreateCouponAsync(SaveCouponRequest request)
     {
+        if (request.EndDate.Date < request.StartDate.Date)
+            throw new BusinessException("Ngày kết thúc không được nhỏ hơn ngày bắt đầu.");
+
+        if (await _context.Coupons.AnyAsync(c => c.CouponCode == request.CouponCode.ToUpper()))
+            throw new BusinessException("Mã giảm giá này đã tồn tại trong hệ thống. Vui lòng chọn mã khác.");
+
         var coupon = new Coupon
         {
             CouponCode = request.CouponCode.ToUpper(),
@@ -59,6 +66,12 @@ public class CouponService : ICouponService
 
     public async Task<CouponDto?> UpdateCouponAsync(int id, SaveCouponRequest request)
     {
+        if (request.EndDate.Date < request.StartDate.Date)
+            throw new BusinessException("Ngày kết thúc không được nhỏ hơn ngày bắt đầu.");
+
+        if (await _context.Coupons.AnyAsync(c => c.CouponCode == request.CouponCode.ToUpper() && c.CouponId != id))
+            throw new BusinessException("Mã giảm giá này đã tồn tại trong hệ thống. Vui lòng chọn mã khác.");
+
         var coupon = await _context.Coupons.FindAsync(id);
         if (coupon == null) return null;
 

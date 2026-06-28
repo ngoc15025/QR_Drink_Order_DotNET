@@ -295,7 +295,7 @@
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
                 content.Add(fileContent, "file", file.Name);
 
-                var imageUrl = await MenuApi.UploadImageAsync(content);
+                var imageUrl = await MenuApi.UploadImageAsync(content, "Banner");
                 
                 if (!string.IsNullOrEmpty(imageUrl))
                 {
@@ -319,6 +319,12 @@
 
     private async Task SavePromotion()
     {
+        if (editingPromotionId != null)
+        {
+            bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn lưu thay đổi cho chương trình khuyến mãi này?");
+            if (!confirmed) return;
+        }
+
         try
         {
             isSaving = true;

@@ -1,6 +1,7 @@
 @page "/admin/coupons"
 @attribute [Authorize(Roles = "Admin,Manager")]
 @inject QRDrinkOrder.Client.Services.CouponApiClient CouponApi
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Shared.DTOs.Responses
 
@@ -252,6 +253,12 @@
 
     private async Task SaveCoupon()
     {
+        if (editingId != 0)
+        {
+            bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn lưu thay đổi cho mã giảm giá này?");
+            if (!confirmed) return;
+        }
+
         isSaving = true;
         try
         {
@@ -271,6 +278,10 @@
 
     private async Task ToggleStatus(CouponDto c)
     {
+        string actionText = c.IsActive ? "khóa" : "mở khóa";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn {actionText} mã giảm giá này?");
+        if (!confirmed) return;
+
         var request = new SaveCouponRequest
         {
             CouponCode = c.CouponCode,

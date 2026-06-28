@@ -190,6 +190,12 @@
     {
         if (request.CategoryId == 0) return;
 
+        if (editingDrinkId != 0)
+        {
+            bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn lưu thay đổi cho món nước này?");
+            if (!confirmed) return;
+        }
+
         isSaving = true;
         try
         {
@@ -221,6 +227,10 @@
 
     private async Task ToggleDrinkStatus(DrinkDto drink)
     {
+        string actionText = drink.IsActive ? "khóa" : "mở khóa";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn {actionText} món nước này?");
+        if (!confirmed) return;
+
         var nameVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.DrinkName ?? drink.DrinkName;
         var nameEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.DrinkName ?? drink.DrinkName;
         var descVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.Description ?? drink.Description;
@@ -267,6 +277,12 @@
 
     private async Task SaveCategory(SaveCategoryRequest request)
     {
+        if (editingCategoryId != 0)
+        {
+            bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn lưu thay đổi cho danh mục này?");
+            if (!confirmed) return;
+        }
+
         isSaving = true;
         try
         {

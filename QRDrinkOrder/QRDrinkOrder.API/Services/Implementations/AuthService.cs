@@ -1,3 +1,4 @@
+using QRDrinkOrder.Shared.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -39,7 +40,7 @@ public class AuthService : IAuthService
             return null;
 
         if (!account.IsActive == true)
-            throw new Exception(ErrorMessages.AccountDisabled);
+            throw new BusinessException(ErrorMessages.AccountDisabled);
 
         var verifyResult = _passwordHasher.VerifyHashedPassword(request.Email, account.PasswordHash, request.Password);
         if (verifyResult == PasswordVerificationResult.Failed)
@@ -69,7 +70,7 @@ public class AuthService : IAuthService
     {
         var existingAccount = await _context.Accounts.AnyAsync(a => a.Email == request.Email);
         if (existingAccount)
-            throw new Exception("Email này đã được sử dụng.");
+            throw new BusinessException("Email này đã được sử dụng.");
 
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
@@ -128,7 +129,7 @@ public class AuthService : IAuthService
 
         var verifyResult = _passwordHasher.VerifyHashedPassword(account.Email, account.PasswordHash, request.OldPassword);
         if (verifyResult == PasswordVerificationResult.Failed)
-            throw new Exception("Mật khẩu cũ không chính xác.");
+            throw new BusinessException("Mật khẩu cũ không chính xác.");
 
         account.PasswordHash = _passwordHasher.HashPassword(account.Email, request.NewPassword);
         await _context.SaveChangesAsync();
@@ -240,3 +241,4 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
+

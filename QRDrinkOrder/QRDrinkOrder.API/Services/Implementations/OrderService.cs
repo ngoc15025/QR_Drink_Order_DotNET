@@ -1,3 +1,4 @@
+using QRDrinkOrder.Shared.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Hubs;
@@ -82,7 +83,7 @@ public class OrderService : IOrderService
                     }
                     else
                     {
-                        throw new Exception("Bạn đã sử dụng ưu đãi 50% dành cho nhân viên trong hôm nay.");
+                        throw new BusinessException("Bạn đã sử dụng ưu đãi 50% dành cho nhân viên trong hôm nay.");
                     }
                 }
             }
@@ -92,11 +93,11 @@ public class OrderService : IOrderService
             if (request.PointsToUse.HasValue && request.PointsToUse.Value > 0)
             {
                 if (string.IsNullOrEmpty(request.Phone))
-                    throw new Exception("Yêu cầu nhập số điện thoại để sử dụng điểm.");
+                    throw new BusinessException("Yêu cầu nhập số điện thoại để sử dụng điểm.");
 
                 var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == request.Phone);
                 if (membership == null || membership.Points < request.PointsToUse.Value)
-                    throw new Exception("Điểm tích lũy không đủ để sử dụng.");
+                    throw new BusinessException("Điểm tích lũy không đủ để sử dụng.");
 
                 var pointRateConfig = await _context.SystemConfigs.FindAsync("RedeemPointRate");
                 int redeemRate = pointRateConfig != null ? int.Parse(pointRateConfig.ConfigValue) : 1000;
@@ -105,7 +106,7 @@ public class OrderService : IOrderService
                 
                 if (discountAmount + pointDiscount > totalAmount)
                 {
-                    throw new Exception("Số điểm sử dụng vượt quá giá trị đơn hàng.");
+                    throw new BusinessException("Số điểm sử dụng vượt quá giá trị đơn hàng.");
                 }
 
                 discountAmount += pointDiscount;
@@ -375,11 +376,11 @@ public class OrderService : IOrderService
 
             // Ràng buộc bảo mật: Đúng SessionId mới được hủy
             if (order.SessionId != sessionId)
-                throw new Exception(ErrorMessages.Unauthorized);
+                throw new BusinessException(ErrorMessages.Unauthorized);
 
             // Ràng buộc F&B: Chỉ được hủy khi chưa pha chế (OrderStatus == 0: Chờ thanh toán)
             if (order.OrderStatus != (byte)OrderStatus.PendingPayment)
-                throw new Exception(ErrorMessages.OrderCannotCancel);
+                throw new BusinessException(ErrorMessages.OrderCannotCancel);
 
             order.OrderStatus = (byte)OrderStatus.Cancelled;
 
@@ -466,11 +467,11 @@ public class OrderService : IOrderService
 
         // Ràng buộc bảo mật: Đúng SessionId mới được sửa
         if (order.SessionId != sessionId)
-            throw new Exception(ErrorMessages.Unauthorized);
+            throw new BusinessException(ErrorMessages.Unauthorized);
 
         // Chỉ được đổi phương thức khi chưa thanh toán
         if (order.Payment.PaymentStatus != (byte)PaymentStatus.Pending)
-            throw new Exception("Không thể thay đổi phương thức cho đơn hàng đã thanh toán.");
+            throw new BusinessException("Không thể thay đổi phương thức cho đơn hàng đã thanh toán.");
 
         order.Payment.PaymentMethod = paymentMethod;
 
@@ -529,7 +530,7 @@ public class OrderService : IOrderService
         foreach (var item in items)
         {
             if (!drinks.TryGetValue(item.DrinkId, out var drink))
-                throw new Exception($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
+                throw new BusinessException($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
 
             decimal unitPrice = drink.BasePrice;
             if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size))
@@ -556,22 +557,22 @@ public class OrderService : IOrderService
     private async Task<(decimal discountAmount, Coupon? coupon, bool isApplied)> CalculateCouponDiscountAsync(string? phone, string? couponCode, decimal totalAmount)
     {
         if (string.IsNullOrEmpty(couponCode)) return (0, null, false);
-        if (string.IsNullOrEmpty(phone)) throw new Exception("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
+        if (string.IsNullOrEmpty(phone)) throw new BusinessException("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
 
         var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponCode == couponCode && c.IsActive == true);
         if (coupon == null || DateTime.Now < coupon.StartDate || DateTime.Now > coupon.EndDate)
-            throw new Exception(ErrorMessages.InvalidCoupon);
+            throw new BusinessException(ErrorMessages.InvalidCoupon);
 
         if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-            throw new Exception(ErrorMessages.CouponLimitReached);
+            throw new BusinessException(ErrorMessages.CouponLimitReached);
 
         if (totalAmount < coupon.MinOrderValue)
-            throw new Exception(ErrorMessages.MinOrderNotMet);
+            throw new BusinessException(ErrorMessages.MinOrderNotMet);
 
         // Chặn lạm dụng mã theo SĐT
         var hasUsed = await _context.CouponUsages.AnyAsync(cu => cu.CouponId == coupon.CouponId && cu.Phone == phone);
         if (hasUsed)
-            throw new Exception(ErrorMessages.CouponAlreadyUsed);
+            throw new BusinessException(ErrorMessages.CouponAlreadyUsed);
 
         // Tính toán số tiền giảm
         decimal discountAmount = 0;
@@ -667,3 +668,4 @@ public class OrderService : IOrderService
         return orders.Select(MapToOrderDto).ToList();
     }
 }
+

@@ -71,10 +71,8 @@ public partial class QrdrinkOrderDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer("Server=localhost;Database=QRDrinkOrderDB;Trusted_Connection=True;TrustServerCertificate=True;");
-        }
+        // Connection string should be provided via dependency injection in Program.cs
+        // optionsBuilder.UseSqlServer("...");
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

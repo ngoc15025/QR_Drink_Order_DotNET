@@ -9,6 +9,7 @@ using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using QRDrinkOrder.API.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +43,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
+builder.Services.AddScoped<IImageService, CloudinaryImageService>();
 
 // 4. Đăng ký SignalR để xử lý thông báo thời gian thực
 builder.Services.AddSignalR();
@@ -150,6 +152,9 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// Thêm Middleware xử lý lỗi tập trung
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Cấu hình đường ống HTTP (Request Pipeline)
 if (app.Environment.IsDevelopment())

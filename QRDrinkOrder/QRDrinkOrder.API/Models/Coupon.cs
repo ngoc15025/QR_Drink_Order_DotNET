@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace QRDrinkOrder.API.Models;
 
 public partial class Coupon

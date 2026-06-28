@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QRDrinkOrder.API.Services.Interfaces;
 
 namespace QRDrinkOrder.API.Controllers;
 
@@ -8,15 +9,15 @@ namespace QRDrinkOrder.API.Controllers;
 [Authorize(Roles = "Admin,Manager")]
 public class UploadController : ControllerBase
 {
-    private readonly IWebHostEnvironment _env;
+    private readonly IImageService _imageService;
 
-    public UploadController(IWebHostEnvironment env)
+    public UploadController(IImageService imageService)
     {
-        _env = env;
+        _imageService = imageService;
     }
 
     [HttpPost("image")]
-    public async Task<IActionResult> UploadImage(IFormFile file)
+    public async Task<IActionResult> UploadImage(IFormFile file, [FromQuery] string folder = "Others")
     {
         if (file == null || file.Length == 0)
         {
@@ -33,24 +34,8 @@ public class UploadController : ControllerBase
 
         try
         {
-            // Set up the path: wwwroot/uploads/images
-            var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "images");
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            // Return absolute URL to be stored in DB
-            var fileUrl = $"{Request.Scheme}://{Request.Host}/uploads/images/{uniqueFileName}";
+            using var stream = file.OpenReadStream();
+            var fileUrl = await _imageService.UploadImageAsync(stream, file.FileName, folder);
             return Ok(new { Url = fileUrl });
         }
         catch (Exception ex)

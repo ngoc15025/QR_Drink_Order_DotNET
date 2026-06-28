@@ -26,11 +26,11 @@ namespace QRDrinkOrder.API.Controllers
         {
             var query = _context.AuditLogs
                 .Include(l => l.Account)
-                    .ThenInclude(a => a.Role)
+                    .ThenInclude(a => a!.Role)
                 .Include(l => l.Account)
-                    .ThenInclude(a => a.Employee)
+                    .ThenInclude(a => a!.Employee)
                 .Include(l => l.Account)
-                    .ThenInclude(a => a.Manager)
+                    .ThenInclude(a => a!.Manager)
                 .AsQueryable();
 
             var totalCount = await query.CountAsync();

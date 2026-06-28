@@ -115,9 +115,9 @@ public class MenuApiClient
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<string?> UploadImageAsync(MultipartFormDataContent content)
+    public async Task<string?> UploadImageAsync(MultipartFormDataContent content, string folder = "Others")
     {
-        var response = await _httpClient.PostAsync("api/upload/image", content);
+        var response = await _httpClient.PostAsync($"api/upload/image?folder={folder}", content);
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
