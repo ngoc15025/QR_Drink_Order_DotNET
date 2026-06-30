@@ -13,7 +13,7 @@
 @if (isLoading)
 {
     <div class="home-container" style="display: flex; flex-direction: column; height: calc(100vh - 60px); max-height: calc(100vh - 60px); overflow: hidden;">
-        <div class="home-scroll-area" style="overflow-y: hidden; flex: 1; background-color: #f5f6fa; padding: 16px;">
+        <div class="home-scroll-area no-scrollbar" style="overflow-y: hidden; flex: 1; background-color: #FFFFFF; padding: 16px;">
             <!-- Promo skeleton -->
             <div class="skeleton-box" style="width: 100%; height: 160px; border-radius: 12px; margin-bottom: 24px;"></div>
             
@@ -51,13 +51,13 @@ else
 {
     <div class="home-container" style="display: flex; flex-direction: column; height: calc(100vh - 60px); max-height: calc(100vh - 60px); overflow: hidden;">
         <!-- Nội dung chính có thể cuộn toàn bộ -->
-        <div class="home-scroll-area" id="menu-content-scroll" style="overflow-y: auto; flex: 1; background-color: #f5f6fa;">
+        <div class="home-scroll-area no-scrollbar" id="menu-content-scroll" style="overflow-y: auto; flex: 1; background-color: #FFFFFF;">
             
             <!-- TIN TỨC (Promotions) -->
             @if (promotions.Any())
             {
                 <h4 class="fw-bold px-3 pt-3 mb-2" style="color: #000033; font-size: 1.2rem;">TIN TỨC</h4>
-                <div class="promo-carousel-wrapper mx-3" id="promoCarouselWrapper" style="border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <div class="promo-carousel-wrapper mx-3" id="promoCarouselWrapper" style="border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); background-color: #fef8e5;">
                     <!-- Slides -->
                     <div class="promo-slides" id="promoSlides">
                         @for (int i = 0; i < promotions.Count; i++)
@@ -67,27 +67,24 @@ else
                             <div class="promo-slide" @onclick="() => OpenPromoModal(idx)">
                                 <img src="@promo.ImageUrl" alt="@promo.Title"
                                      onerror="this.onerror=null; this.src='/images/placeholder.png';" />
-                                <!-- Tên chương trình + mã giảm giá nổi lên -->
+                                
                                 <div class="promo-slide-footer">
+                                    <div class="promo-slide-meta">
+                                        <span class="promo-slide-category">COFFEEHOLIC</span>
+                                        <span class="promo-slide-date">@(promo.StartDate?.ToString("dd/MM/yyyy") ?? DateTime.Now.ToString("dd/MM/yyyy"))</span>
+                                    </div>
                                     @if (!string.IsNullOrEmpty(promo.Title))
                                     {
-                                        <p class="promo-slide-title">@promo.Title</p>
+                                        <h5 class="promo-slide-title">@promo.Title</h5>
+                                    }
+                                    @if (!string.IsNullOrEmpty(promo.Description))
+                                    {
+                                        <p class="promo-slide-desc">@promo.Description</p>
                                     }
                                     @if (!string.IsNullOrEmpty(promo.CouponCode))
                                     {
-                                        <div class="promo-slide-code" @onclick:stopPropagation>
-                                            <span class="promo-code-label">Nhập mã</span>
-                                            <strong class="promo-code-text">@promo.CouponCode</strong>
-                                            <button class="promo-copy-btn" @onclick="() => CopyPromoCode(promo.CouponCode)">
-                                                @if (copiedCode == promo.CouponCode)
-                                                {
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/></svg>
-                                                }
-                                                else
-                                                {
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
-                                                }
-                                            </button>
+                                        <div class="mt-2">
+                                            <span class="badge bg-success">Mã: @promo.CouponCode</span>
                                         </div>
                                     }
                                 </div>
@@ -185,7 +182,7 @@ else
             </div>
 
             <!-- Vùng Menu 2 cột: Sidebar và List -->
-            <div class="d-flex align-items-start position-relative" style="background-color: #f5f6fa;">
+            <div class="d-flex align-items-start position-relative" style="background-color: #FFFFFF;">
                 <!-- Sidebar -->
                 <div class="menu-sidebar" style="position: sticky; top: 70px; max-height: calc(100vh - 130px); height: auto; border-right: none;" id="sidebar-container">
                     <div class="sidebar-item @(selectedCategoryId == null ? "active" : "")" id="sidebar-cat-all" @onclick="() => SelectCategory(null)">
@@ -226,7 +223,7 @@ else
                         if (drinksInGroup.Any())
                         {
                             <!-- Category Header -->
-                            <div class="category-header sticky-top" style="top: 60px;" id="cat-@group.CategoryId">
+                            <div class="category-header sticky-top" style="top: 72px;" id="cat-@group.CategoryId">
                                 @group.CategoryName
                             </div>
 
@@ -488,6 +485,19 @@ else
         }
     }
 
+    [JSInvokable]
+    public void UpdatePromoIndex(int idx)
+    {
+        if (currentPromoIndex != idx)
+        {
+            currentPromoIndex = idx;
+            StateHasChanged();
+            
+            // Đặt lại timer khi user vuốt tay (lướt ngang)
+            StartAutoSlide();
+        }
+    }
+
     public void Dispose()
     {
         _promoTimerCts?.Cancel();
@@ -516,7 +526,8 @@ else
             try {
                 objRef = DotNetObjectReference.Create(this);
                 await JSRuntime.InvokeVoidAsync("menuScrollSpy.initialize", objRef);
-            } catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi initialize scrollSpy"); }
+                await JSRuntime.InvokeVoidAsync("promoCarousel.init", objRef);
+            } catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi initialize scrollSpy / promoCarousel"); }
             try {
                 await JSRuntime.InvokeVoidAsync("gsapHelpers.staggerLoad", ".drink-item-card");
             } catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi gọi gsapHelpers.staggerLoad"); }

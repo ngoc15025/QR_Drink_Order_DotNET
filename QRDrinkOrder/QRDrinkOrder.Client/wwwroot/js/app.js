@@ -375,10 +375,34 @@ window.printInvoice = function(invoiceHtml) {
 
 // --- Promo Carousel ---
 window.promoCarousel = {
+    _dotNetHelper: null,
+    _scrollTimeout: null,
+    init: function(dotNetHelper) {
+        this._dotNetHelper = dotNetHelper;
+        const el = document.getElementById('promoSlides');
+        if (el) {
+            el.addEventListener('scroll', () => {
+                clearTimeout(this._scrollTimeout);
+                this._scrollTimeout = setTimeout(() => {
+                    const index = Math.round(el.scrollLeft / el.clientWidth);
+                    if (this._dotNetHelper) {
+                        this._dotNetHelper.invokeMethodAsync('UpdatePromoIndex', index);
+                    }
+                }, 100);
+            });
+        }
+    },
     goTo: function(slidePercent) {
         var el = document.getElementById('promoSlides');
         if (el) {
-            el.style.transform = 'translateX(-' + slidePercent + '%)';
+            var index = Math.round(slidePercent / 100);
+            var slide = el.children[index];
+            if (slide) {
+                el.scrollTo({
+                    left: slide.offsetLeft,
+                    behavior: 'smooth'
+                });
+            }
         }
     }
 };

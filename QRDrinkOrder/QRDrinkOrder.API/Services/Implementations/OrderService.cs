@@ -1,4 +1,4 @@
-using QRDrinkOrder.Shared.Exceptions;
+﻿using QRDrinkOrder.Shared.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Hubs;
@@ -55,7 +55,7 @@ public class OrderService : IOrderService
             var drinkIds = request.Items.Select(i => i.DrinkId).ToList();
             var drinks = await _context.Drinks
                 .Include(d => d.DrinkTranslations)
-                .Where(d => drinkIds.Contains(d.DrinkId))
+                .Where(d => drinkIds.Contains(d.DrinkId) && d.IsActive == true)
                 .ToDictionaryAsync(d => d.DrinkId);
 
             var sizes = await _context.Sizes.ToDictionaryAsync(s => s.SizeId);
@@ -199,7 +199,7 @@ public class OrderService : IOrderService
                     UsedAt = DateTime.Now
                 };
                 _context.CouponUsages.Add(usage);
-                coupon.UsedCount += 1;
+                await _context.Coupons.Where(c => c.CouponId == coupon.CouponId).ExecuteUpdateAsync(s => s.SetProperty(c => c.UsedCount, c => c.UsedCount + 1));
             }
 
             // Ghi nhận phúc lợi nhân viên

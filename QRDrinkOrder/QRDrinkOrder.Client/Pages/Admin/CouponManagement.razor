@@ -138,7 +138,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small fw-bold">Mức giảm *</label>
-                                <InputNumber class="form-control" @bind-Value="model.DiscountValue" placeholder="Số tiền hoặc %" />
+                                <InputNumber class="form-control" @bind-Value="model.DiscountValue" placeholder="10000 hoặc 15" />
+                                <div class="form-text mt-1" style="font-size: 0.85rem; color: #6c757d;"><i class="bi bi-info-circle me-1"></i>Ví dụ: 10000 (10,000 VNĐ) hoặc 15 (15%)</div>
                                 <ValidationMessage For="@(() => model.DiscountValue)" class="text-danger small" />
                             </div>
                             <div class="col-md-6 mb-3">
@@ -150,7 +151,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small fw-bold">Giá trị đơn tối thiểu (VNĐ)</label>
-                                <InputNumber class="form-control" @bind-Value="model.MinOrderValue" />
+                                <InputNumber class="form-control" @bind-Value="model.MinOrderValue" placeholder="50000" />
+                                <div class="form-text mt-1" style="font-size: 0.85rem; color: #6c757d;"><i class="bi bi-info-circle me-1"></i>Ví dụ: 50000 (50,000 VNĐ)</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small fw-bold">Giới hạn số lượt sử dụng</label>

@@ -12,79 +12,87 @@
 
 @if (isLoading)
 {
-    <div class="menu-layout">
-        <!-- Sidebar Skeleton -->
-        <div class="menu-sidebar" style="position: sticky; top: 70px; height: calc(100vh - 70px); background: transparent; border-right: none;">
-            @for (int i = 0; i < 6; i++)
-            {
-                <div class="skeleton-box" style="width: 50px; height: 50px; border-radius: 12px; margin: 0 auto 20px; display: block;"></div>
-            }
+    <div class="menu-container" style="display: flex; flex-direction: column; height: calc(100vh - 60px); max-height: calc(100vh - 60px); overflow: hidden; background-color: #FFFFFF;">
+        <!-- Search skeleton (Full width) -->
+        <div class="px-3 pt-3 pb-2 bg-white">
+            <div class="skeleton-box skeleton-search" style="margin-bottom: 0;"></div>
         </div>
-        <!-- Content Skeleton -->
-        <div class="menu-content px-3 pt-3">
-            <!-- Search skeleton -->
-            <div class="skeleton-box skeleton-search"></div>
-            <!-- AI button skeleton -->
-            <div class="skeleton-box" style="width: 100%; height: 50px; border-radius: 12px; margin-bottom: 24px;"></div>
-            
-            <div class="skeleton-box skeleton-text-title" style="margin-bottom: 20px;"></div>
-            @for (int i = 0; i < 5; i++)
-            {
-                <div class="skeleton-card skeleton-card-horizontal" style="padding: 12px;">
-                    <div class="skeleton-box" style="width: 70px; height: 70px; border-radius: 12px; flex-shrink: 0;"></div>
-                    <div class="d-flex flex-column justify-content-center w-100 ps-2">
-                        <div class="skeleton-box skeleton-text" style="width: 80%;"></div>
-                        <div class="skeleton-box skeleton-text-sm" style="width: 40%;"></div>
-                        <div class="skeleton-box skeleton-text-sm" style="width: 30%; margin-top: 12px;"></div>
+        
+        <div class="d-flex align-items-start position-relative" style="flex: 1; overflow: hidden;">
+            <!-- Sidebar Skeleton -->
+            <div class="menu-sidebar" style="height: 100%; background: transparent; border-right: 1px solid #F0F0F0;">
+                @for (int i = 0; i < 6; i++)
+                {
+                    <div class="skeleton-box" style="width: 50px; height: 50px; border-radius: 12px; margin: 0 auto 20px; display: block;"></div>
+                }
+            </div>
+            <!-- Content Skeleton -->
+            <div class="menu-content px-3 pt-3 no-scrollbar" style="height: 100%; overflow-y: auto;">
+                <!-- AI button skeleton -->
+                <div class="skeleton-box" style="width: 100%; height: 50px; border-radius: 12px; margin-bottom: 24px;"></div>
+                
+                <div class="skeleton-box skeleton-text-title" style="margin-bottom: 20px;"></div>
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="skeleton-card skeleton-card-horizontal" style="padding: 12px;">
+                        <div class="skeleton-box" style="width: 70px; height: 70px; border-radius: 12px; flex-shrink: 0;"></div>
+                        <div class="d-flex flex-column justify-content-center w-100 ps-2">
+                            <div class="skeleton-box skeleton-text" style="width: 80%;"></div>
+                            <div class="skeleton-box skeleton-text-sm" style="width: 40%;"></div>
+                            <div class="skeleton-box skeleton-text-sm" style="width: 30%; margin-top: 12px;"></div>
+                        </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
     </div>
 }
 else
 {
-    <div class="menu-layout">
-        <!-- Sidebar Danh mục (Left) -->
-        <div class="menu-sidebar" style="position: sticky; top: 70px; height: calc(100vh - 70px);" id="sidebar-container">
-            <div class="sidebar-item @(selectedCategoryId == null ? "active" : "")" id="sidebar-cat-all" @onclick="() => SelectCategory(null)">
-                @if (selectedCategoryId == null)
-                {
-                    <div class="sidebar-img-wrapper">
-                        <img src="/images/logo.png" class="sidebar-img" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
-                    </div>
-                }
-                <div class="sidebar-text">Tất cả</div>
+    <div class="menu-container" style="display: flex; flex-direction: column; height: calc(100vh - 60px); max-height: calc(100vh - 60px); overflow: hidden; background-color: #FFFFFF;">
+        <!-- Thanh tìm kiếm (Full width) -->
+        <div class="px-3 pt-3 pb-2 bg-white" style="z-index: 10;">
+            <div class="input-group" style="border: 1px solid #e0e0e0; border-radius: 24px; overflow: hidden; background: #fff;">
+                <span class="input-group-text bg-white border-0 ps-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-search text-secondary" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+                </span>
+                <input type="text" class="form-control border-0 py-2 shadow-none" placeholder="Tìm kiếm món..." @bind="searchQuery" @bind:event="oninput" style="font-size: 15px;" />
             </div>
-            @foreach (var cat in categories)
-            {
-                var catImg = GetCategoryImageUrl(cat.CategoryId);
-                var isActive = selectedCategoryId == cat.CategoryId;
-                <div class="sidebar-item @(isActive ? "active" : "")" id="sidebar-cat-@cat.CategoryId"
-                     @onclick="() => SelectCategory(cat.CategoryId)">
-                    @if (isActive)
-                    {
-                        <div class="sidebar-img-wrapper">
-                            <img src="@catImg" class="sidebar-img" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
-                        </div>
-                    }
-                    <div class="sidebar-text">@cat.CategoryName</div>
-                </div>
-            }
-            <!-- Spacer để scroll không bị che bởi bottom nav -->
-            <div style="height: 80px; flex-shrink: 0;"></div>
         </div>
 
-        <!-- Danh sách món (Right) -->
-        <div class="menu-content" id="menu-content-scroll">
-            <div class="mb-3 d-flex align-items-center px-3 pt-3 pb-2 bg-white sticky-top" style="z-index: 10;">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search text-secondary" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-                    </span>
-                    <input type="text" class="form-control bg-light border-0" placeholder="Tìm kiếm món..." @bind="searchQuery" @bind:event="oninput" />
+        <div class="d-flex align-items-start position-relative" style="flex: 1; overflow: hidden;">
+            <!-- Sidebar Danh mục (Left) -->
+            <div class="menu-sidebar" style="height: 100%; border-right: 1px solid #F0F0F0;" id="sidebar-container">
+                <div class="sidebar-item @(selectedCategoryId == null ? "active" : "")" id="sidebar-cat-all" @onclick="() => SelectCategory(null)">
+                    @if (selectedCategoryId == null)
+                    {
+                        <div class="sidebar-img-wrapper">
+                            <img src="/images/logo.png" class="sidebar-img" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                        </div>
+                    }
+                    <div class="sidebar-text">Tất cả</div>
                 </div>
+                @foreach (var cat in categories)
+                {
+                    var catImg = GetCategoryImageUrl(cat.CategoryId);
+                    var isActive = selectedCategoryId == cat.CategoryId;
+                    <div class="sidebar-item @(isActive ? "active" : "")" id="sidebar-cat-@cat.CategoryId"
+                         @onclick="() => SelectCategory(cat.CategoryId)">
+                        @if (isActive)
+                        {
+                            <div class="sidebar-img-wrapper">
+                                <img src="@catImg" class="sidebar-img" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                            </div>
+                        }
+                        <div class="sidebar-text">@cat.CategoryName</div>
+                    </div>
+                }
+                <!-- Spacer để scroll không bị che bởi bottom nav -->
+                <div style="height: 80px; flex-shrink: 0;"></div>
             </div>
+
+            <!-- Danh sách món (Right) -->
+            <div class="menu-content no-scrollbar" id="menu-content-scroll" style="height: 100%; overflow-y: auto;">
 
             <div class="px-3 pb-3">
                 <button class="btn w-100 fw-bold d-flex align-items-center justify-content-center gap-2" style="background-color: #FFF3E0; color: var(--tch-orange); border: 1px solid rgba(234, 128, 37, 0.5); border-radius: 12px; padding: 12px;" @onclick="GetAiSuggestions" disabled="@isAiLoading">
@@ -131,7 +139,7 @@ else
                         var drinksInGroup = FilteredDrinks.Where(d => d.CategoryId == group.CategoryId).ToList();
                         if (drinksInGroup.Any())
                         {
-                            <div class="category-header sticky-top" id="cat-@group.CategoryId">
+                            <div class="category-header sticky-top" id="cat-@group.CategoryId" style="top: 0;">
                                 @group.CategoryName
                             </div>
 
@@ -178,6 +186,7 @@ else
             </div>
         </div>
     </div>
+</div>
 
     <div class="drawer-overlay @(isModalOpen ? "open" : "")" @onclick="CloseModal"></div>
     <div class="customization-drawer glass-panel @(isModalOpen ? "open" : "")">

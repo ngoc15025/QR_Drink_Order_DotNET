@@ -10,12 +10,12 @@ namespace QRDrinkOrder.API.Services.Implementations;
 public class ReviewService : IReviewService
 {
     private readonly QrdrinkOrderDbContext _context;
-    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly IImageService _imageService;
 
-    public ReviewService(QrdrinkOrderDbContext context, IWebHostEnvironment webHostEnvironment)
+    public ReviewService(QrdrinkOrderDbContext context, IImageService imageService)
     {
         _context = context;
-        _webHostEnvironment = webHostEnvironment;
+        _imageService = imageService;
     }
 
     public async Task<bool> SubmitReviewAsync(Guid sessionId, SubmitReviewRequest request)
@@ -52,14 +52,6 @@ public class ReviewService : IReviewService
             // 4. Xử lý lưu ảnh tải lên (nếu có) vào thư mục tĩnh wwwroot
             if (request.Base64Images != null && request.Base64Images.Count > 0)
             {
-                string webRootPath = _webHostEnvironment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                string uploadsFolder = Path.Combine(webRootPath, "images", "reviews");
-
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-
                 foreach (var base64Str in request.Base64Images)
                 {
                     if (string.IsNullOrEmpty(base64Str)) continue;
@@ -80,14 +72,14 @@ public class ReviewService : IReviewService
 
                     byte[] imageBytes = Convert.FromBase64String(rawBase64);
                     string fileName = $"{Guid.NewGuid()}.{extension}";
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    await File.WriteAllBytesAsync(filePath, imageBytes);
+                    
+                    using var stream = new MemoryStream(imageBytes);
+                    string imageUrl = await _imageService.UploadImageAsync(stream, fileName, "Reviews");
 
                     var reviewImage = new ReviewImage
                     {
                         ReviewId = review.ReviewId,
-                        ImageUrl = $"/images/reviews/{fileName}",
+                        ImageUrl = imageUrl,
                         UploadedAt = DateTime.Now
                     };
                     _context.ReviewImages.Add(reviewImage);

@@ -31,11 +31,27 @@ public class ReviewApiClient
 
     public async Task<List<ReviewDto>> GetReviewsForDrinkAsync(int drinkId)
     {
-        return await _httpClient.GetFromJsonAsync<List<ReviewDto>>($"api/reviews/drink/{drinkId}") ?? new List<ReviewDto>();
+        var reviews = await _httpClient.GetFromJsonAsync<List<ReviewDto>>($"api/reviews/drink/{drinkId}") ?? new List<ReviewDto>();
+        foreach (var review in reviews)
+        {
+            if (review.ImageUrls != null)
+            {
+                review.ImageUrls = review.ImageUrls.Select(url => ImageUrlResolver.Resolve(url, _httpClient.BaseAddress?.ToString())).ToList();
+            }
+        }
+        return reviews;
     }
 
     public async Task<List<ReviewDto>> GetAllReviewsAsync()
     {
-        return await _httpClient.GetFromJsonAsync<List<ReviewDto>>("api/reviews") ?? new List<ReviewDto>();
+        var reviews = await _httpClient.GetFromJsonAsync<List<ReviewDto>>("api/reviews") ?? new List<ReviewDto>();
+        foreach (var review in reviews)
+        {
+            if (review.ImageUrls != null)
+            {
+                review.ImageUrls = review.ImageUrls.Select(url => ImageUrlResolver.Resolve(url, _httpClient.BaseAddress?.ToString())).ToList();
+            }
+        }
+        return reviews;
     }
 }

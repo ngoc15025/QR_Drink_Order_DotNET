@@ -53,7 +53,8 @@
                         </div>
                         <div class="col-md-6 mb-4">
                             <label class="form-label form-label-premium">Giá bán (VND) *</label>
-                            <InputNumber class="form-control form-control-premium" @bind-Value="Model.BasePrice" />
+                            <InputNumber class="form-control form-control-premium" placeholder="10000" @bind-Value="Model.BasePrice" />
+                            <div class="form-text mt-1" style="font-size: 0.85rem; color: #6c757d;"><i class="bi bi-info-circle me-1"></i>Ví dụ: 10000 (10,000 VNĐ)</div>
                             <ValidationMessage For="@(() => Model.BasePrice)" class="text-danger small mt-1" />
                         </div>
                     </div>
