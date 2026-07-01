@@ -33,6 +33,7 @@ public class SizesController : ControllerBase
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> AddSize([FromBody] SizeDto sizeDto)
     {
+        if (sizeDto.PriceOffset < 0) return BadRequest("Giá cộng thêm không được là số âm.");
         var size = new Size
         {
             Name = sizeDto.Name,
@@ -49,6 +50,7 @@ public class SizesController : ControllerBase
     public async Task<IActionResult> UpdateSize(int id, [FromBody] SizeDto sizeDto)
     {
         if (id != sizeDto.SizeId) return BadRequest();
+        if (sizeDto.PriceOffset < 0) return BadRequest("Giá cộng thêm không được là số âm.");
         var size = await _context.Sizes.FindAsync(id);
         if (size == null) return NotFound();
         

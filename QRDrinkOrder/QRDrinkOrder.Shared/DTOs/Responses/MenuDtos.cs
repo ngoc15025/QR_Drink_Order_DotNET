@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.Enums;
 
@@ -68,13 +69,23 @@ public class PromotionDto
 public class SizeDto
 {
     public int SizeId { get; set; }
+
+    [Required(ErrorMessage = "Tên Size là bắt buộc.")]
+    [StringLength(50, ErrorMessage = "Tên Size không được vượt quá 50 ký tự.")]
     public string Name { get; set; } = string.Empty;
+
+    [Range(0, 1000000000, ErrorMessage = "Giá cộng thêm không được là số âm.")]
     public decimal PriceOffset { get; set; }
 }
 
 public class ToppingDto
 {
     public int ToppingId { get; set; }
+
+    [Required(ErrorMessage = "Tên Topping là bắt buộc.")]
+    [StringLength(100, ErrorMessage = "Tên Topping không được vượt quá 100 ký tự.")]
     public string Name { get; set; } = string.Empty;
+
+    [Range(0, 1000000000, ErrorMessage = "Giá Topping không được là số âm.")]
     public decimal Price { get; set; }
 }

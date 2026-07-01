@@ -456,8 +456,17 @@ a:hover {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     max-height: 90vh;
     overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
     pointer-events: none;
     /* Block clicks when closed */
+}
+
+.customization-drawer::-webkit-scrollbar,
+.customer-theme *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .customization-drawer.open {
@@ -3803,6 +3812,123 @@ a:hover {
     border-radius: 24px;
     margin-bottom: 24px;
 }
+/* Suggested Pairings (TCH Style) */
+.pairing-section {
+    background-color: #f8f9fa;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    padding: 0.75rem 1.5rem 1rem 1.5rem;
+    border-top: 1px solid var(--tch-border);
+    border-bottom: 1px solid var(--tch-border);
+}
+
+.pairing-card {
+    background: #ffffff;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 220px;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.pairing-card:hover {
+    border-color: var(--tch-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(234, 128, 37, 0.12);
+}
+
+.btn-pairing-add {
+    background: var(--tch-orange);
+    color: #ffffff;
+    border: none;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 20px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.btn-pairing-add:hover {
+    background: #d6701c;
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+/* TCH Modal Layout Components */
+.tch-section-bar {
+    background-color: #f2f4f8;
+    color: #555555;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 8px 1.5rem;
+    margin: 16px -1.5rem 14px -1.5rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.tch-opt-btn {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    color: #333333;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.tch-opt-btn:hover {
+    border-color: var(--tch-orange);
+    color: var(--tch-orange);
+}
+
+.tch-opt-btn.active {
+    background: #fff7ed;
+    border-color: var(--tch-orange);
+    color: var(--tch-orange);
+    font-weight: 700;
+}
+
+/* Modal Stacking Animations & Banner */
+@keyframes stackPush {
+    0% { transform: translateX(35px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes stackPop {
+    0% { transform: translateX(-35px); opacity: 0; }
+    30% { transform: translateX(5px); opacity: 1; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+.anim-stack-push {
+    animation: stackPush 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.anim-stack-pop {
+    animation: stackPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tch-back-banner {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 1px dashed var(--tch-orange);
+    color: var(--tch-text-main);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(234, 128, 37, 0.1);
+}
+
+.tch-back-banner:hover {
+    background: #ffedd5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 128, 37, 0.18);
+}
+
 /* Utilities */
 .no-scrollbar::-webkit-scrollbar {
     display: none;

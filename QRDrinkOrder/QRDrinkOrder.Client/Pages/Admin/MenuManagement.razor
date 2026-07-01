@@ -38,6 +38,13 @@
                     Thêm Topping
                 </button>
             }
+            else if (activeTab == "sizes")
+            {
+                <button class="btn-admin-action btn-action-primary" @onclick="OpenCreateSizeModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/></svg>
+                    Thêm Size
+                </button>
+            }
         </div>
     </div>
 
@@ -52,6 +59,9 @@
             </li>
             <li class="nav-item">
                 <button class="nav-link @(activeTab == "toppings" ? "active" : "")" @onclick='() => activeTab = "toppings"'>Topping</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(activeTab == "sizes" ? "active" : "")" @onclick='() => activeTab = "sizes"'>Size</button>
             </li>
         </ul>
     </div>
@@ -76,6 +86,10 @@
         else if (activeTab == "toppings")
         {
             <ToppingListTable Toppings="toppings" OnEdit="OpenEditToppingModal" OnDelete="DeleteTopping" />
+        }
+        else if (activeTab == "sizes")
+        {
+            <SizeListTable Sizes="sizes" OnEdit="OpenEditSizeModal" OnDelete="DeleteSize" />
         }
     }
 </div>
@@ -107,6 +121,14 @@
                       OnSave="SaveTopping" />
 }
 
+@if (showSizeModal)
+{
+    <SizeFormModal Model="sizeModel" 
+                   IsSaving="isSaving" 
+                   OnClose="CloseModals" 
+                   OnSave="SaveSize" />
+}
+
 @code {
     private string activeTab = "drinks";
     private bool isLoading = true;
@@ -128,6 +150,10 @@
     private ToppingDto toppingModel = new();
     private List<ToppingDto> toppings = new();
 
+    private bool showSizeModal = false;
+    private SizeDto sizeModel = new();
+    private List<SizeDto> sizes = new();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -142,6 +168,7 @@
             categories = await MenuApi.GetCategoriesAsync("vi", true);
             drinks = await MenuApi.GetDrinksAsync("vi", null, true);
             toppings = await MenuApi.GetToppingsAsync();
+            sizes = await MenuApi.GetSizesAsync();
         }
         finally
         {
@@ -154,6 +181,7 @@
         showDrinkModal = false;
         showCategoryModal = false;
         showToppingModal = false;
+        showSizeModal = false;
     }
 
     private void OpenCreateDrinkModal()
@@ -368,6 +396,78 @@
             try
             {
                 bool success = await MenuApi.DeleteToppingAsync(toppingId);
+                if (success)
+                {
+                    await LoadData();
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Xóa thất bại!");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+            }
+        }
+    }
+
+    private void OpenCreateSizeModal()
+    {
+        sizeModel = new SizeDto();
+        showSizeModal = true;
+    }
+
+    private void OpenEditSizeModal(SizeDto size)
+    {
+        sizeModel = new SizeDto
+        {
+            SizeId = size.SizeId,
+            Name = size.Name,
+            PriceOffset = size.PriceOffset
+        };
+        showSizeModal = true;
+    }
+
+    private async Task SaveSize()
+    {
+        isSaving = true;
+        try
+        {
+            bool success;
+            if (sizeModel.SizeId == 0)
+                success = await MenuApi.CreateSizeAsync(sizeModel);
+            else
+                success = await MenuApi.UpdateSizeAsync(sizeModel.SizeId, sizeModel);
+
+            if (success)
+            {
+                CloseModals();
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Lưu thất bại!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteSize(int sizeId)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa Size này không?");
+        if (confirmed)
+        {
+            try
+            {
+                bool success = await MenuApi.DeleteSizeAsync(sizeId);
                 if (success)
                 {
                     await LoadData();

@@ -33,6 +33,7 @@ public class ToppingsController : ControllerBase
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> AddTopping([FromBody] ToppingDto toppingDto)
     {
+        if (toppingDto.Price < 0) return BadRequest("Giá Topping không được là số âm.");
         var topping = new Topping
         {
             Name = toppingDto.Name,
@@ -49,6 +50,7 @@ public class ToppingsController : ControllerBase
     public async Task<IActionResult> UpdateTopping(int id, [FromBody] ToppingDto toppingDto)
     {
         if (id != toppingDto.ToppingId) return BadRequest();
+        if (toppingDto.Price < 0) return BadRequest("Giá Topping không được là số âm.");
         var topping = await _context.Toppings.FindAsync(id);
         if (topping == null) return NotFound();
         

@@ -193,66 +193,104 @@ else
         @if (selectedDrink != null)
         {
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0">Thêm món mới</h5>
-                <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                <button type="button" class="btn btn-link text-dark p-0 border-0 d-flex align-items-center justify-content-start" style="width: 24px;" @onclick="CloseOrBackModal">
+                    @if (modalStack.Count > 0)
+                    {
+                        <i class="bi bi-arrow-left fs-5" style="color: var(--tch-orange);"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-lg fs-5"></i>
+                    }
+                </button>
+                <h6 class="fw-bold mb-0 mx-auto">Thêm vào giỏ</h6>
+                <div style="width: 24px;"></div>
             </div>
             
-            <div class="d-flex mb-4 align-items-center">
-                <img src="@(string.IsNullOrEmpty(selectedDrink.ImageUrl) ? "/images/placeholder.png" : selectedDrink.ImageUrl)" 
-                     class="rounded" style="width: 70px; height: 70px; object-fit: cover;" alt="@selectedDrink.DrinkName" onerror="this.onerror=null; this.src='/images/placeholder.png';">
-                <div class="ms-3">
-                    <h6 class="fw-bold mb-1" style="font-size: 1.1rem;">@selectedDrink.DrinkName</h6>
-                    <div class="fw-bold" style="font-size: 1.1rem; color: var(--tch-orange);">@selectedDrink.BasePrice.ToString("N0")đ</div>
+            <div class="@modalAnimClass" @key="selectedDrink?.DrinkId">
+                @if (modalStack.Count > 0)
+                {
+                    var parentDrink = modalStack.Peek().Drink;
+                    <div class="tch-back-banner mb-3 d-flex align-items-center justify-content-between p-2 rounded" @onclick="CloseOrBackModal" style="cursor: pointer;">
+                        <div class="d-flex align-items-center text-dark overflow-hidden me-2">
+                            <i class="bi bi-arrow-left-circle-fill fs-5 me-2" style="color: var(--tch-orange);"></i>
+                            <div class="text-truncate">
+                                <span class="small text-muted d-block" style="font-size: 0.75rem;">Đang chọn kèm cho món chính:</span>
+                                <strong class="text-dark text-truncate d-block" style="font-size: 0.85rem;">@parentDrink.DrinkName</strong>
+                            </div>
+                        </div>
+                        <span class="badge rounded-pill px-2 py-1 small flex-shrink-0" style="background-color: var(--tch-orange); color: white;">Quay lại <i class="bi bi-arrow-return-left"></i></span>
+                    </div>
+                }
+
+                <div class="d-flex mb-4 align-items-center">
+                    <img src="@(string.IsNullOrEmpty(selectedDrink.ImageUrl) ? "/images/placeholder.png" : selectedDrink.ImageUrl)" 
+                         class="rounded" style="width: 70px; height: 70px; object-fit: cover;" alt="@selectedDrink.DrinkName" onerror="this.onerror=null; this.src='/images/placeholder.png';">
+                    <div class="ms-3">
+                        <h6 class="fw-bold mb-1" style="font-size: 1.1rem;">@selectedDrink.DrinkName</h6>
+                        <div class="fw-bold" style="font-size: 1.1rem; color: var(--tch-orange);">@selectedDrink.BasePrice.ToString("N0")đ</div>
+                    </div>
                 </div>
-            </div>
 
-            <hr style="border-top: 1px solid var(--tch-border);" />
+                @if (!string.IsNullOrEmpty(selectedDrink.Description))
+                {
+                    <div class="text-secondary mb-3" style="font-size: 0.9rem; line-height: 1.5;">@selectedDrink.Description</div>
+                }
 
-            @if (!string.IsNullOrEmpty(selectedDrink.Description))
-            {
-                <div class="text-secondary mb-4" style="font-size: 0.9rem; line-height: 1.5;">@selectedDrink.Description</div>
-            }
+                @if (suggestedPairings.Any())
+                {
+                    <div class="pairing-section mb-3">
+                        <div class="text-secondary small fw-bold mb-2" style="letter-spacing: 0.05em;">GỢI Ý DÙNG KÈM</div>
+                        <div class="d-flex gap-2 overflow-auto no-scrollbar pb-1">
+                            @foreach (var item in suggestedPairings)
+                            {
+                                <div class="pairing-card" @onclick="() => OpenPairingModal(item)">
+                                    <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.png" : item.ImageUrl)" 
+                                         class="rounded-circle me-2" style="width: 44px; height: 44px; object-fit: cover;" 
+                                         alt="@item.DrinkName" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+                                    <div class="flex-grow-1 overflow-hidden me-1">
+                                        <div class="fw-bold text-truncate" style="font-size: 0.85rem; color: var(--tch-text-main);">@item.DrinkName</div>
+                                        <div class="text-orange fw-bold" style="font-size: 0.8rem;">@item.BasePrice.ToString("N0")đ</div>
+                                    </div>
+                                    <button type="button" class="btn-pairing-add" @onclick:stopPropagation="true" @onclick="() => OpenPairingModal(item)">Thêm &gt;</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">ĐỘ NGỌT</label>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn @(sweetness == 0 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 0">0%</button>
-                    <button class="btn @(sweetness == 30 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 30">30%</button>
-                    <button class="btn @(sweetness == 50 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 50">50%</button>
-                    <button class="btn @(sweetness == 70 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 70">70%</button>
-                    <button class="btn @(sweetness == 100 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => sweetness = 100">100%</button>
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">LƯỢNG ĐÁ</label>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn @(ice == 0 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => ice = 0">0%</button>
-                    <button class="btn @(ice == 50 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => ice = 50">50%</button>
-                    <button class="btn @(ice == 100 ? "btn-outline-primary active" : "btn-outline-secondary") flex-fill fw-bold rounded-pill" @onclick="() => ice = 100">100%</button>
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-uppercase text-secondary mb-3">Chọn Size</label>
-                <div class="d-flex flex-wrap gap-2">
+                <div class="tch-section-bar">Chọn 1 Loại Size</div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
                     @foreach (var size in sizes)
                     {
                         <button type="button" 
-                                class="btn btn-outline-primary size-btn @(selectedSize?.SizeId == size.SizeId ? "active" : "")" 
+                                class="tch-opt-btn @(selectedSize?.SizeId == size.SizeId ? "active" : "")" 
                                 @onclick="() => SelectSize(size)">
-                            <span class="d-block fw-bold">@size.Name</span>
-                            <span class="d-block small">@(size.PriceOffset > 0 ? $"+{size.PriceOffset.ToString("N0")}đ" : "Miễn phí")</span>
+                            <span class="d-block">@size.Name @(size.PriceOffset > 0 ? $"({size.PriceOffset.ToString("N0")}đ)" : "")</span>
                         </button>
                     }
                 </div>
-            </div>
 
-            @if (toppings.Any())
-            {
-                <div class="mb-4">
-                    <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">TOPPING</label>
-                    <div class="d-flex flex-column gap-2">
+                <div class="tch-section-bar">Lượng Đá</div>
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <button type="button" class="tch-opt-btn @(ice == 0 ? "active" : "")" @onclick="() => ice = 0">0%</button>
+                    <button type="button" class="tch-opt-btn @(ice == 50 ? "active" : "")" @onclick="() => ice = 50">50%</button>
+                    <button type="button" class="tch-opt-btn @(ice == 100 ? "active" : "")" @onclick="() => ice = 100">100%</button>
+                </div>
+
+                <div class="tch-section-bar">Độ Ngọt</div>
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <button type="button" class="tch-opt-btn @(sweetness == 0 ? "active" : "")" @onclick="() => sweetness = 0">0%</button>
+                    <button type="button" class="tch-opt-btn @(sweetness == 30 ? "active" : "")" @onclick="() => sweetness = 30">30%</button>
+                    <button type="button" class="tch-opt-btn @(sweetness == 50 ? "active" : "")" @onclick="() => sweetness = 50">50%</button>
+                    <button type="button" class="tch-opt-btn @(sweetness == 70 ? "active" : "")" @onclick="() => sweetness = 70">70%</button>
+                    <button type="button" class="tch-opt-btn @(sweetness == 100 ? "active" : "")" @onclick="() => sweetness = 100">100%</button>
+                </div>
+
+                @if (toppings.Any())
+                {
+                    <div class="tch-section-bar">Topping</div>
+                    <div class="d-flex flex-column gap-2 mb-3">
                         @foreach (var topping in toppings)
                         {
                             <div class="form-check d-flex align-items-center bg-light rounded px-3 py-2 border @(selectedToppings.Any(t => t.ToppingId == topping.ToppingId) ? "border-primary" : "border-0")" 
@@ -263,21 +301,21 @@ else
                             </div>
                         }
                     </div>
-                </div>
-            }
+                }
 
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-secondary" style="letter-spacing: 0.05em;">YÊU CẦU KHÁC</label>
-                <input type="text" class="form-control bg-light border-0 py-2 rounded-pill px-3" placeholder="Ghi chú thêm cho quán..." @bind="note" />
+                <div class="tch-section-bar">Yêu Cầu Khác</div>
+                <div class="mb-4">
+                    <input type="text" class="form-control bg-light border-0 py-2 rounded-pill px-3" placeholder="Ghi chú thêm cho quán..." @bind="note" />
+                </div>
             </div>
 
             <div class="d-flex align-items-center mt-3 pt-3" style="border-top: 1px solid var(--tch-border);">
                 <div class="d-flex align-items-center me-3 bg-light rounded-pill px-2 py-1">
-                    <button class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="DecreaseQuantity">-</button>
+                    <button type="button" class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="DecreaseQuantity">-</button>
                     <span class="px-3 fw-bold fs-5">@quantity</span>
-                    <button class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="IncreaseQuantity">+</button>
+                    <button type="button" class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="IncreaseQuantity">-</button>
                 </div>
-                <button class="btn btn-primary flex-grow-1 py-3 fw-bold fs-6" style="border-radius: 24px;" @onclick="AddToCart">
+                <button type="button" class="btn btn-primary flex-grow-1 py-3 fw-bold fs-6" style="border-radius: 24px;" @onclick="AddToCart">
                     Thêm - @((GetUnitPrice() * quantity).ToString("N0"))đ
                 </button>
             </div>
@@ -311,10 +349,25 @@ else
 
     private bool isModalOpen = false;
     private DrinkDto? selectedDrink;
+    private List<DrinkDto> suggestedPairings = new();
     private byte sweetness = 100;
     private byte ice = 100;
     private int quantity = 1;
     private string note = "";
+    private class DrinkModalState
+    {
+        public DrinkDto Drink { get; set; } = default!;
+        public byte Sweetness { get; set; }
+        public byte Ice { get; set; }
+        public int Quantity { get; set; }
+        public string Note { get; set; } = "";
+        public SizeDto? SelectedSize { get; set; }
+        public List<ToppingDto> SelectedToppings { get; set; } = new();
+        public List<DrinkDto> SuggestedPairings { get; set; } = new();
+    }
+    private Stack<DrinkModalState> modalStack = new();
+    private string modalAnimClass = "";
+
     private SizeDto? selectedSize;
     private List<ToppingDto> selectedToppings = new();
 
@@ -433,10 +486,16 @@ else
         }
     }
 
-    private void OpenDrinkModal(DrinkDto drink)
+    private void OpenDrinkModal(DrinkDto drink, bool isFromPairing = false)
     {
         if (!drink.IsActive) return; 
         
+        if (!isFromPairing)
+        {
+            modalStack.Clear();
+            modalAnimClass = "";
+        }
+
         selectedDrink = drink;
         sweetness = 100;
         ice = 100;
@@ -444,12 +503,93 @@ else
         note = "";
         selectedSize = sizes.FirstOrDefault();
         selectedToppings.Clear();
+        UpdateSmartPairings(drink);
         isModalOpen = true;
+    }
+
+    private void OpenPairingModal(DrinkDto pairingItem)
+    {
+        if (selectedDrink != null)
+        {
+            modalStack.Push(new DrinkModalState
+            {
+                Drink = selectedDrink,
+                Sweetness = sweetness,
+                Ice = ice,
+                Quantity = quantity,
+                Note = note,
+                SelectedSize = selectedSize,
+                SelectedToppings = new List<ToppingDto>(selectedToppings),
+                SuggestedPairings = new List<DrinkDto>(suggestedPairings)
+            });
+        }
+        modalAnimClass = "anim-stack-push";
+        OpenDrinkModal(pairingItem, true);
+    }
+
+    private void CloseOrBackModal()
+    {
+        if (modalStack.Count > 0)
+        {
+            var parent = modalStack.Pop();
+            selectedDrink = parent.Drink;
+            sweetness = parent.Sweetness;
+            ice = parent.Ice;
+            quantity = parent.Quantity;
+            note = parent.Note;
+            selectedSize = parent.SelectedSize;
+            selectedToppings = parent.SelectedToppings;
+            suggestedPairings = parent.SuggestedPairings;
+            modalAnimClass = "anim-stack-pop";
+        }
+        else
+        {
+            CloseModal();
+        }
+    }
+
+    private void UpdateSmartPairings(DrinkDto currentDrink)
+    {
+        if (allDrinks == null || currentDrink == null)
+        {
+            suggestedPairings.Clear();
+            return;
+        }
+
+        bool isFoodOrOther = currentDrink.TemperatureType == QRDrinkOrder.Shared.Enums.DrinkTemperature.Other;
+
+        if (!isFoodOrOther)
+        {
+            var pairings = allDrinks
+                .Where(d => d.TemperatureType == QRDrinkOrder.Shared.Enums.DrinkTemperature.Other && d.DrinkId != currentDrink.DrinkId && d.IsActive)
+                .OrderBy(x => Guid.NewGuid())
+                .Take(3)
+                .ToList();
+
+            if (!pairings.Any())
+            {
+                pairings = allDrinks
+                    .Where(d => d.CategoryId != currentDrink.CategoryId && d.DrinkId != currentDrink.DrinkId && d.IsActive)
+                    .OrderBy(x => Guid.NewGuid())
+                    .Take(3)
+                    .ToList();
+            }
+            suggestedPairings = pairings;
+        }
+        else
+        {
+            suggestedPairings = allDrinks
+                .Where(d => d.TemperatureType != QRDrinkOrder.Shared.Enums.DrinkTemperature.Other && d.DrinkId != currentDrink.DrinkId && d.IsActive)
+                .OrderBy(x => Guid.NewGuid())
+                .Take(3)
+                .ToList();
+        }
     }
 
     private void CloseModal()
     {
         isModalOpen = false;
+        modalStack.Clear();
     }
 
     private void IncreaseQuantity() => quantity++;
@@ -466,7 +606,24 @@ else
             try {
                 await JSRuntime.InvokeVoidAsync("animateAddToCart", selectedDrink.ImageUrl, e.ClientX, e.ClientY);
             } catch (Exception ex) { Logger.LogWarning(ex, "Lỗi khi gọi animateAddToCart"); }
-            CloseModal();
+            
+            if (modalStack.Count > 0)
+            {
+                var parent = modalStack.Pop();
+                selectedDrink = parent.Drink;
+                sweetness = parent.Sweetness;
+                ice = parent.Ice;
+                quantity = parent.Quantity;
+                note = parent.Note;
+                selectedSize = parent.SelectedSize;
+                selectedToppings = parent.SelectedToppings;
+                suggestedPairings = parent.SuggestedPairings;
+                modalAnimClass = "anim-stack-pop";
+            }
+            else
+            {
+                CloseModal();
+            }
         }
     }
 

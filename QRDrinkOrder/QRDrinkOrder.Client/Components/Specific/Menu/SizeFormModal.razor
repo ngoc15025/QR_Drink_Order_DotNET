@@ -1,0 +1,54 @@
+@using QRDrinkOrder.Shared.DTOs.Responses
+
+<div class="modal-backdrop fade show"></div>
+<div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">@(Model.SizeId == 0 ? "Thêm Size Mới" : "Sửa Size")</h5>
+                <button type="button" class="btn-close" @onclick="OnClose"></button>
+            </div>
+            
+            <EditForm Model="Model" OnValidSubmit="OnSave">
+                <DataAnnotationsValidator />
+                
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Tên Size</label>
+                        <InputText class="form-control" @bind-Value="Model.Name" placeholder="Ví dụ: Size S, Size M, Size L" />
+                        <ValidationMessage For="@(() => Model.Name)" class="text-danger small mt-1" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Giá cộng thêm (VNĐ)</label>
+                        <InputNumber class="form-control" @bind-Value="Model.PriceOffset" placeholder="0" min="0" />
+                        <div class="form-text mt-1" style="font-size: 0.85rem; color: #6c757d;"><i class="bi bi-info-circle me-1"></i>Ví dụ: 0 cho Size S (mặc định), 6000 cho Size M, 10000 cho Size L</div>
+                        <ValidationMessage For="@(() => Model.PriceOffset)" class="text-danger small mt-1" />
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" @onclick="OnClose" disabled="@IsSaving">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@IsSaving">
+                        @if (IsSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Đang lưu...</span>
+                        }
+                        else
+                        {
+                            <span>Lưu thay đổi</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SizeDto Model { get; set; } = new();
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+}
