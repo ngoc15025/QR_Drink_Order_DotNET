@@ -9,4 +9,169 @@
   <data name="Menu" xml:space="preserve">
     <value>Menu</value>
   </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="OrderLookup" xml:space="preserve">
+    <value>Order Lookup</value>
+  </data>
+  <data name="EnterPhonePlaceholder" xml:space="preserve">
+    <value>Enter phone number...</value>
+  </data>
+  <data name="SearchBtn" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="CustomerTab" xml:space="preserve">
+    <value>Customer</value>
+  </data>
+  <data name="StaffTab" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="TrackNowBtn" xml:space="preserve">
+    <value>Track Order</value>
+  </data>
+  <data name="StaffLogin" xml:space="preserve">
+    <value>Staff Login</value>
+  </data>
+  <data name="LoginBtn" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="RecentOrders" xml:space="preserve">
+    <value>Recent Orders</value>
+  </data>
+  <data name="ViewDetailsTrack" xml:space="preserve">
+    <value>View Details &amp; Track</value>
+  </data>
+  <data name="NoOrdersFound" xml:space="preserve">
+    <value>No orders found!</value>
+  </data>
+  <data name="MemberCustomer" xml:space="preserve">
+    <value>Member Customer</value>
+  </data>
+  <data name="AccumulatedPoints" xml:space="preserve">
+    <value>Points Balance</value>
+  </data>
+  <data name="OrderLookupDesc" xml:space="preserve">
+    <value>Enter your phone number to check your order history and status.</value>
+  </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="ProcessingText" xml:space="preserve">
+    <value>Processing...</value>
+  </data>
+  <data name="OrderCodeLabel" xml:space="preserve">
+    <value>Order ID:</value>
+  </data>
+  <data name="StatusPending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="StatusPreparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="StatusCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="StatusCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="ConfirmOrderTitle" xml:space="preserve">
+    <value>Order Confirmation</value>
+  </data>
+  <data name="EmptyCartTitle" xml:space="preserve">
+    <value>Your cart is empty</value>
+  </data>
+  <data name="EmptyCartSub" xml:space="preserve">
+    <value>Add some delicious drinks!</value>
+  </data>
+  <data name="ContinueShoppingBtn" xml:space="preserve">
+    <value>Continue Shopping</value>
+  </data>
+  <data name="DeliveryOptionsTitle" xml:space="preserve">
+    <value>Pickup Options</value>
+  </data>
+  <data name="TakeawayBtn" xml:space="preserve">
+    <value>Takeaway</value>
+  </data>
+  <data name="DineInBtn" xml:space="preserve">
+    <value>Dine-In</value>
+  </data>
+  <data name="TableNumberLabel" xml:space="preserve">
+    <value>Table Number</value>
+  </data>
+  <data name="PhoneLabel" xml:space="preserve">
+    <value>Phone Number</value>
+  </data>
+  <data name="RewardPointsTitle" xml:space="preserve">
+    <value>Reward Points</value>
+  </data>
+  <data name="UsePointsLabel" xml:space="preserve">
+    <value>Use Points</value>
+  </data>
+  <data name="EmployeeBenefitTitle" xml:space="preserve">
+    <value>Staff Discount</value>
+  </data>
+  <data name="NoteLabel" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="SelectedItemsTitle" xml:space="preserve">
+    <value>Selected Items</value>
+  </data>
+  <data name="TotalTitle" xml:space="preserve">
+    <value>Order Summary</value>
+  </data>
+  <data name="ApplyBtn" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="RemoveBtn" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="SubtotalLabel" xml:space="preserve">
+    <value>Subtotal</value>
+  </data>
+  <data name="DiscountLabel" xml:space="preserve">
+    <value>Discount</value>
+  </data>
+  <data name="FinalAmountLabel" xml:space="preserve">
+    <value>Total Amount</value>
+  </data>
+  <data name="PaymentMethodTitle" xml:space="preserve">
+    <value>Payment Method</value>
+  </data>
+  <data name="QRBankTransfer" xml:space="preserve">
+    <value>QR Bank Transfer</value>
+  </data>
+  <data name="CashPayment" xml:space="preserve">
+    <value>Cash</value>
+  </data>
+  <data name="OrderingText" xml:space="preserve">
+    <value>Placing order...</value>
+  </data>
+  <data name="PlaceOrderBtn" xml:space="preserve">
+    <value>Place Order</value>
+  </data>
+  <data name="SizeSectionTitle" xml:space="preserve">
+    <value>Choose Size</value>
+  </data>
+  <data name="IceSectionTitle" xml:space="preserve">
+    <value>Ice Level</value>
+  </data>
+  <data name="SweetnessSectionTitle" xml:space="preserve">
+    <value>Sweetness Level</value>
+  </data>
+  <data name="ToppingSectionTitle" xml:space="preserve">
+    <value>Toppings</value>
+  </data>
+  <data name="NoteSectionTitle" xml:space="preserve">
+    <value>Special Instructions</value>
+  </data>
+  <data name="DrinkNotePlaceholder" xml:space="preserve">
+    <value>Add a note...</value>
+  </data>
+  <data name="AddBtn" xml:space="preserve">
+    <value>Add</value>
+  </data>
 </root>

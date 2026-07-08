@@ -9,4 +9,169 @@
   <data name="Menu" xml:space="preserve">
     <value>Thực đơn</value>
   </data>
+  <data name="Home" xml:space="preserve">
+    <value>Trang chủ</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Tài khoản</value>
+  </data>
+  <data name="OrderLookup" xml:space="preserve">
+    <value>Tra cứu đơn hàng</value>
+  </data>
+  <data name="EnterPhonePlaceholder" xml:space="preserve">
+    <value>Nhập số điện thoại...</value>
+  </data>
+  <data name="SearchBtn" xml:space="preserve">
+    <value>Tìm</value>
+  </data>
+  <data name="CustomerTab" xml:space="preserve">
+    <value>Khách hàng</value>
+  </data>
+  <data name="StaffTab" xml:space="preserve">
+    <value>Nhân viên</value>
+  </data>
+  <data name="TrackNowBtn" xml:space="preserve">
+    <value>Tra cứu ngay</value>
+  </data>
+  <data name="StaffLogin" xml:space="preserve">
+    <value>Đăng nhập Nội bộ</value>
+  </data>
+  <data name="LoginBtn" xml:space="preserve">
+    <value>Đăng nhập</value>
+  </data>
+  <data name="RecentOrders" xml:space="preserve">
+    <value>Đơn hàng gần đây</value>
+  </data>
+  <data name="ViewDetailsTrack" xml:space="preserve">
+    <value>Xem chi tiết &amp; Theo dõi</value>
+  </data>
+  <data name="NoOrdersFound" xml:space="preserve">
+    <value>Không tìm thấy đơn hàng nào!</value>
+  </data>
+  <data name="MemberCustomer" xml:space="preserve">
+    <value>Khách hàng thành viên</value>
+  </data>
+  <data name="AccumulatedPoints" xml:space="preserve">
+    <value>Điểm tích lũy</value>
+  </data>
+  <data name="OrderLookupDesc" xml:space="preserve">
+    <value>Nhập số điện thoại để xem lịch sử và trạng thái đơn hàng của bạn.</value>
+  </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Mật khẩu</value>
+  </data>
+  <data name="ProcessingText" xml:space="preserve">
+    <value>Đang xử lý...</value>
+  </data>
+  <data name="OrderCodeLabel" xml:space="preserve">
+    <value>Mã đơn:</value>
+  </data>
+  <data name="StatusPending" xml:space="preserve">
+    <value>Chờ xử lý</value>
+  </data>
+  <data name="StatusPreparing" xml:space="preserve">
+    <value>Đang pha chế</value>
+  </data>
+  <data name="StatusCompleted" xml:space="preserve">
+    <value>Đã hoàn thành</value>
+  </data>
+  <data name="StatusCancelled" xml:space="preserve">
+    <value>Đã hủy</value>
+  </data>
+  <data name="ConfirmOrderTitle" xml:space="preserve">
+    <value>Xác nhận đơn hàng</value>
+  </data>
+  <data name="EmptyCartTitle" xml:space="preserve">
+    <value>Giỏ hàng của bạn đang trống</value>
+  </data>
+  <data name="EmptyCartSub" xml:space="preserve">
+    <value>Hãy chọn thêm các món ngon nhé!</value>
+  </data>
+  <data name="ContinueShoppingBtn" xml:space="preserve">
+    <value>Tiếp tục chọn món</value>
+  </data>
+  <data name="DeliveryOptionsTitle" xml:space="preserve">
+    <value>Tùy chọn nhận hàng</value>
+  </data>
+  <data name="TakeawayBtn" xml:space="preserve">
+    <value>Mang đi</value>
+  </data>
+  <data name="DineInBtn" xml:space="preserve">
+    <value>Uống tại bàn</value>
+  </data>
+  <data name="TableNumberLabel" xml:space="preserve">
+    <value>Số bàn đang ngồi</value>
+  </data>
+  <data name="PhoneLabel" xml:space="preserve">
+    <value>Số điện thoại</value>
+  </data>
+  <data name="RewardPointsTitle" xml:space="preserve">
+    <value>Tích điểm</value>
+  </data>
+  <data name="UsePointsLabel" xml:space="preserve">
+    <value>Dùng điểm</value>
+  </data>
+  <data name="EmployeeBenefitTitle" xml:space="preserve">
+    <value>Ưu đãi Nhân viên</value>
+  </data>
+  <data name="NoteLabel" xml:space="preserve">
+    <value>Ghi chú</value>
+  </data>
+  <data name="SelectedItemsTitle" xml:space="preserve">
+    <value>Sản phẩm đã chọn</value>
+  </data>
+  <data name="TotalTitle" xml:space="preserve">
+    <value>Tổng cộng</value>
+  </data>
+  <data name="ApplyBtn" xml:space="preserve">
+    <value>Áp dụng</value>
+  </data>
+  <data name="RemoveBtn" xml:space="preserve">
+    <value>Bỏ</value>
+  </data>
+  <data name="SubtotalLabel" xml:space="preserve">
+    <value>Tạm tính</value>
+  </data>
+  <data name="DiscountLabel" xml:space="preserve">
+    <value>Khuyến mãi</value>
+  </data>
+  <data name="FinalAmountLabel" xml:space="preserve">
+    <value>Thành tiền</value>
+  </data>
+  <data name="PaymentMethodTitle" xml:space="preserve">
+    <value>Phương thức thanh toán</value>
+  </data>
+  <data name="QRBankTransfer" xml:space="preserve">
+    <value>Chuyển khoản QR</value>
+  </data>
+  <data name="CashPayment" xml:space="preserve">
+    <value>Tiền mặt</value>
+  </data>
+  <data name="OrderingText" xml:space="preserve">
+    <value>Đang đặt...</value>
+  </data>
+  <data name="PlaceOrderBtn" xml:space="preserve">
+    <value>Đặt hàng</value>
+  </data>
+  <data name="SizeSectionTitle" xml:space="preserve">
+    <value>Chọn 1 Loại Size</value>
+  </data>
+  <data name="IceSectionTitle" xml:space="preserve">
+    <value>Lượng Đá</value>
+  </data>
+  <data name="SweetnessSectionTitle" xml:space="preserve">
+    <value>Độ Ngọt</value>
+  </data>
+  <data name="ToppingSectionTitle" xml:space="preserve">
+    <value>Topping</value>
+  </data>
+  <data name="NoteSectionTitle" xml:space="preserve">
+    <value>Yêu Cầu Khác</value>
+  </data>
+  <data name="DrinkNotePlaceholder" xml:space="preserve">
+    <value>Ghi chú thêm cho quán...</value>
+  </data>
+  <data name="AddBtn" xml:space="preserve">
+    <value>Thêm</value>
+  </data>
 </root>

@@ -1,0 +1,152 @@
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.75); z-index: 1060;">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden; background: #212529; color: #fff;">
+                <!-- Header -->
+                <div class="modal-header border-bottom border-secondary px-4 py-3">
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0">
+                            <i class="bi bi-crop text-warning me-2"></i>Cắt & Căn Chỉnh Ảnh Banner (Chuẩn 16:9)
+                        </h5>
+                        <small class="text-white-50">Khung màu cam hiển thị chính xác vùng ảnh sẽ xuất hiện trên Trang chủ Khách hàng</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body p-4 text-center">
+                    @if (isLoadingCanvas)
+                    {
+                        <div class="py-5">
+                            <div class="spinner-border text-warning" role="status"></div>
+                            <div class="mt-2 text-white-50">Đang khởi tạo khung cắt ảnh...</div>
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-center mb-3">
+                        <canvas id="bannerCropCanvas" width="640" height="360"
+                                class="shadow"
+                                style="width: 100%; max-width: 640px; aspect-ratio: 16/9; border-radius: 12px; touch-action: none; background: #111;">
+                        </canvas>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="bg-dark p-3 rounded-3 border border-secondary mx-auto" style="max-width: 640px;">
+                        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                <i class="bi bi-zoom-out text-white-50"></i>
+                                <input type="range" class="form-range" min="100" max="300" step="5"
+                                       value="@zoomPercent" @oninput="OnZoomInput" />
+                                <i class="bi bi-zoom-in text-white-50"></i>
+                                <span class="badge bg-secondary ms-1">@zoomPercent%</span>
+                            </div>
+
+                            <div>
+                                <button type="button" class="btn btn-outline-light btn-sm" @onclick="ResetCenter">
+                                    <i class="bi bi-arrows-move me-1"></i> Căn giữa lại
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-white-50 small mt-2 text-start">
+                            <i class="bi bi-info-circle me-1"></i> Mẹo: Dùng chuột kéo di chuyển ảnh hoặc cuộn chuột để phóng to/thu nhỏ nhanh.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer border-top border-secondary px-4 py-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary text-white" @onclick="CloseModal">
+                        Hủy bỏ
+                    </button>
+                    <button type="button" class="btn btn-warning fw-bold px-4" @onclick="ConfirmCrop" disabled="@isExporting">
+                        @if (isExporting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Đang xuất ảnh...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check2-circle me-1"></i>
+                            <span>Áp dụng & Tải lên (16:9)</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string? ImageSrc { get; set; }
+    [Parameter] public EventCallback<string> OnCropCompleted { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool isLoadingCanvas = true;
+    private bool isExporting = false;
+    private int zoomPercent = 100;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !string.IsNullOrEmpty(ImageSrc))
+        {
+            isLoadingCanvas = true;
+            zoomPercent = 100;
+            // Delay slightly so Blazor renders canvas element first
+            await Task.Delay(100);
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("bannerCropper.init", "bannerCropCanvas", ImageSrc);
+                isLoadingCanvas = false;
+                StateHasChanged();
+            }
+            catch
+            {
+                isLoadingCanvas = false;
+            }
+        }
+    }
+
+    private async Task OnZoomInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int val))
+        {
+            zoomPercent = val;
+            await JSRuntime.InvokeVoidAsync("bannerCropper.setZoom", zoomPercent);
+        }
+    }
+
+    private async Task ResetCenter()
+    {
+        zoomPercent = 100;
+        await JSRuntime.InvokeVoidAsync("bannerCropper.resetCenter");
+    }
+
+    private async Task ConfirmCrop()
+    {
+        try
+        {
+            isExporting = true;
+            StateHasChanged();
+
+            // Export cropped image as 1280x720 (Standard 16:9 HD banner resolution)
+            var croppedBase64 = await JSRuntime.InvokeAsync<string>("bannerCropper.exportCroppedImage", 1280, 720);
+            if (!string.IsNullOrEmpty(croppedBase64))
+            {
+                await OnCropCompleted.InvokeAsync(croppedBase64);
+            }
+        }
+        finally
+        {
+            isExporting = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

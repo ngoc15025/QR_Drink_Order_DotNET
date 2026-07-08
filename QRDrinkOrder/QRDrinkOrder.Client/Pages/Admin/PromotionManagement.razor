@@ -2,6 +2,7 @@
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Client.Services
+@using QRDrinkOrder.Client.Components.Specific.Admin
 @using System.Net.Http.Headers
 @inject MenuApiClient MenuApi
 @inject CouponApiClient CouponApi
@@ -114,9 +115,12 @@
                             
                             @if (!string.IsNullOrEmpty(promotionModel.ImageUrl))
                             {
-                                <div class="mb-3 border rounded overflow-hidden" style="height: 150px; background-color: #f8f9fa;">
+                                <div class="mb-2 border rounded overflow-hidden shadow-sm" style="aspect-ratio: 16/9; width: 100%; background-color: #f8f9fa;">
                                     <img src="@promotionModel.ImageUrl" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://placehold.co/600x400?text=No+Image';" />
                                 </div>
+                                <button type="button" class="btn btn-outline-warning btn-sm w-100 mb-3 fw-bold" @onclick="ReopenCropper">
+                                    <i class="bi bi-crop me-1"></i> Cắt / Căn chỉnh lại khung ảnh (16:9)
+                                </button>
                             }
 
                             <div class="mb-3">
@@ -198,11 +202,18 @@
     </div>
 </div>
 
+<BannerCropperModal IsOpen="isCropperOpen"
+                    ImageSrc="@tempRawImageSrc"
+                    OnCropCompleted="HandleCroppedImage"
+                    OnClose="() => isCropperOpen = false" />
+
 @code {
     private bool isLoading = true;
     private bool isModalOpen = false;
     private bool isSaving = false;
     private bool isUploadingImage = false;
+    private bool isCropperOpen = false;
+    private string? tempRawImageSrc = null;
     private int? editingPromotionId = null;
     private string activeTab = "vi";
 
@@ -284,36 +295,71 @@
         {
             try
             {
-                isUploadingImage = true;
-
-                // Max size: 5MB
-                var maxAllowedSize = 5 * 1024 * 1024;
+                var maxAllowedSize = 10 * 1024 * 1024; // 10MB
                 using var stream = file.OpenReadStream(maxAllowedSize);
-                
-                var content = new MultipartFormDataContent();
-                var fileContent = new StreamContent(stream);
-                fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
-                content.Add(fileContent, "file", file.Name);
-
-                var imageUrl = await MenuApi.UploadImageAsync(content, "Banner");
-                
-                if (!string.IsNullOrEmpty(imageUrl))
-                {
-                    promotionModel.ImageUrl = imageUrl;
-                }
-                else
-                {
-                    await JSRuntime.InvokeVoidAsync("alert", "Không thể tải lên ảnh!");
-                }
+                using var ms = new System.IO.MemoryStream();
+                await stream.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                var base64 = Convert.ToBase64String(bytes);
+                tempRawImageSrc = $"data:{file.ContentType};base64,{base64}";
+                isCropperOpen = true;
+                StateHasChanged();
             }
             catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Lỗi tải ảnh: {ex.Message}");
+                await JSRuntime.InvokeVoidAsync("alert", $"Lỗi đọc ảnh: {ex.Message}");
             }
-            finally
+        }
+    }
+
+    private void ReopenCropper()
+    {
+        if (!string.IsNullOrEmpty(promotionModel.ImageUrl))
+        {
+            tempRawImageSrc = promotionModel.ImageUrl;
+            isCropperOpen = true;
+        }
+    }
+
+    private async Task HandleCroppedImage(string croppedBase64)
+    {
+        isCropperOpen = false;
+        try
+        {
+            isUploadingImage = true;
+            StateHasChanged();
+
+            var base64Data = croppedBase64;
+            var commaIndex = croppedBase64.IndexOf(',');
+            if (commaIndex >= 0)
             {
-                isUploadingImage = false;
+                base64Data = croppedBase64.Substring(commaIndex + 1);
             }
+
+            var bytes = Convert.FromBase64String(base64Data);
+            var content = new MultipartFormDataContent();
+            var fileContent = new ByteArrayContent(bytes);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+            content.Add(fileContent, "file", $"banner_{DateTime.Now.Ticks}.jpg");
+
+            var imageUrl = await MenuApi.UploadImageAsync(content, "Banner");
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                promotionModel.ImageUrl = imageUrl;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Không thể tải lên ảnh đã crop!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi tải ảnh sau khi crop: {ex.Message}");
+        }
+        finally
+        {
+            isUploadingImage = false;
+            StateHasChanged();
         }
     }
 

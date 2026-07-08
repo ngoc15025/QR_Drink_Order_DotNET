@@ -3,11 +3,12 @@
 @inject QRDrinkOrder.Client.Services.LocalStorageService LocalStorage
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
+@inject Microsoft.Extensions.Localization.IStringLocalizer<QRDrinkOrder.Client.SharedResource> Loc
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Client.Services
 @using System.Security.Claims
 
-<PageTitle>Tài khoản - Ngoc UwU Coffee</PageTitle>
+<PageTitle>@Loc["Account"] - Ngoc UwU Coffee</PageTitle>
 
 <AuthorizeView Context="authContext">
     <Authorized>
@@ -42,11 +43,11 @@
         <div class="order-type-tabs mb-4 bg-white rounded overflow-hidden d-flex" style="border: 1px solid #f0f0f0;">
             <button class="order-type-tab @(activeTab == "customer" ? "active" : "") border-0 flex-fill py-3" 
                     @onclick='() => activeTab = "customer"'>
-                Khách hàng
+                @Loc["CustomerTab"]
             </button>
             <button class="order-type-tab @(activeTab == "staff" ? "active" : "") border-0 flex-fill py-3" 
                     @onclick='() => activeTab = "staff"'>
-                Nhân viên
+                @Loc["StaffTab"]
             </button>
         </div>
 
@@ -55,20 +56,20 @@
             <div class="bg-white p-4 rounded" style="border: 1px solid #f0f0f0;">
                 <div class="text-center mb-4">
                     <img src="/images/placeholder.png" alt="Search Order" width="120" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
-                    <h5 class="fw-bold mt-3">Tra cứu đơn hàng</h5>
-                    <p class="text-secondary small">Nhập số điện thoại để xem lịch sử và trạng thái đơn hàng của bạn.</p>
+                    <h5 class="fw-bold mt-3">@Loc["OrderLookup"]</h5>
+                    <p class="text-secondary small">@Loc["OrderLookupDesc"]</p>
                 </div>
                 <div class="mb-3">
-                    <input type="tel" class="form-control py-2" placeholder="Nhập số điện thoại..." @bind="customerPhone" @onkeyup="HandleKeyUp" />
+                    <input type="tel" class="form-control py-2" placeholder="@Loc["EnterPhonePlaceholder"]" @bind="customerPhone" @onkeyup="HandleKeyUp" />
                 </div>
-                <button class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 24px;" @onclick="SearchOrder">Tra cứu ngay</button>
+                <button class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 24px;" @onclick="SearchOrder">@Loc["TrackNowBtn"]</button>
             </div>
         }
         else
         {
             <div class="bg-white p-4 rounded" style="border: 1px solid #f0f0f0;">
                 <div class="text-center mb-4">
-                    <h5 class="fw-bold text-dark">Đăng nhập Nội bộ</h5>
+                    <h5 class="fw-bold text-dark">@Loc["StaffLogin"]</h5>
                 </div>
                 
                 @if (!string.IsNullOrEmpty(errorMessage))
@@ -84,18 +85,18 @@
                         <ValidationMessage For="@(() => loginModel.Email)" class="text-danger small" />
                     </div>
                     <div class="mb-4">
-                        <label class="form-label fw-bold small text-dark">Mật khẩu</label>
+                        <label class="form-label fw-bold small text-dark">@Loc["PasswordLabel"]</label>
                         <InputText type="password" class="form-control py-2" @bind-Value="loginModel.Password" placeholder="••••••••" />
                         <ValidationMessage For="@(() => loginModel.Password)" class="text-danger small" />
                     </div>
                     <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 24px;" disabled="@isLoggingIn">
                         @if (isLoggingIn)
                         {
-                            <span class="spinner-border spinner-border-sm me-2"></span> <span>Đang xử lý...</span>
+                            <span class="spinner-border spinner-border-sm me-2"></span> <span>@Loc["ProcessingText"]</span>
                         }
                         else
                         {
-                            <span>Đăng nhập</span>
+                            <span>@Loc["LoginBtn"]</span>
                         }
                     </button>
                 </EditForm>
