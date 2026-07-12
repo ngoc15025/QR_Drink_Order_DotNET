@@ -9,7 +9,7 @@ public interface IOrderService
     Task<List<OrderDto>> GetActiveOrdersAsync();
     Task<List<OrderDto>> GetOrderHistoryByPhoneAsync(string phone);
     Task<OrderDto?> GetOrderByIdAsync(int orderId);
-    Task<bool> UpdateOrderStatusAsync(int orderId, byte status, int? employeeId = null);
+    Task<bool> UpdateOrderStatusAsync(int orderId, byte status, int? employeeId = null, string? cancelReason = null);
     Task<bool> CancelOrderAsync(int orderId, Guid sessionId);
     Task<bool> UpdatePaymentMethodAsync(int orderId, Guid sessionId, byte paymentMethod);
     Task<List<OrderDto>> GetAllOrdersAsync(DateTime? startDate = null, DateTime? endDate = null);

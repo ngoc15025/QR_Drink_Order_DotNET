@@ -91,6 +91,12 @@ public class MenuApiClient
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> ToggleDrinkStatusAsync(int id)
+    {
+        var response = await _httpClient.PutAsync($"api/menu/drinks/{id}/toggle-status", null);
+        return response.IsSuccessStatusCode;
+    }
+
     public async Task<bool> DeleteDrinkAsync(int id)
     {
         var response = await _httpClient.DeleteAsync($"api/menu/drinks/{id}");

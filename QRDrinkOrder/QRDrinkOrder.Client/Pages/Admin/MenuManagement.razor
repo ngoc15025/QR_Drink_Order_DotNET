@@ -255,28 +255,11 @@
 
     private async Task ToggleDrinkStatus(DrinkDto drink)
     {
-        string actionText = drink.IsActive ? "khóa" : "mở khóa";
-        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn {actionText} món nước này?");
+        string actionText = drink.IsActive ? "chuyển sang Hết hàng" : "chuyển sang Còn hàng";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn {actionText} cho món '{drink.DrinkName}'?");
         if (!confirmed) return;
 
-        var nameVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.DrinkName ?? drink.DrinkName;
-        var nameEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.DrinkName ?? drink.DrinkName;
-        var descVi = drink.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.Description ?? drink.Description;
-        var descEn = drink.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.Description ?? drink.Description;
-
-        var request = new SaveDrinkRequest
-        {
-            CategoryId = drink.CategoryId,
-            ImageUrl = drink.ImageUrl ?? "",
-            BasePrice = drink.BasePrice,
-            TemperatureType = drink.TemperatureType,
-            IsActive = !drink.IsActive,
-            NameVi = nameVi,
-            NameEn = nameEn,
-            DescriptionVi = descVi,
-            DescriptionEn = descEn
-        };
-        await MenuApi.UpdateDrinkAsync(drink.DrinkId, request);
+        await MenuApi.ToggleDrinkStatusAsync(drink.DrinkId);
         await LoadData();
     }
 

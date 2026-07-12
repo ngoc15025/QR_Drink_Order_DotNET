@@ -15,6 +15,7 @@ public interface IMenuService
     Task<DrinkDto?> GetDrinkByIdAsync(int id, string langCode);
     Task<DrinkDto> CreateDrinkAsync(SaveDrinkRequest request);
     Task<DrinkDto?> UpdateDrinkAsync(int id, SaveDrinkRequest request);
+    Task<bool> ToggleDrinkStatusAsync(int id);
     Task<bool> DeleteDrinkAsync(int id);
 
     Task<WeatherRecommendationDto> GetWeatherRecommendationsAsync(string langCode, string weatherType);

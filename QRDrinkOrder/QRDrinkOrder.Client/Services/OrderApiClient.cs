@@ -62,9 +62,9 @@ public class OrderApiClient
         return orders;
     }
 
-    public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status)
+    public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status, string? cancelReason = null)
     {
-        var response = await _httpClient.PutAsJsonAsync($"api/orders/{orderId}/status", new UpdateOrderStatusRequest { OrderStatus = status });
+        var response = await _httpClient.PutAsJsonAsync($"api/orders/{orderId}/status", new UpdateOrderStatusRequest { OrderStatus = status, CancelReason = cancelReason });
         return response.IsSuccessStatusCode;
     }
 

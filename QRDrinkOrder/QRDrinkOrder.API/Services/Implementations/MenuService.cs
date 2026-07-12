@@ -330,6 +330,17 @@ public class MenuService : IMenuService
         return true;
     }
 
+    public async Task<bool> ToggleDrinkStatusAsync(int id)
+    {
+        var drink = await _context.Drinks.FindAsync(id);
+        if (drink == null)
+            return false;
+
+        drink.IsActive = !(drink.IsActive ?? true);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<WeatherRecommendationDto> GetWeatherRecommendationsAsync(string langCode, string weatherType)
     {
         string message = "";

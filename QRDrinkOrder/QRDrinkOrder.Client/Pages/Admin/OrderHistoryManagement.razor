@@ -64,8 +64,8 @@
                                     <td class="py-3">
                                         @if (order.Payment != null)
                                         {
-                                            <span class="admin-badge @(order.Payment.PaymentStatus == 1 ? "badge-success" : "badge-warning")">
-                                                @order.Payment.PaymentMethodName
+                                            <span class="admin-badge @(order.Payment.PaymentStatus == 1 ? "badge-success" : (order.Payment.PaymentStatus == 3 ? "badge-danger" : "badge-warning"))">
+                                                @order.Payment.PaymentMethodName @(order.Payment.PaymentStatus == 3 ? "(Đã hoàn tiền)" : "")
                                             </span>
                                         }
                                         else
@@ -167,7 +167,13 @@
                         <div class="col-6 text-end fw-bold mt-2 fs-5 text-danger">@selectedOrder.FinalAmount.ToString("N0")đ</div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-0">
+                <div class="modal-footer border-top-0 pt-0 d-flex justify-content-between">
+                    <div>
+                        @if (selectedOrder.OrderStatus == 0 || selectedOrder.OrderStatus == 1)
+                        {
+                            <button class="btn btn-danger" @onclick="() => CancelOrderAdmin(selectedOrder.OrderId)">Hủy đơn</button>
+                        }
+                    </div>
                     <button class="btn btn-secondary" @onclick="CloseModal">Đóng</button>
                 </div>
             </div>
@@ -212,6 +218,23 @@
     private void CloseModal()
     {
         selectedOrder = null;
+    }
+
+    private async Task CancelOrderAdmin(int orderId)
+    {
+        string? reason = await JSRuntime.InvokeAsync<string?>("prompt", "Nhập lý do hủy đơn:", "Hết nguyên liệu");
+        if (reason == null) return;
+
+        bool success = await OrderApi.UpdateOrderStatusAsync(orderId, 3, reason);
+        if (success)
+        {
+            await LoadDataAsync();
+            CloseModal();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Hủy đơn thất bại. Vui lòng thử lại.");
+        }
     }
 }
 

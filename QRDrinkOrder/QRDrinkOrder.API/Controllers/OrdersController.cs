@@ -85,7 +85,7 @@ public class OrdersController : ControllerBase
             employeeId = empId;
         }
 
-        var success = await _orderService.UpdateOrderStatusAsync(id, request.OrderStatus, employeeId);
+        var success = await _orderService.UpdateOrderStatusAsync(id, request.OrderStatus, employeeId, request.CancelReason);
         if (success)
             return Ok(new { Message = "Cập nhật trạng thái đơn hàng thành công." });
 

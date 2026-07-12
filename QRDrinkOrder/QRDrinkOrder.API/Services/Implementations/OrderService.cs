@@ -1,4 +1,4 @@
-﻿using QRDrinkOrder.Shared.Exceptions;
+using QRDrinkOrder.Shared.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Hubs;
@@ -286,11 +286,12 @@ public class OrderService : IOrderService
         return MapToOrderDto(order);
     }
 
-    public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status, int? employeeId = null)
+    public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status, int? employeeId = null, string? cancelReason = null)
     {
         var order = await _context.Orders
             .Include(o => o.Payment)
             .Include(o => o.Session)
+            .Include(o => o.Coupon)
             .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
         if (order == null)
@@ -303,9 +304,65 @@ public class OrderService : IOrderService
         }
 
         // Nếu trạng thái là Đã hủy hoặc Hoàn thành, cập nhật trạng thái thanh toán tương ứng
-        if (status == (byte)OrderStatus.Cancelled && order.Payment != null)
+        if (status == (byte)OrderStatus.Cancelled)
         {
-            order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
+            if (order.Payment != null)
+            {
+                if (order.Payment.PaymentStatus == (byte)PaymentStatus.Success)
+                {
+                    order.Payment.PaymentStatus = (byte)PaymentStatus.Refunded;
+                }
+                else
+                {
+                    order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
+                }
+            }
+
+            string reasonText = !string.IsNullOrWhiteSpace(cancelReason)
+                ? $" [Đã hủy bởi nhân viên: {cancelReason}]"
+                : " [Đã hủy bởi nhân viên]";
+            order.Note = (order.Note ?? "") + reasonText;
+
+            // Hoàn lại mã giảm giá
+            if (order.CouponId.HasValue && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
+            {
+                var usage = await _context.CouponUsages.FirstOrDefaultAsync(cu => cu.CouponId == order.CouponId.Value && cu.Phone == order.Session.Phone);
+                if (usage != null)
+                {
+                    _context.CouponUsages.Remove(usage);
+                }
+
+                if (order.Coupon != null)
+                {
+                    order.Coupon.UsedCount = Math.Max(0, order.Coupon.UsedCount.GetValueOrDefault() - 1);
+                }
+            }
+
+            // Hoàn lại phúc lợi nhân viên
+            if (order.EmployeeId.HasValue)
+            {
+                var benefit = await _context.StaffBenefits.FirstOrDefaultAsync(sb => sb.OrderId == order.OrderId);
+                if (benefit != null)
+                {
+                    _context.StaffBenefits.Remove(benefit);
+                }
+            }
+
+            // Hoàn lại điểm
+            if (order.PointsUsed.HasValue && order.PointsUsed.Value > 0 && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
+            {
+                var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == order.Session.Phone);
+                if (membership != null)
+                {
+                    membership.Points += order.PointsUsed.Value;
+                    _context.PointHistories.Add(new PointHistory
+                    {
+                        Phone = membership.Phone,
+                        PointsChanged = order.PointsUsed.Value,
+                        Reason = $"Hoàn điểm do nhân viên hủy đơn #{order.OrderId}"
+                    });
+                }
+            }
         }
         else if (status == (byte)OrderStatus.Completed && order.Payment != null && order.Payment.PaymentMethod == (byte)PaymentMethod.Cash)
         {
@@ -520,6 +577,7 @@ public class OrderService : IOrderService
             (byte)PaymentStatus.Pending => "Đang chờ",
             (byte)PaymentStatus.Success => "Thành công",
             (byte)PaymentStatus.Failed => "Thất bại",
+            (byte)PaymentStatus.Refunded => "Đã hoàn tiền",
             _ => "Không xác định"
         };
     }

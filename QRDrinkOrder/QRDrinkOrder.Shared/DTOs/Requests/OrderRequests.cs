@@ -54,6 +54,8 @@ public class UpdateOrderStatusRequest
 {
     [Required]
     public byte OrderStatus { get; set; } // 0: Chờ, 1: Đang chuẩn bị, 2: Hoàn thành, 3: Hủy
+
+    public string? CancelReason { get; set; }
 }
 
 public class ConfirmPaymentRequest

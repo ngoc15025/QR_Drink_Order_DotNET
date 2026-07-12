@@ -1428,6 +1428,156 @@ a:hover {
     }
 }
 
+.pos-menu-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pos-menu-toggle-btn:hover {
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+/* --- AWWWARDS-Level POS Inventory Bento Grid --- */
+.pos-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+    grid-auto-flow: dense;
+    gap: 16px;
+}
+
+.pos-bento-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.pos-bento-card:hover {
+    transform: translateY(-3px);
+    border-color: #cbd5e1;
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
+}
+
+.pos-bento-card.is-inactive {
+    background: #f8fafc;
+    border-color: #fecdd3;
+    opacity: 0.88;
+}
+
+.pos-bento-img-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+}
+
+.pos-bento-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.pos-bento-card:hover .pos-bento-img-wrap img {
+    transform: scale(1.08);
+}
+
+.pos-bento-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+.pos-bento-card.is-inactive .pos-bento-name {
+    color: #64748b;
+    text-decoration: line-through;
+}
+
+.pos-bento-price {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ea580c;
+}
+
+.pos-bento-toggle-btn {
+    width: 100%;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pos-bento-toggle-btn.active-state {
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+    color: #059669;
+}
+
+.pos-bento-toggle-btn.active-state:hover {
+    background: #d1fae5;
+    border-color: #059669;
+}
+
+.pos-bento-toggle-btn.active-state .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.pos-bento-toggle-btn.inactive-state {
+    background: #fff1f2;
+    border: 1px solid #f43f5e;
+    color: #e11d48;
+}
+
+.pos-bento-toggle-btn.inactive-state:hover {
+    background: #ffe4e6;
+    border-color: #e11d48;
+}
+
+.pos-bento-toggle-btn.inactive-state .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f43f5e;
+    box-shadow: 0 0 6px rgba(244, 63, 94, 0.5);
+}
+
+.status-hint {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.75;
+}
+
 .pos-exit-btn {
     display: flex;
     align-items: center;

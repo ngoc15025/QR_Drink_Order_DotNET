@@ -170,6 +170,24 @@ public class MenuController : ControllerBase
         }
     }
 
+    [HttpPut("drinks/{id}/toggle-status")]
+    [Authorize(Roles = "Admin,Manager,Employee")]
+    public async Task<IActionResult> ToggleDrinkStatus(int id)
+    {
+        try
+        {
+            var success = await _menuService.ToggleDrinkStatusAsync(id);
+            if (success)
+                return Ok(new { Message = "Cập nhật trạng thái món thành công." });
+
+            return NotFound(new { Message = "Không tìm thấy món nước." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
     [HttpDelete("drinks/{id}")]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> DeleteDrink(int id)
