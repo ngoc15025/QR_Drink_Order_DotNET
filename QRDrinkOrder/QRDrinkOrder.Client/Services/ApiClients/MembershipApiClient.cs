@@ -1,7 +1,7 @@
-using System.Net.Http.Json;
 using QRDrinkOrder.Shared.DTOs.Responses;
+using System.Net.Http.Json;
 
-namespace QRDrinkOrder.Client.Services;
+namespace QRDrinkOrder.Client.Services.ApiClients;
 
 public class MembershipApiClient
 {

@@ -1,6 +1,6 @@
 @page "/admin/accounts"
 @attribute [Authorize(Roles = "Admin,Manager")]
-@inject QRDrinkOrder.Client.Services.AuthApiClient AuthApi
+@inject QRDrinkOrder.Client.Services.ApiClients.AuthApiClient AuthApi
 @inject AuthenticationStateProvider AuthStateProvider
 @using System.Security.Claims
 

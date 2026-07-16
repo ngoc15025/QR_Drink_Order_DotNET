@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.API.Models;
+using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using System.Text.Json;
 using WebPush;
@@ -93,7 +93,7 @@ public class NotificationService : INotificationService
                 // Ignore other errors
             }
         }
-        
+
         await _context.SaveChangesAsync();
     }
 }

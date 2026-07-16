@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
-using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 

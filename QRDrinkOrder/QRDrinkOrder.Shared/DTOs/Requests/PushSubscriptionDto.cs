@@ -1,5 +1,3 @@
-using System;
-
 namespace QRDrinkOrder.Shared.DTOs.Requests;
 
 public class PushSubscriptionDto

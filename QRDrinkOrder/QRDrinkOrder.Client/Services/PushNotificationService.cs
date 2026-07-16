@@ -1,6 +1,6 @@
 using Microsoft.JSInterop;
-using System.Net.Http.Json;
 using QRDrinkOrder.Shared.DTOs.Requests;
+using System.Net.Http.Json;
 
 namespace QRDrinkOrder.Client.Services;
 

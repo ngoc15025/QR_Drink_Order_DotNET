@@ -2,7 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Manager")]
 @layout QRDrinkOrder.Client.Layout.AdminLayout
 @inject NavigationManager NavigationManager
-@inject QRDrinkOrder.Client.Services.ReportApiClient ReportApi
+@inject QRDrinkOrder.Client.Services.ApiClients.ReportApiClient ReportApi
 @inject Microsoft.JSInterop.IJSRuntime JS
 @using QRDrinkOrder.Shared.DTOs.Responses
 @inject ILogger<Dashboard> Logger

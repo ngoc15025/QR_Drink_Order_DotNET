@@ -1,6 +1,6 @@
 @page "/payment/{OrderId:int}"
-@inject QRDrinkOrder.Client.Services.OrderApiClient OrderApi
-@inject QRDrinkOrder.Client.Services.BankAccountApiClient BankAccountApi
+@inject QRDrinkOrder.Client.Services.ApiClients.OrderApiClient OrderApi
+@inject QRDrinkOrder.Client.Services.ApiClients.BankAccountApiClient BankAccountApi
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Shared.Enums
 @using Microsoft.AspNetCore.SignalR.Client

@@ -24,7 +24,7 @@ public class MembershipsController : ControllerBase
                 return BadRequest(new { Message = "Số điện thoại là bắt buộc." });
 
             var membership = await _membershipService.GetMembershipByPhoneAsync(phone);
-            
+
             if (membership == null)
             {
                 return Ok(new MembershipDto { Phone = phone, Points = 0 });

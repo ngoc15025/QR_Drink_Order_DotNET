@@ -1,8 +1,8 @@
 @page "/menu"
 @implements IDisposable
-@inject QRDrinkOrder.Client.Services.MenuApiClient MenuApi
-@inject QRDrinkOrder.Client.Services.Interfaces.IAiRecommendationApiClient AiApi
-@inject QRDrinkOrder.Client.Services.CartState CartState
+@inject QRDrinkOrder.Client.Services.ApiClients.MenuApiClient MenuApi
+@inject QRDrinkOrder.Client.Services.ApiClients.IAiRecommendationApiClient AiApi
+@inject QRDrinkOrder.Client.Services.State.CartState CartState
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Client.Services
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime

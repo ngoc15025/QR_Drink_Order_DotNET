@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 
 namespace QRDrinkOrder.API.Hubs;
 

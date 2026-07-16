@@ -2,7 +2,7 @@ using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using System.Net.Http.Json;
 
-namespace QRDrinkOrder.Client.Services;
+namespace QRDrinkOrder.Client.Services.ApiClients;
 
 public class OrderApiClient
 {
@@ -37,7 +37,7 @@ public class OrderApiClient
             }
         }
         catch (System.Text.Json.JsonException) { }
-        
+
         throw new Exception(errorContent);
     }
 

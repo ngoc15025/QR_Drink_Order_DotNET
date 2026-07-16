@@ -1,8 +1,9 @@
 @inherits LayoutComponentBase
-@inject QRDrinkOrder.Client.Services.CartState CartState
+@inject QRDrinkOrder.Client.Services.State.CartState CartState
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @inject Microsoft.Extensions.Localization.IStringLocalizer<QRDrinkOrder.Client.SharedResource> Loc
-@inject QRDrinkOrder.Client.Services.SystemConfigApiClient ConfigApi
+@inject QRDrinkOrder.Client.Services.ApiClients.SystemConfigApiClient ConfigApi
 @using QRDrinkOrder.Shared.DTOs.Responses
 @inject ILogger<MainLayout> Logger
 @implements IDisposable

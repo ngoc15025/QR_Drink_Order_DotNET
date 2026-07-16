@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Hubs;
+using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
-using QRDrinkOrder.API.Models;
 using System.Text.RegularExpressions;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -25,7 +25,7 @@ public class PaymentService : IPaymentService
         // 1. Kiểm tra AccountNumber có hợp lệ và được kích hoạt không
         var validAccount = await _context.BankAccounts
             .FirstOrDefaultAsync(b => b.AccountNumber == accountNumber && b.IsActive);
-            
+
         if (validAccount == null)
         {
             Console.WriteLine($"[SePay Webhook] Bỏ qua - Tài khoản {accountNumber} không hợp lệ hoặc chưa được kích hoạt.");

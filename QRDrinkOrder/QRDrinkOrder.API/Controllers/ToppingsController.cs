@@ -53,10 +53,10 @@ public class ToppingsController : ControllerBase
         if (toppingDto.Price < 0) return BadRequest("Giá Topping không được là số âm.");
         var topping = await _context.Toppings.FindAsync(id);
         if (topping == null) return NotFound();
-        
+
         topping.Name = toppingDto.Name;
         topping.Price = toppingDto.Price;
-        
+
         await _context.SaveChangesAsync();
         return NoContent();
     }

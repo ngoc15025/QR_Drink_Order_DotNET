@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using QRDrinkOrder.API.Services.Interfaces;
-using QRDrinkOrder.API.Models;
 using QRDrinkOrder.Shared.DTOs.Requests;
 
 namespace QRDrinkOrder.API.Controllers;

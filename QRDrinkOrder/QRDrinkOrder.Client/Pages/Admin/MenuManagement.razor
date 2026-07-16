@@ -1,6 +1,6 @@
 @page "/admin/menu"
 @attribute [Authorize(Roles = "Admin,Manager")]
-@inject QRDrinkOrder.Client.Services.MenuApiClient MenuApi
+@inject QRDrinkOrder.Client.Services.ApiClients.MenuApiClient MenuApi
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Client.Components.Specific.Menu

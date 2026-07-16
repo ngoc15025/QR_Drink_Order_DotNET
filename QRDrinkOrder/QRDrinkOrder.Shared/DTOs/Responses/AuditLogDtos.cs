@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace QRDrinkOrder.Shared.DTOs.Responses
 {
     public class AuditLogDto

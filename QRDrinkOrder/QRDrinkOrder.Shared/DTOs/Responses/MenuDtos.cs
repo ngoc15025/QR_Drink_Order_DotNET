@@ -1,6 +1,6 @@
-using System.ComponentModel.DataAnnotations;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace QRDrinkOrder.Shared.DTOs.Responses;
 

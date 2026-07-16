@@ -1,7 +1,7 @@
-using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using QRDrinkOrder.API.Models.External;
 using QRDrinkOrder.API.Services.Interfaces;
+using System.Text.Json;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -15,7 +15,7 @@ public class WeatherService : IWeatherService
     private const string CacheKey = "CurrentWeather";
 
     public WeatherService(
-        HttpClient httpClient, 
+        HttpClient httpClient,
         IConfiguration configuration,
         IMemoryCache cache,
         ILogger<WeatherService> logger)
@@ -51,13 +51,13 @@ public class WeatherService : IWeatherService
             {
                 var content = await response.Content.ReadAsStringAsync();
                 var weatherData = JsonSerializer.Deserialize<WeatherResponse>(content);
-                
+
                 if (weatherData != null)
                 {
                     // Cache the weather data for 30 minutes
                     var cacheEntryOptions = new MemoryCacheEntryOptions()
                         .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
-                    
+
                     _cache.Set(CacheKey, weatherData, cacheEntryOptions);
                     return weatherData;
                 }

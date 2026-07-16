@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using QRDrinkOrder.Shared.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace QRDrinkOrder.Shared.DTOs.Requests;
 

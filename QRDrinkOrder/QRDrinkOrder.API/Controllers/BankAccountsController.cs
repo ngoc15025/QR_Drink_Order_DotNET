@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QRDrinkOrder.API.Models;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Controllers;
 
@@ -34,7 +34,7 @@ public class BankAccountsController : ControllerBase
                 IsActive = b.IsActive
             })
             .ToListAsync();
-            
+
         return Ok(accounts);
     }
 
@@ -70,7 +70,7 @@ public class BankAccountsController : ControllerBase
         bankAccount.BankCode = request.BankCode;
         bankAccount.AccountNumber = request.AccountNumber;
         bankAccount.AccountName = request.AccountName;
-        
+
         if (request.IsActive && !bankAccount.IsActive)
         {
             var activeAccounts = await _context.BankAccounts.Where(b => b.IsActive && b.BankAccountId != id).ToListAsync();
@@ -79,7 +79,7 @@ public class BankAccountsController : ControllerBase
         }
         else if (!request.IsActive && bankAccount.IsActive)
         {
-             bankAccount.IsActive = false;
+            bankAccount.IsActive = false;
         }
 
         await _context.SaveChangesAsync();

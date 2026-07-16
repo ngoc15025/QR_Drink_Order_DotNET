@@ -1,7 +1,7 @@
 @page "/admin/reviews"
 @attribute [Authorize(Roles = "Admin,Manager")]
 @layout QRDrinkOrder.Client.Layout.AdminLayout
-@inject QRDrinkOrder.Client.Services.ReviewApiClient ReviewApi
+@inject QRDrinkOrder.Client.Services.ApiClients.ReviewApiClient ReviewApi
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @using QRDrinkOrder.Shared.DTOs.Responses

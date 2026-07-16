@@ -1,6 +1,6 @@
 @page "/admin/auditlogs"
 @attribute [Authorize(Roles = "Admin,Manager")]
-@inject QRDrinkOrder.Client.Services.AuditLogApiClient AuditLogApi
+@inject QRDrinkOrder.Client.Services.ApiClients.AuditLogApiClient AuditLogApi
 
 @layout QRDrinkOrder.Client.Layout.AdminLayout
 

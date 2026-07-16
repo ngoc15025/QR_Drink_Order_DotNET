@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.API.Models;
+using QRDrinkOrder.API.Services.Interfaces;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -18,7 +18,7 @@ public class MembershipService : IMembershipService
         var membership = await _context.Memberships
             .Include(m => m.PointHistories.OrderByDescending(h => h.CreatedAt).Take(10))
             .FirstOrDefaultAsync(m => m.Phone == phone);
-            
+
         return membership;
     }
 }

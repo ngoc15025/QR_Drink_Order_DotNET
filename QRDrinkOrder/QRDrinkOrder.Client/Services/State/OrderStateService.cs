@@ -1,4 +1,4 @@
-namespace QRDrinkOrder.Client.Services
+namespace QRDrinkOrder.Client.Services.State
 {
     public enum OrderType
     {

@@ -1,7 +1,7 @@
 using Microsoft.JSInterop;
 using QRDrinkOrder.Shared.DTOs.Responses;
 
-namespace QRDrinkOrder.Client.Services;
+namespace QRDrinkOrder.Client.Services.State;
 
 public class CartState
 {
@@ -42,10 +42,10 @@ public class CartState
 
     public void AddToCart(DrinkDto drink, int quantity, byte? sweetness, byte? ice, string? note, SizeDto? size, List<ToppingDto> toppings)
     {
-        var existingItem = Items.FirstOrDefault(i => 
-            i.Drink.DrinkId == drink.DrinkId && 
-            i.SweetnessLevel == sweetness && 
-            i.IceLevel == ice && 
+        var existingItem = Items.FirstOrDefault(i =>
+            i.Drink.DrinkId == drink.DrinkId &&
+            i.SweetnessLevel == sweetness &&
+            i.IceLevel == ice &&
             i.ItemNote == note &&
             i.SelectedSize?.SizeId == size?.SizeId &&
             i.SelectedToppings.Select(t => t.ToppingId).OrderBy(id => id).SequenceEqual(toppings.Select(t => t.ToppingId).OrderBy(id => id))

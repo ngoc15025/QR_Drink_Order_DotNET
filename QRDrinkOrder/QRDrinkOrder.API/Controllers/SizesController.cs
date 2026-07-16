@@ -53,10 +53,10 @@ public class SizesController : ControllerBase
         if (sizeDto.PriceOffset < 0) return BadRequest("Giá cộng thêm không được là số âm.");
         var size = await _context.Sizes.FindAsync(id);
         if (size == null) return NotFound();
-        
+
         size.Name = sizeDto.Name;
         size.PriceOffset = sizeDto.PriceOffset;
-        
+
         await _context.SaveChangesAsync();
         return NoContent();
     }

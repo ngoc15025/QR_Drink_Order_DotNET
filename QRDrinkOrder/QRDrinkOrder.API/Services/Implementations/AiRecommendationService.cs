@@ -1,10 +1,10 @@
-using System.Text;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Models.External;
 using QRDrinkOrder.API.Services.Interfaces;
-using QRDrinkOrder.API.Models;
+using System.Text;
+using System.Text.Json;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -42,7 +42,7 @@ public class AiRecommendationService : IAiRecommendationService
         }
 
         var result = new AiRecommendationResult();
-        
+
         try
         {
             // 1. Get current weather
@@ -60,8 +60,8 @@ public class AiRecommendationService : IAiRecommendationService
                 .Select(d => new
                 {
                     Id = d.DrinkId,
-                    Name = d.DrinkTranslations.FirstOrDefault(t => t.LanguageCode == "vi") != null 
-                           ? d.DrinkTranslations.First(t => t.LanguageCode == "vi").DrinkName 
+                    Name = d.DrinkTranslations.FirstOrDefault(t => t.LanguageCode == "vi") != null
+                           ? d.DrinkTranslations.First(t => t.LanguageCode == "vi").DrinkName
                            : "Unknown",
                     TemperatureType = d.TemperatureType.ToString()
                 })
@@ -118,9 +118,9 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseContent);
-                
+
                 var generatedText = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
-                
+
                 if (!string.IsNullOrEmpty(generatedText))
                 {
                     try
@@ -129,7 +129,7 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
                         {
                             PropertyNameCaseInsensitive = true
                         });
-                        
+
                         if (parsedResult != null)
                         {
                             // Lưu vào cache 15 phút

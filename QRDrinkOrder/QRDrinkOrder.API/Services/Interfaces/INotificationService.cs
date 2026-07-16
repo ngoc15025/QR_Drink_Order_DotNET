@@ -1,4 +1,3 @@
-using QRDrinkOrder.API.Models;
 using QRDrinkOrder.Shared.DTOs.Requests;
 
 namespace QRDrinkOrder.API.Services.Interfaces;

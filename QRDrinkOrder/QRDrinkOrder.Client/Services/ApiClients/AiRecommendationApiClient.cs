@@ -1,8 +1,7 @@
-using System.Net.Http.Json;
-using QRDrinkOrder.Client.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs;
+using System.Net.Http.Json;
 
-namespace QRDrinkOrder.Client.Services.Implementations;
+namespace QRDrinkOrder.Client.Services.ApiClients;
 
 public class AiRecommendationApiClient : IAiRecommendationApiClient
 {

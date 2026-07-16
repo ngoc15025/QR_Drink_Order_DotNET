@@ -1,6 +1,6 @@
 using QRDrinkOrder.Shared.DTOs;
 
-namespace QRDrinkOrder.Client.Services.Interfaces;
+namespace QRDrinkOrder.Client.Services.ApiClients;
 
 public interface IAiRecommendationApiClient
 {

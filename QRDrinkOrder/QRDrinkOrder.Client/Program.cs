@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using QRDrinkOrder.Client.Services;
+using QRDrinkOrder.Client.Services.ApiClients;
+using QRDrinkOrder.Client.Services.State;
 
 namespace QRDrinkOrder.Client;
 
@@ -37,7 +38,7 @@ public class Program
         builder.Services.AddScoped<PushNotificationService>();
         builder.Services.AddScoped<SystemConfigApiClient>();
         builder.Services.AddScoped<AuditLogApiClient>();
-        builder.Services.AddScoped<QRDrinkOrder.Client.Services.Interfaces.IAiRecommendationApiClient, QRDrinkOrder.Client.Services.Implementations.AiRecommendationApiClient>();
+        builder.Services.AddScoped<IAiRecommendationApiClient, AiRecommendationApiClient>();
 
         // Đăng ký trạng thái giỏ hàng toàn cục
         builder.Services.AddScoped<CartState>();

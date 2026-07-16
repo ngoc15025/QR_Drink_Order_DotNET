@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace QRDrinkOrder.API.Controllers;
 

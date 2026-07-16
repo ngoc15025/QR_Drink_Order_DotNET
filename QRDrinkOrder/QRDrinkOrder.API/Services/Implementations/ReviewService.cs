@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
-using QRDrinkOrder.API.Models;
 using System.Text.RegularExpressions;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -72,7 +72,7 @@ public class ReviewService : IReviewService
 
                     byte[] imageBytes = Convert.FromBase64String(rawBase64);
                     string fileName = $"{Guid.NewGuid()}.{extension}";
-                    
+
                     using var stream = new MemoryStream(imageBytes);
                     string imageUrl = await _imageService.UploadImageAsync(stream, fileName, "Reviews");
 

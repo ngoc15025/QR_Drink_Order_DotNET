@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace QRDrinkOrder.API.Models;
 
 public partial class OrderItemTopping

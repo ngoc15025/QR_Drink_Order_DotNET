@@ -23,7 +23,7 @@ public class CreateOrderRequest
     public List<OrderItemRequest> Items { get; set; } = new();
 
     public int? EmployeeId { get; set; } // Nếu nhân viên đặt món hộ
-    
+
     public bool UseEmployeeBenefit { get; set; } // Nhân viên dùng đặc quyền giảm 50%
 }
 

@@ -1,13 +1,13 @@
-using QRDrinkOrder.Shared.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Hubs;
+using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
-using QRDrinkOrder.API.Models;
+using QRDrinkOrder.Shared.Exceptions;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -103,7 +103,7 @@ public class OrderService : IOrderService
                 int redeemRate = pointRateConfig != null ? int.Parse(pointRateConfig.ConfigValue) : 1000;
 
                 decimal pointDiscount = request.PointsToUse.Value * redeemRate;
-                
+
                 if (discountAmount + pointDiscount > totalAmount)
                 {
                     throw new BusinessException("Số điểm sử dụng vượt quá giá trị đơn hàng.");
@@ -111,7 +111,7 @@ public class OrderService : IOrderService
 
                 discountAmount += pointDiscount;
                 pointsUsed = request.PointsToUse.Value;
-                
+
                 // Trừ điểm ngay lập tức
                 membership.Points -= pointsUsed;
                 _context.PointHistories.Add(new PointHistory
@@ -146,7 +146,7 @@ public class OrderService : IOrderService
                 var drink = drinks[item.DrinkId];
                 decimal unitPrice = drink.BasePrice;
                 if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size)) unitPrice += size.PriceOffset;
-                
+
                 if (item.ToppingIds != null)
                 {
                     foreach (var tId in item.ToppingIds) if (toppings.TryGetValue(tId, out var topping)) unitPrice += topping.Price;
@@ -383,7 +383,7 @@ public class OrderService : IOrderService
 
             var earnRateConfig = await _context.SystemConfigs.FindAsync("EarnPointRate");
             int earnRate = earnRateConfig != null ? int.Parse(earnRateConfig.ConfigValue) : 10000;
-            
+
             int earnedPoints = (int)((order.FinalAmount ?? 0) / earnRate);
             if (earnedPoints > 0)
             {
@@ -536,11 +536,11 @@ public class OrderService : IOrderService
         await _context.SaveChangesAsync();
 
         // Gửi SignalR cho màn hình thu ngân cập nhật phương thức
-        await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new 
-        { 
-            OrderId = orderId, 
-            Status = order.OrderStatus, 
-            StatusName = GetStatusName(order.OrderStatus ?? 0), 
+        await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new
+        {
+            OrderId = orderId,
+            Status = order.OrderStatus,
+            StatusName = GetStatusName(order.OrderStatus ?? 0),
             PaymentStatus = order.Payment.PaymentStatus,
             PaymentMethod = paymentMethod
         });

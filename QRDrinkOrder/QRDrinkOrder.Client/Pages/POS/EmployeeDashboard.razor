@@ -1,9 +1,9 @@
 @page "/pos"
 @attribute [Authorize(Roles = "Employee")]
 @inject NavigationManager NavigationManager
-@inject QRDrinkOrder.Client.Services.OrderApiClient OrderApi
-@inject QRDrinkOrder.Client.Services.SystemConfigApiClient ConfigApi
-@inject QRDrinkOrder.Client.Services.MenuApiClient MenuApi
+@inject QRDrinkOrder.Client.Services.ApiClients.OrderApiClient OrderApi
+@inject QRDrinkOrder.Client.Services.ApiClients.SystemConfigApiClient ConfigApi
+@inject QRDrinkOrder.Client.Services.ApiClients.MenuApiClient MenuApi
 @inject IJSRuntime JSRuntime
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using Microsoft.AspNetCore.SignalR.Client

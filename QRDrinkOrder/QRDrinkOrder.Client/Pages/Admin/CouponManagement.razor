@@ -1,6 +1,6 @@
 @page "/admin/coupons"
 @attribute [Authorize(Roles = "Admin,Manager")]
-@inject QRDrinkOrder.Client.Services.CouponApiClient CouponApi
+@inject QRDrinkOrder.Client.Services.ApiClients.CouponApiClient CouponApi
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Shared.DTOs.Responses

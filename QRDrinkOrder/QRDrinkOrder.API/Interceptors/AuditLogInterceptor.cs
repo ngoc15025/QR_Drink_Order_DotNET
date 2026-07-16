@@ -78,11 +78,11 @@ namespace QRDrinkOrder.API.Interceptors
                 {
                     var idProp = entry.Properties.FirstOrDefault(p => p.Metadata.IsPrimaryKey());
                     var idVal = idProp != null ? idProp.OriginalValue : "N/A";
-                    
+
                     var changes = entry.Properties
                         .Where(p => p.IsModified)
                         .Select(p => $"{p.Metadata.Name}: '{p.OriginalValue}' -> '{p.CurrentValue}'");
-                        
+
                     description = $"Cập nhật bản ghi (ID: {idVal}): " + string.Join(", ", changes);
                 }
 

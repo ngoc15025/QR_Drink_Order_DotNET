@@ -1,6 +1,6 @@
 @page "/admin/settings"
 @attribute [Authorize(Roles = "Admin,Manager")]
-@inject QRDrinkOrder.Client.Services.SystemConfigApiClient ConfigApi
+@inject QRDrinkOrder.Client.Services.ApiClients.SystemConfigApiClient ConfigApi
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 @layout QRDrinkOrder.Client.Layout.AdminLayout
