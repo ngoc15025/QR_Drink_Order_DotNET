@@ -54,10 +54,6 @@
                     <span>@CompletedOrders.Count Hoàn thành</span>
                 </span>
             </div>
-            <div class="pos-connection-badge @(isConnected ? "connected" : "disconnected")">
-                <span class="connection-dot"></span>
-                <span>@(isConnected ? "Trực tuyến" : "Mất kết nối")</span>
-            </div>
             <button class="pos-menu-toggle-btn" @onclick="OpenMenuStatusModal" title="Quản lý tình trạng món (Còn hàng / Hết hàng)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
@@ -411,21 +407,12 @@
                                 </svg>
                             </div>
                             <div>
-                                <h5 class="fw-bold m-0" style="font-size: 1.15rem; color: #0f172a; letter-spacing: -0.3px;">Kiểm soát Tình trạng Món (POS Live Inventory)</h5>
-                                <div class="small text-secondary mt-1">Bấm nút gạt trên thẻ món để cập nhật tức thì trạng thái Còn hàng / Hết nguyên liệu</div>
+                                <h5 class="fw-bold m-0" style="font-size: 1.15rem; color: #0f172a; letter-spacing: -0.3px;">Kiểm soát Tình trạng Món</h5>
+                                <div class="small text-secondary mt-1">Bấm nút gạt trên thẻ món để cập nhật trạng thái Còn hàng / Hết nguyên liệu</div>
                             </div>
                         </div>
                         
-                        <!-- Quick Summary Pills -->
                         <div class="d-flex align-items-center gap-2">
-                            <div class="px-3 py-1.5 rounded-pill d-flex align-items-center gap-2" style="background: #ecfdf5; border: 1px solid #a7f3d0; font-size: 13px; font-weight: 600; color: #059669;">
-                                <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
-                                @menuDrinks.Count(d => d.IsActive) phục vụ
-                            </div>
-                            <div class="px-3 py-1.5 rounded-pill d-flex align-items-center gap-2" style="background: #fff1f2; border: 1px solid #fecdd3; font-size: 13px; font-weight: 600; color: #e11d48;">
-                                <span style="width: 7px; height: 7px; border-radius: 50%; background: #f43f5e;"></span>
-                                @menuDrinks.Count(d => !d.IsActive) hết hàng
-                            </div>
                             <button type="button" class="btn-close ms-2" @onclick="CloseMenuModal"></button>
                         </div>
                     </div>

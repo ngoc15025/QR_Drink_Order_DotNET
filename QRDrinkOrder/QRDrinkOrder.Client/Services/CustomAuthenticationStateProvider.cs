@@ -70,6 +70,20 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                     claims.Add(new Claim(kvp.Key, kvp.Value?.ToString() ?? ""));
                 }
             }
+
+            // Đảm bảo ClaimTypes.Name luôn có giá trị để user.Identity.Name không bị null
+            if (!claims.Any(c => c.Type == ClaimTypes.Name))
+            {
+                var nameVal = claims.FirstOrDefault(c => c.Type == "FullName" || c.Type == "name")?.Value;
+                if (string.IsNullOrWhiteSpace(nameVal))
+                {
+                    nameVal = claims.FirstOrDefault(c => c.Type == "email" || c.Type == ClaimTypes.Email || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+                }
+                if (!string.IsNullOrWhiteSpace(nameVal))
+                {
+                    claims.Add(new Claim(ClaimTypes.Name, nameVal));
+                }
+            }
         }
         return claims;
     }

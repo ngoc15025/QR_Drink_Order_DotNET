@@ -20,7 +20,14 @@
                     <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
                 </svg>
             </div>
-            <h5 class="fw-bold">@authContext.User.Identity?.Name</h5>
+            @{
+                var displayName = authContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "FullName" || c.Type == "name")?.Value;
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    displayName = authContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? authContext.User.Identity?.Name ?? "Admin";
+                }
+            }
+            <h5 class="fw-bold mb-2 text-dark" style="word-break: break-all;">@displayName</h5>
             <div class="text-secondary mb-4">
                 Chức vụ: <span class="badge bg-warning text-dark">@GetRoleName(authContext.User)</span>
             </div>

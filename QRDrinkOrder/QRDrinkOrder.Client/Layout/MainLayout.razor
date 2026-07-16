@@ -31,20 +31,23 @@
                 <LanguageSwitcher />
                 @if (ShouldHideCart)
                 {
-                    <AuthorizeView>
-                        <Authorized>
-                            @{
-                                var name = context.User.Claims.FirstOrDefault(c => c.Type == "FullName" || c.Type == "name" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value ?? context.User.Identity?.Name;
-                                if (string.IsNullOrEmpty(name))
-                                {
-                                    name = context.User.Claims.FirstOrDefault(c => c.Type == "email" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? "Thành viên";
+                    @if (!NavigationManager.Uri.Contains("/account", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <AuthorizeView>
+                            <Authorized>
+                                @{
+                                    var name = context.User.Claims.FirstOrDefault(c => c.Type == "FullName" || c.Type == "name" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value ?? context.User.Identity?.Name;
+                                    if (string.IsNullOrEmpty(name))
+                                    {
+                                        name = context.User.Claims.FirstOrDefault(c => c.Type == "email" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? "Thành viên";
+                                    }
                                 }
-                            }
-                            <span class="fw-bold" style="color: var(--tch-orange); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                                @name
-                            </span>
-                        </Authorized>
-                    </AuthorizeView>
+                                <span class="fw-bold" style="color: var(--tch-orange); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                                    @name
+                                </span>
+                            </Authorized>
+                        </AuthorizeView>
+                    }
                 }
                 else
                 {
