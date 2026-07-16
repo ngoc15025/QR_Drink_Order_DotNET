@@ -187,7 +187,7 @@
                 {
                     bankName = activeBank.BankCode;
                     accountNumber = activeBank.AccountNumber;
-                    // Chuyển TotalAmount thành số nguyên (bỏ phần thập phân) để VietQR tự động điền số tiền
+                    accountName = activeBank.AccountName;
                     long amountStr = (long)order.TotalAmount;
                     qrUrl = $"https://img.vietqr.io/image/{activeBank.BankCode}-{activeBank.AccountNumber}-compact.png?amount={amountStr}&addInfo=UwU{order.OrderId}&accountName={Uri.EscapeDataString(activeBank.AccountName)}";
                 }
