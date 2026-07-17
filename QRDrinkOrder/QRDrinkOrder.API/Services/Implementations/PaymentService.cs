@@ -5,6 +5,7 @@ using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
+using QRDrinkOrder.Shared.Helpers;
 using System.Text.RegularExpressions;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -79,7 +80,7 @@ public class PaymentService : IPaymentService
             // Thanh toán thành công
             order.Payment.PaymentStatus = (byte)PaymentStatus.Success;
             order.Payment.TransactionId = transactionId;
-            order.Payment.PaidAt = DateTime.Now;
+            order.Payment.PaidAt = TimeHelper.GetVietnamTime();
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -135,7 +136,7 @@ public class PaymentService : IPaymentService
             return false;
 
         order.Payment.PaymentStatus = (byte)PaymentStatus.Success;
-        order.Payment.PaidAt = DateTime.Now;
+        order.Payment.PaidAt = TimeHelper.GetVietnamTime();
         order.Payment.TransactionId = $"CASH_CONFIRMED_BY_EMP_{employeeId}";
 
         // Không tự động chuyển sang Đang chuẩn bị nữa, để nhân viên tự bấm Nhận đơn
@@ -213,7 +214,7 @@ public class PaymentService : IPaymentService
             OrderStatus = order.OrderStatus ?? 0,
             OrderStatusName = GetStatusName(order.OrderStatus ?? 0),
             CouponId = order.CouponId,
-            OrderDate = order.OrderDate ?? DateTime.Now,
+            OrderDate = order.OrderDate ?? TimeHelper.GetVietnamTime(),
             Note = order.Note,
             CustomerPhone = order.Session?.Phone,
             Items = order.OrderItems.Select(oi => new OrderItemDto

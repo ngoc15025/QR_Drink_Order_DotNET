@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using QRDrinkOrder.API.Models;
+using QRDrinkOrder.Shared.Helpers;
 using System.Security.Claims;
 
 namespace QRDrinkOrder.API.Interceptors
@@ -92,7 +93,7 @@ namespace QRDrinkOrder.API.Interceptors
                     Action = action,
                     TableName = tableName,
                     Description = description,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = TimeHelper.GetVietnamTime()
                 };
 
                 context.Set<AuditLog>().Add(auditLog);

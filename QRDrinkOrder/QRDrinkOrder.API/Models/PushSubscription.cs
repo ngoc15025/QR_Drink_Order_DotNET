@@ -1,3 +1,5 @@
+using QRDrinkOrder.Shared.Helpers;
+
 namespace QRDrinkOrder.API.Models;
 
 public partial class PushSubscription
@@ -12,5 +14,5 @@ public partial class PushSubscription
 
     public string Auth { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = TimeHelper.GetVietnamTime();
 }

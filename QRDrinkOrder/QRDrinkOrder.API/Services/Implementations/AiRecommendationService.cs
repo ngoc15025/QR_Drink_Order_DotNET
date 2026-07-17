@@ -47,10 +47,11 @@ public class AiRecommendationService : IAiRecommendationService
         {
             // 1. Get current weather
             var weather = await _weatherService.GetCurrentWeatherAsync();
-            var weatherDescription = "thời tiết mát mẻ bình thường";
+            var locationName = !string.IsNullOrEmpty(weather?.Name) ? weather.Name : "Quận 8, TP. Hồ Chí Minh";
+            var weatherDescription = $"tại khu vực {locationName}: thời tiết mát mẻ bình thường";
             if (weather?.Weather != null && weather.Weather.Any() && weather.Main != null)
             {
-                weatherDescription = $"nhiệt độ {weather.Main.Temp}°C, {weather.Weather[0].Description}";
+                weatherDescription = $"tại khu vực {locationName}: nhiệt độ hiện tại {weather.Main.Temp}°C, {weather.Weather[0].Description}";
             }
 
             // 2. Fetch active drinks from DB
@@ -77,15 +78,15 @@ public class AiRecommendationService : IAiRecommendationService
 
             // 3. Build Prompt for Gemini
             var prompt = $@"
-Bạn là một nhân viên phục vụ vui tính và chuyên nghiệp tại quán Ngoc UwU Coffee.
-Thời tiết hiện tại ở quán là: {weatherDescription}.
+Bạn là một nhân viên phục vụ vui tính và thân thiện tại quán Ngoc UwU Coffee (Chi nhánh Quận 8, TP. Hồ Chí Minh).
+Tình hình thời tiết {weatherDescription}.
 Dưới đây là danh sách các món nước quán đang bán (ID, Tên món, Loại nhiệt độ Hot/Iced/Both/Other):
 {drinksJson}
 
-Dựa vào thời tiết hiện tại, hãy chọn ra đúng 3 món phù hợp nhất để giới thiệu cho khách hàng (trời nóng thì ưu tiên đồ lạnh, trời lạnh ưu tiên đồ nóng).
+Dựa vào tình hình thời tiết và nhiệt độ thực tế tại Quận 8, Hồ Chí Minh lúc này, hãy chọn ra đúng 3 món phù hợp nhất để giới thiệu cho khách hàng (trời nóng bức thì ưu tiên đồ lạnh giải khát, trời mát hoặc có mưa thì ưu tiên đồ ấm hoặc trà sữa thơm béo).
 Trả về KẾT QUẢ ĐÚNG CHUẨN JSON sau:
 {{
-  ""message"": ""1 câu chào mời ngắn gọn, vui vẻ và hấp dẫn dựa vào thời tiết (ví dụ: Trời đang nóng 35 độ, giải nhiệt ngay với các món này nhé!)"",
+  ""message"": ""1 câu chào mời ngắn gọn (dưới 25 từ), vui vẻ, tự nhiên, có nhắc khéo đến thời tiết/nhiệt độ tại Quận 8 (ví dụ: Trời Quận 8 đang nóng 34°C, làm ngay ly trà mát lạnh giải nhiệt nha bạn ơi!)"",
   ""drinkIds"": [ID món 1, ID món 2, ID món 3]
 }}
 Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấu markdown ```json.

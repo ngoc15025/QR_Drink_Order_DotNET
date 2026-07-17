@@ -1,6 +1,8 @@
 @page "/track-order/{OrderId:int}"
 @inject QRDrinkOrder.Client.Services.ApiClients.OrderApiClient OrderApi
 @inject QRDrinkOrder.Client.Services.ApiClients.ReviewApiClient ReviewApi
+@inject QRDrinkOrder.Client.Services.PushNotificationService PushService
+@inject IJSRuntime JSRuntime
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using Microsoft.AspNetCore.SignalR.Client
@@ -36,6 +38,19 @@
     else
     {
         <!-- Tracking Timeline -->
+        @if (order.OrderStatus == 2)
+        {
+            <div class="alert alert-success d-flex align-items-center p-3 mb-4 shadow-sm animate__animated animate__bounceIn" style="border-radius: 12px; border: 2px solid #22c55e; background-color: #f0fdf4;">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-bell-fill" viewBox="0 0 16 16"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 3.042-1.135 3.848-.318.404-.465.91-.35 1.408.114.498.487.892.986 1.037.498.145 1.036.035 1.458-.293C4.542 11.5 6.166 11 8 11s3.458.5 4.041 1.002c.422.328.96.438 1.458.293.499-.145.872-.539.986-1.037.115-.498-.032-1.004-.35-1.408C13.5 9.042 13 7.098 13 6c0-2.809-2.072-5.147-4.995-5.901z"/></svg>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-success" style="font-size: 1.05rem;">🎉 Đồ uống của bạn đã hoàn thành!</h6>
+                    <div class="small text-dark">Vui lòng đến quầy nhận nước hoặc đợi nhân viên mang tới bàn. Chúc bạn thưởng thức ngon miệng!</div>
+                </div>
+            </div>
+        }
+
         <div class="tch-card p-4 mb-4">
             <h6 class="fw-bold mb-4 text-center">Trạng thái đơn hàng</h6>
             <div class="d-flex justify-content-between position-relative">
@@ -107,8 +122,20 @@
                     <div class="d-flex">
                         <div class="fw-bold text-primary me-2">@item.Quantity x</div>
                         <div>
-                            <div class="fw-bold">@item.DrinkName</div>
-                            <div class="small text-secondary">Đá: @item.IceLevel%, Đường: @item.SweetnessLevel%</div>
+                            <div class="fw-bold">
+                                @item.DrinkName
+                                @if (!string.IsNullOrEmpty(item.SizeName))
+                                {
+                                    <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                }
+                            </div>
+                            <div class="small text-secondary">
+                                Đá: @item.IceLevel%, Đường: @item.SweetnessLevel%
+                                @if (item.ToppingNames != null && item.ToppingNames.Any())
+                                {
+                                    <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                }
+                            </div>
                             @if (!string.IsNullOrEmpty(item.ItemNote))
                             {
                                 <div class="small text-secondary">Ghi chú: @item.ItemNote</div>
@@ -234,16 +261,26 @@
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<StatusUpdateMessage>("ReceiveStatusUpdate", (payload) =>
+        hubConnection.On<StatusUpdateMessage>("ReceiveStatusUpdate", async (payload) =>
         {
             if (order != null && payload.OrderId == OrderId)
             {
+                var oldStatus = order.OrderStatus;
                 order.OrderStatus = payload.Status;
                 if (payload.PaymentStatus.HasValue && order.Payment != null)
                 {
                     order.Payment.PaymentStatus = payload.PaymentStatus.Value;
                 }
-                StateHasChanged();
+                await InvokeAsync(StateHasChanged);
+
+                if (oldStatus != 2 && payload.Status == 2)
+                {
+                    try
+                    {
+                        await JSRuntime.InvokeVoidAsync("playChimeSound");
+                    }
+                    catch { }
+                }
             }
         });
 
@@ -267,6 +304,10 @@
         {
             isLoading = true;
             order = await OrderApi.GetOrderByIdAsync(OrderId);
+            if (order != null && !string.IsNullOrEmpty(order.CustomerPhone))
+            {
+                _ = PushService.SubscribeToNotificationsAsync(order.CustomerPhone);
+            }
         }
         finally
         {

@@ -1,3 +1,5 @@
+using QRDrinkOrder.Shared.Helpers;
+
 namespace QRDrinkOrder.API.Models;
 
 public partial class PointHistory
@@ -10,7 +12,7 @@ public partial class PointHistory
 
     public string Reason { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = TimeHelper.GetVietnamTime();
 
     public virtual Membership Membership { get; set; } = null!;
 }

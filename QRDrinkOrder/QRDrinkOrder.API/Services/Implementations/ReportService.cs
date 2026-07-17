@@ -3,6 +3,7 @@ using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
+using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -17,7 +18,7 @@ public class ReportService : IReportService
 
     public async Task<DashboardDto> GetDashboardDataAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var end = endDate ?? DateTime.Now;
+        var end = endDate ?? TimeHelper.GetVietnamTime();
         var start = startDate ?? end.AddDays(-30);
 
         // Đảm bảo thời gian bắt đầu từ 00:00:00 và kết thúc ở 23:59:59
@@ -61,7 +62,7 @@ public class ReportService : IReportService
         }
 
         int activeCoupons = await _context.Coupons
-            .CountAsync(c => c.IsActive == true && c.EndDate >= DateTime.Now);
+            .CountAsync(c => c.IsActive == true && c.EndDate >= TimeHelper.GetVietnamTime());
 
         var overview = new DashboardOverviewDto
         {
@@ -77,7 +78,7 @@ public class ReportService : IReportService
 
         // 3. Daily Revenue (Thống kê doanh thu theo ngày)
         var dailyQuery = completedOrders
-            .GroupBy(o => o.OrderDate ?? DateTime.Now)
+            .GroupBy(o => o.OrderDate ?? TimeHelper.GetVietnamTime())
             .Select(g => new DailyRevenueDto
             {
                 DateStr = g.Key.ToString("dd/MM"),
@@ -100,7 +101,7 @@ public class ReportService : IReportService
 
         // 4. Peak Hours (Thống kê khung giờ cao điểm)
         var peakHours = completedOrders
-            .GroupBy(o => (o.OrderDate ?? DateTime.Now).Hour)
+            .GroupBy(o => (o.OrderDate ?? TimeHelper.GetVietnamTime()).Hour)
             .Select(g => new PeakHourDto
             {
                 Hour = g.Key,

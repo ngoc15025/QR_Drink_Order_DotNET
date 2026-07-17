@@ -9,6 +9,9 @@ public class WeatherResponse
 
     [JsonPropertyName("main")]
     public MainInfo? Main { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 }
 
 public class WeatherInfo

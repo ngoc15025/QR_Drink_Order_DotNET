@@ -138,8 +138,21 @@
                                 {
                                     <li class="order-item">
                                         <span class="item-qty">@item.Quantity</span>
-                                        <span class="item-name">@item.DrinkName</span>
-                                        <span class="item-opts">đá @item.IceLevel% · đường @item.SweetnessLevel%@(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · {item.ItemNote}")</span>
+                                        <span class="item-name">
+                                            @item.DrinkName
+                                            @if (!string.IsNullOrEmpty(item.SizeName))
+                                            {
+                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                            }
+                                        </span>
+                                        <span class="item-opts">
+                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            @if (item.ToppingNames != null && item.ToppingNames.Any())
+                                            {
+                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                            }
+                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
+                                        </span>
                                     </li>
                                 }
                             </ul>
@@ -223,8 +236,21 @@
                                 {
                                     <li class="order-item">
                                         <span class="item-qty">@item.Quantity</span>
-                                        <span class="item-name">@item.DrinkName</span>
-                                        <span class="item-opts">đá @item.IceLevel% · đường @item.SweetnessLevel%@(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · {item.ItemNote}")</span>
+                                        <span class="item-name">
+                                            @item.DrinkName
+                                            @if (!string.IsNullOrEmpty(item.SizeName))
+                                            {
+                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                            }
+                                        </span>
+                                        <span class="item-opts">
+                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            @if (item.ToppingNames != null && item.ToppingNames.Any())
+                                            {
+                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                            }
+                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
+                                        </span>
                                     </li>
                                 }
                             </ul>
@@ -300,8 +326,21 @@
                                 {
                                     <li class="order-item">
                                         <span class="item-qty">@item.Quantity×</span>
-                                        <span class="item-name">@item.DrinkName</span>
-                                        <span class="item-opts">đá @item.IceLevel% · đường @item.SweetnessLevel%@(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · {item.ItemNote}")</span>
+                                        <span class="item-name">
+                                            @item.DrinkName
+                                            @if (!string.IsNullOrEmpty(item.SizeName))
+                                            {
+                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                            }
+                                        </span>
+                                        <span class="item-opts">
+                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            @if (item.ToppingNames != null && item.ToppingNames.Any())
+                                            {
+                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                            }
+                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
+                                        </span>
                                     </li>
                                 }
                             </ul>
@@ -371,6 +410,30 @@
                                     Đã giao
                                 </div>
                             </div>
+                            <div class="kanban-divider"></div>
+                            <ul class="order-items-list">
+                                @foreach (var item in order.Items)
+                                {
+                                    <li class="order-item">
+                                        <span class="item-qty">@item.Quantity×</span>
+                                        <span class="item-name">
+                                            @item.DrinkName
+                                            @if (!string.IsNullOrEmpty(item.SizeName))
+                                            {
+                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                            }
+                                        </span>
+                                        <span class="item-opts">
+                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            @if (item.ToppingNames != null && item.ToppingNames.Any())
+                                            {
+                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                            }
+                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
                             <div class="kanban-divider"></div>
                             <div class="kanban-card-footer d-flex justify-content-between align-items-center w-100">
                                 <div class="completed-amount">@order.FinalAmount.ToString("N0")đ</div>
@@ -510,7 +573,6 @@
 
 @code {
     private bool isLoading = true;
-    private bool isConnected = false;
     private List<OrderDto> activeOrders = new();
     private HubConnection? hubConnection;
     private List<SystemConfigDto> configs = new();
@@ -648,19 +710,17 @@
             }
         });
 
-        hubConnection.Closed += (error) => { isConnected = false; StateHasChanged(); return Task.CompletedTask; };
-        hubConnection.Reconnected += (id) => { isConnected = true; StateHasChanged(); return Task.CompletedTask; };
+        hubConnection.Closed += (error) => { StateHasChanged(); return Task.CompletedTask; };
+        hubConnection.Reconnected += (id) => { StateHasChanged(); return Task.CompletedTask; };
 
         try
         {
             await hubConnection.StartAsync();
-            isConnected = true;
             await hubConnection.InvokeAsync("JoinStaffGroup");
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Lỗi khi kết nối SignalR");
-            isConnected = false;
         }
     }
 

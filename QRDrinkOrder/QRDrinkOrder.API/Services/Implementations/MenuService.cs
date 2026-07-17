@@ -3,6 +3,7 @@ using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
+using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -58,7 +59,7 @@ public class MenuService : IMenuService
             {
                 DisplayOrder = request.DisplayOrder,
                 IsActive = request.IsActive,
-                CreatedAt = DateTime.Now
+                CreatedAt = TimeHelper.GetVietnamTime()
             };
 
             _context.Categories.Add(category);
@@ -205,7 +206,7 @@ public class MenuService : IMenuService
                 BasePrice = request.BasePrice,
                 TemperatureType = request.TemperatureType,
                 IsActive = request.IsActive,
-                CreatedAt = DateTime.Now
+                CreatedAt = TimeHelper.GetVietnamTime()
             };
 
             _context.Drinks.Add(drink);
@@ -490,7 +491,7 @@ public class MenuService : IMenuService
                 ImageUrl = request.ImageUrl,
                 CouponId = request.CouponId,
                 IsActive = request.IsActive,
-                CreatedAt = DateTime.Now
+                CreatedAt = TimeHelper.GetVietnamTime()
             };
 
             _context.Promotions.Add(promotion);

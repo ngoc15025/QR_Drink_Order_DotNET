@@ -4,6 +4,7 @@ using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using System.Text.RegularExpressions;
+using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -43,7 +44,7 @@ public class ReviewService : IReviewService
                 SessionId = sessionId,
                 Rating = request.Rating,
                 Comment = request.Comment,
-                CreatedAt = DateTime.Now
+                CreatedAt = TimeHelper.GetVietnamTime()
             };
 
             _context.Reviews.Add(review);
@@ -80,7 +81,7 @@ public class ReviewService : IReviewService
                     {
                         ReviewId = review.ReviewId,
                         ImageUrl = imageUrl,
-                        UploadedAt = DateTime.Now
+                        UploadedAt = TimeHelper.GetVietnamTime()
                     };
                     _context.ReviewImages.Add(reviewImage);
                 }
@@ -137,7 +138,7 @@ public class ReviewService : IReviewService
             SessionId = review.SessionId,
             Rating = review.Rating,
             Comment = review.Comment,
-            CreatedAt = review.CreatedAt ?? DateTime.Now,
+            CreatedAt = review.CreatedAt ?? TimeHelper.GetVietnamTime(),
             ImageUrls = review.ReviewImages.Select(ri => ri.ImageUrl).ToList(),
             CustomerPhone = review.Order?.Session?.Phone,
             TableNumber = review.Order?.TableNumber

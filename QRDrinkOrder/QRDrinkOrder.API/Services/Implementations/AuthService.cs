@@ -7,6 +7,7 @@ using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Exceptions;
+using QRDrinkOrder.Shared.Helpers;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -81,7 +82,7 @@ public class AuthService : IAuthService
                 RoleId = request.RoleId,
                 IsActive = true,
                 IsDeleted = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = TimeHelper.GetVietnamTime()
             };
 
             newAccount.PasswordHash = _passwordHasher.HashPassword(request.Email, request.Password);
@@ -166,7 +167,7 @@ public class AuthService : IAuthService
                 RoleId = a.RoleId,
                 RoleName = a.Role.RoleName,
                 IsActive = a.IsActive == true,
-                CreatedAt = a.CreatedAt ?? DateTime.Now,
+                CreatedAt = a.CreatedAt ?? TimeHelper.GetVietnamTime(),
                 FullName = a.RoleId == AppRoles.EmployeeId ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
                 Phone = a.RoleId == AppRoles.EmployeeId ? a.Employee?.Phone : a.Manager?.Phone
             });
@@ -192,7 +193,7 @@ public class AuthService : IAuthService
             RoleId = a.RoleId,
             RoleName = a.Role.RoleName,
             IsActive = a.IsActive == true,
-            CreatedAt = a.CreatedAt ?? DateTime.Now,
+            CreatedAt = a.CreatedAt ?? TimeHelper.GetVietnamTime(),
             FullName = a.RoleId == AppRoles.EmployeeId ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
             Phone = a.RoleId == AppRoles.EmployeeId ? a.Employee?.Phone : a.Manager?.Phone
         };
@@ -234,7 +235,7 @@ public class AuthService : IAuthService
             issuer: jwtSettings["Issuer"] ?? "QRDrinkOrderAPI",
             audience: jwtSettings["Audience"] ?? "QRDrinkOrderClient",
             claims: claims,
-            expires: DateTime.Now.AddDays(expiryDays),
+            expires: TimeHelper.GetVietnamTime().AddDays(expiryDays),
             signingCredentials: creds
         );
 

@@ -461,6 +461,25 @@ function urlB64ToUint8Array(base64String) {
     return outputArray;
 }
 
+window.playChimeSound = function() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.8);
+    } catch (e) {
+        console.error("Cannot play audio chime:", e);
+    }
+};
+
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js');
 }

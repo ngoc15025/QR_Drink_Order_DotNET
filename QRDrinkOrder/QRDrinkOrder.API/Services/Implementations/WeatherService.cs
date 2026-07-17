@@ -34,7 +34,9 @@ public class WeatherService : IWeatherService
         }
 
         var apiKey = _configuration["ExternalApis:OpenWeatherMap:ApiKey"];
-        var city = _configuration["ExternalApis:OpenWeatherMap:City"] ?? "Ho Chi Minh City";
+        var lat = _configuration["ExternalApis:OpenWeatherMap:Lat"] ?? "10.7289"; // Tọa độ mặc định Quận 8, TP. Hồ Chí Minh
+        var lon = _configuration["ExternalApis:OpenWeatherMap:Lon"] ?? "106.6667";
+        var city = _configuration["ExternalApis:OpenWeatherMap:City"];
 
         if (string.IsNullOrEmpty(apiKey) || apiKey == "YOUR_OPENWEATHER_KEY")
         {
@@ -44,7 +46,11 @@ public class WeatherService : IWeatherService
 
         try
         {
-            var url = $"https://api.openweathermap.org/data/2.5/weather?q={Uri.EscapeDataString(city)}&appid={apiKey}&units=metric";
+            // Ưu tiên gọi theo tọa độ Lat/Lon (Quận 8) với lang=vi để lấy mô tả thời tiết chính xác bằng tiếng Việt
+            var url = !string.IsNullOrEmpty(lat) && !string.IsNullOrEmpty(lon)
+                ? $"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={apiKey}&units=metric&lang=vi"
+                : $"https://api.openweathermap.org/data/2.5/weather?q={Uri.EscapeDataString(city ?? "Ho Chi Minh City")}&appid={apiKey}&units=metric&lang=vi";
+
             var response = await _httpClient.GetAsync(url);
 
             if (response.IsSuccessStatusCode)

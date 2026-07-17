@@ -4,6 +4,7 @@ using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Exceptions;
+using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -22,7 +23,8 @@ public class CouponService : ICouponService
 
         if (!includeInactive)
         {
-            query = query.Where(c => c.IsActive == true && c.EndDate >= DateTime.Now);
+            var now = TimeHelper.GetVietnamTime();
+            query = query.Where(c => c.IsActive == true && c.EndDate >= now);
         }
 
         var coupons = await query.ToListAsync();
@@ -108,10 +110,11 @@ public class CouponService : ICouponService
         if (coupon == null)
             throw new Exception("Mã giảm giá không tồn tại hoặc đã bị khóa.");
 
-        if (coupon.StartDate > DateTime.Now)
+        var now = TimeHelper.GetVietnamTime();
+        if (coupon.StartDate > now)
             throw new Exception("Mã giảm giá chưa đến thời gian áp dụng.");
 
-        if (coupon.EndDate < DateTime.Now)
+        if (coupon.EndDate < now)
             throw new Exception("Mã giảm giá đã hết hạn.");
 
         if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)

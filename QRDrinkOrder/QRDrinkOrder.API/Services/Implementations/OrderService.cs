@@ -8,6 +8,7 @@ using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
 using QRDrinkOrder.Shared.Exceptions;
+using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -40,7 +41,7 @@ public class OrderService : IOrderService
                     SessionId = sessionId,
                     Phone = request.Phone,
                     PreferredLanguage = "vi",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = TimeHelper.GetVietnamTime()
                 };
                 _context.CustomerSessions.Add(session);
             }
@@ -133,7 +134,7 @@ public class OrderService : IOrderService
                 PointsUsed = pointsUsed > 0 ? pointsUsed : null,
                 OrderStatus = (byte)OrderStatus.PendingPayment,
                 CouponId = coupon?.CouponId,
-                OrderDate = DateTime.Now,
+                OrderDate = TimeHelper.GetVietnamTime(),
                 Note = request.Note
             };
 
@@ -196,7 +197,7 @@ public class OrderService : IOrderService
                     CouponId = coupon.CouponId,
                     Phone = request.Phone!,
                     OrderId = order.OrderId,
-                    UsedAt = DateTime.Now
+                    UsedAt = TimeHelper.GetVietnamTime()
                 };
                 _context.CouponUsages.Add(usage);
                 await _context.Coupons.Where(c => c.CouponId == coupon.CouponId).ExecuteUpdateAsync(s => s.SetProperty(c => c.UsedCount, c => c.UsedCount + 1));
@@ -368,7 +369,7 @@ public class OrderService : IOrderService
         {
             // Đối với tiền mặt, khi hoàn thành đơn nghĩa là đã thanh toán tại quầy
             order.Payment.PaymentStatus = (byte)PaymentStatus.Success;
-            order.Payment.PaidAt = DateTime.Now;
+            order.Payment.PaidAt = TimeHelper.GetVietnamTime();
         }
 
         // Tích điểm khi đơn hàng hoàn thành
@@ -618,7 +619,7 @@ public class OrderService : IOrderService
         if (string.IsNullOrEmpty(phone)) throw new BusinessException("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
 
         var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponCode == couponCode && c.IsActive == true);
-        if (coupon == null || DateTime.Now < coupon.StartDate || DateTime.Now > coupon.EndDate)
+        if (coupon == null || TimeHelper.GetVietnamTime() < coupon.StartDate || TimeHelper.GetVietnamTime() > coupon.EndDate)
             throw new BusinessException(ErrorMessages.InvalidCoupon);
 
         if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
@@ -668,7 +669,7 @@ public class OrderService : IOrderService
             CouponId = order.CouponId,
             CouponCode = order.Coupon?.CouponCode,
             PointsUsed = order.PointsUsed,
-            OrderDate = order.OrderDate ?? DateTime.Now,
+            OrderDate = order.OrderDate ?? TimeHelper.GetVietnamTime(),
             Note = order.Note,
             CustomerPhone = order.Session?.Phone,
             IsReviewed = order.Review != null,
