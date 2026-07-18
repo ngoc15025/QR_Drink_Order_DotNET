@@ -12,7 +12,7 @@ export PATH=~/dotnet:$PATH
 echo "=== 2. Tạo appsettings.Production.json từ biến môi trường Vercel ==="
 cat <<EOF > QRDrinkOrder.Client/wwwroot/appsettings.Production.json
 {
-  "BackendApiUrl": "${BACKEND_API_URL:-https://qr-drink-order-api.onrender.com}",
+  "BackendApiUrl": "${BACKEND_API_URL:-https://qr-drink-order-dotnet.onrender.com}",
   "Firebase": {
     "ApiKey": "${FIREBASE_API_KEY}",
     "AuthDomain": "${FIREBASE_AUTH_DOMAIN}",
