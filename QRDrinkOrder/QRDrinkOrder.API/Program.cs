@@ -244,6 +244,10 @@ namespace QRDrinkOrder.API
             app.MapControllers();
             app.MapHub<OrderHub>("/orderhub");
 
+            // Thêm Health Check endpoint để Render kiểm tra tình trạng server (tránh lỗi 404 khi HEAD/GET trang chủ khiến Render tự tắt container)
+            app.MapMethods("/", new[] { "GET", "HEAD" }, () => Results.Ok(new { status = "online", service = "QRDrinkOrder API v1", timestamp = DateTime.UtcNow }));
+            app.MapMethods("/health", new[] { "GET", "HEAD" }, () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
             app.Run();
         }
     }
