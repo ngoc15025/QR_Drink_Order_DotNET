@@ -60,20 +60,16 @@ namespace QRDrinkOrder.API
                 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
                 options.AddPolicy("CorsPolicy", policy =>
                 {
-                    if (allowedOrigins.Length > 0)
-                    {
-                        policy.WithOrigins(allowedOrigins)
-                              .AllowAnyHeader()
-                              .AllowAnyMethod()
-                              .AllowCredentials(); // Bắt buộc cho SignalR kết nối thời gian thực
-                    }
-                    else
-                    {
-                        // Dự phòng cho môi trường dev chưa cấu hình
-                        policy.AllowAnyOrigin()
-                              .AllowAnyHeader()
-                              .AllowAnyMethod();
-                    }
+                    policy.SetIsOriginAllowed(origin =>
+                          {
+                              if (string.IsNullOrEmpty(origin)) return false;
+                              if (origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:")) return true;
+                              if (origin.EndsWith(".vercel.app") || origin.EndsWith(".onrender.com")) return true;
+                              return allowedOrigins.Any(o => string.Equals(origin.TrimEnd('/'), o.TrimEnd('/'), StringComparison.OrdinalIgnoreCase));
+                          })
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
                 });
             });
 
@@ -214,6 +210,11 @@ namespace QRDrinkOrder.API
                 }
             }
 
+            app.UseForwardedHeaders();
+
+            // Áp dụng CORS trước tất cả các Middleware khác (đặc biệt là GlobalExceptionMiddleware) để đảm bảo lỗi 500/400 vẫn có header CORS
+            app.UseCors("CorsPolicy");
+
             // Thêm Middleware xử lý lỗi tập trung
             app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -231,13 +232,8 @@ namespace QRDrinkOrder.API
 
             // app.UseHttpsRedirection(); // Tắt dòng này khi deploy lên Render vì Render đã xử lý HTTPS
 
-            app.UseForwardedHeaders();
-
             // Kích hoạt phục vụ file tĩnh trong wwwroot (ảnh đồ uống, ảnh review)
             app.UseStaticFiles();
-
-            // Áp dụng CORS trước Authentication & Authorization
-            app.UseCors("CorsPolicy");
 
             app.UseRateLimiter();
 
