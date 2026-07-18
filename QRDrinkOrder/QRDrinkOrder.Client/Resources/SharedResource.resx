@@ -174,4 +174,64 @@
   <data name="AddBtn" xml:space="preserve">
     <value>Thêm</value>
   </data>
+  <data name="PinAuthTitle" xml:space="preserve">
+    <value>Xác thực mã PIN</value>
+  </data>
+  <data name="SetupPinTitle" xml:space="preserve">
+    <value>Thiết lập mã PIN</value>
+  </data>
+  <data name="ForgotPinBtn" xml:space="preserve">
+    <value>Quên mã PIN?</value>
+  </data>
+  <data name="EnterPinPrompt" xml:space="preserve">
+    <value>Vui lòng nhập mã PIN 4 chữ số để xác thực</value>
+  </data>
+  <data name="SetupPinPrompt" xml:space="preserve">
+    <value>Vui lòng tạo mã PIN 4 chữ số cho tài khoản của bạn</value>
+  </data>
+  <data name="ConfirmPinPrompt" xml:space="preserve">
+    <value>Nhập lại mã PIN 4 chữ số</value>
+  </data>
+  <data name="PinMismatchError" xml:space="preserve">
+    <value>Mã PIN xác nhận không khớp</value>
+  </data>
+  <data name="ForgotPinModalTitle" xml:space="preserve">
+    <value>Khôi phục mã PIN</value>
+  </data>
+  <data name="ForgotPinDesc" xml:space="preserve">
+    <value>Hệ thống sẽ gửi mã OTP qua SMS tới số điện thoại của bạn để đặt lại mã PIN.</value>
+  </data>
+  <data name="SendOtpBtn" xml:space="preserve">
+    <value>Gửi mã OTP</value>
+  </data>
+  <data name="VerifyOtpBtn" xml:space="preserve">
+    <value>Xác nhận OTP &amp; Đặt PIN mới</value>
+  </data>
+  <data name="EnterOtpPrompt" xml:space="preserve">
+    <value>Nhập mã OTP 6 chữ số</value>
+  </data>
+  <data name="NewPinPrompt" xml:space="preserve">
+    <value>Nhập mã PIN mới (4 chữ số)</value>
+  </data>
+  <data name="PinLockedWarning" xml:space="preserve">
+    <value>Tài khoản tạm khóa 15 phút do nhập sai PIN quá 5 lần</value>
+  </data>
+  <data name="PinSuccessMsg" xml:space="preserve">
+    <value>Xác thực thành công</value>
+  </data>
+  <data name="SetupPinSuccessMsg" xml:space="preserve">
+    <value>Thiết lập mã PIN thành công</value>
+  </data>
+  <data name="ResetPinSuccessMsg" xml:space="preserve">
+    <value>Khôi phục mã PIN thành công</value>
+  </data>
+  <data name="PointsRequirePin" xml:space="preserve">
+    <value>Sử dụng điểm yêu cầu xác thực mã PIN</value>
+  </data>
+  <data name="OrderHistoryRequirePin" xml:space="preserve">
+    <value>Tra cứu đơn hàng yêu cầu xác thực mã PIN</value>
+  </data>
+  <data name="ConfirmActionBtn" xml:space="preserve">
+    <value>Xác nhận</value>
+  </data>
 </root>

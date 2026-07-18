@@ -1,0 +1,497 @@
+@namespace QRDrinkOrder.Client.Components.UI
+@inject MembershipApiClient MembershipApi
+@inject CustomerAuthService AuthService
+@inject IJSRuntime JSRuntime
+@inject IStringLocalizer<SharedResource> Loc
+
+@if (IsOpen)
+{
+    <div class="pin-modal-backdrop" @onclick="HandleBackdropClick">
+        <div class="pin-modal-card" @onclick:stopPropagation="true">
+            <div class="pin-modal-header">
+                <h4 class="pin-modal-title">@GetModalTitle()</h4>
+                <button type="button" class="btn-close-modal" @onclick="CloseAsync">&times;</button>
+            </div>
+
+            <div class="pin-modal-body">
+                @if (IsLocked)
+                {
+                    <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"></i>
+                        <div>
+                            @Loc["PinLockedWarning"]
+                            @if (LockoutEnd.HasValue)
+                            {
+                                <div class="small mt-1">@($"Mở khóa sau: {LockoutEnd.Value.ToLocalTime():HH:mm:ss}")</div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 px-3 small mb-3">@ErrorMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(SuccessMessage))
+                {
+                    <div class="alert alert-success py-2 px-3 small mb-3">@SuccessMessage</div>
+                }
+
+                @if (CurrentMode == PinModalMode.Verify)
+                {
+                    <p class="text-muted text-center mb-4">@Loc["EnterPinPrompt"]</p>
+                    <div class="pin-boxes-container mb-4">
+                        @for (int i = 0; i < 4; i++)
+                        {
+                            int idx = i;
+                            <input @ref="PinInputs[idx]"
+                                   type="password"
+                                   inputmode="numeric"
+                                   maxlength="1"
+                                   class="pin-box"
+                                   value="@GetPinDigit(idx)"
+                                   @oninput="@(e => OnPinInputAsync(idx, e))"
+                                   @onkeydown="@(e => OnPinKeyDownAsync(idx, e))"
+                                   disabled="@(IsLoading || IsLocked)" />
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top">
+                        <a href="javascript:void(0)" class="forgot-pin-link" @onclick="SwitchToForgotPin">@Loc["ForgotPinBtn"]</a>
+                        <button class="btn btn-primary px-4 rounded-pill" @onclick="SubmitVerifyPinAsync" disabled="@(IsLoading || IsLocked || GetCurrentPinString().Length < 4)">
+                            @if (IsLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @Loc["ConfirmActionBtn"]
+                        </button>
+                    </div>
+                }
+                else if (CurrentMode == PinModalMode.SetupStep1 || CurrentMode == PinModalMode.SetupStep2)
+                {
+                    @if (CurrentMode == PinModalMode.SetupStep1)
+                    {
+                        <p class="text-muted text-center mb-4">
+                            Vui lòng tạo mã PIN 4 chữ số cho số <strong class="fw-bold text-dark">@PhoneNumber</strong> của bạn
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-4">@Loc["ConfirmPinPrompt"]</p>
+                    }
+                    <div class="pin-boxes-container mb-4">
+                        @for (int i = 0; i < 4; i++)
+                        {
+                            int idx = i;
+                            <input @ref="PinInputs[idx]"
+                                   type="password"
+                                   inputmode="numeric"
+                                   maxlength="1"
+                                   class="pin-box"
+                                   value="@GetPinDigit(idx)"
+                                   @oninput="@(e => OnPinInputAsync(idx, e))"
+                                   @onkeydown="@(e => OnPinKeyDownAsync(idx, e))"
+                                   disabled="@IsLoading" />
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4 pt-2 border-top">
+                        <button class="btn btn-primary px-4 rounded-pill" @onclick="SubmitSetupStepAsync" disabled="@(IsLoading || GetCurrentPinString().Length < 4)">
+                            @if (IsLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @Loc["ConfirmActionBtn"]
+                        </button>
+                    </div>
+                }
+                else if (CurrentMode == PinModalMode.ForgotOtpSend)
+                {
+                    <p class="text-muted small mb-3">@Loc["ForgotPinDesc"]</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Số điện thoại</label>
+                        <input type="text" class="form-control bg-light rounded-3" value="@PhoneNumber" disabled />
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button class="btn btn-primary rounded-pill py-2 fw-bold" @onclick="SendOtpAsync" disabled="@IsLoading">
+                            @if (IsLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @Loc["SendOtpBtn"]
+                        </button>
+                    </div>
+                }
+                else if (CurrentMode == PinModalMode.ForgotOtpVerify)
+                {
+                    <p class="text-muted small mb-3">@Loc["EnterOtpPrompt"]</p>
+                    <div class="mb-4">
+                        <input type="text"
+                               inputmode="numeric"
+                               maxlength="6"
+                               class="form-control text-center fs-4 letter-spacing-lg rounded-3"
+                               placeholder="------"
+                               @bind="OtpCode"
+                               @bind:event="oninput"
+                               disabled="@IsLoading" />
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button class="btn btn-primary rounded-pill py-2 fw-bold" @onclick="VerifyOtpAndProceedAsync" disabled="@(IsLoading || string.IsNullOrEmpty(OtpCode) || OtpCode.Length < 6)">
+                            @if (IsLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @Loc["VerifyOtpBtn"]
+                        </button>
+                    </div>
+                }
+                else if (CurrentMode == PinModalMode.ForgotNewPin)
+                {
+                    <p class="text-muted text-center mb-4">@Loc["NewPinPrompt"]</p>
+                    <div class="pin-boxes-container mb-4">
+                        @for (int i = 0; i < 4; i++)
+                        {
+                            int idx = i;
+                            <input @ref="PinInputs[idx]"
+                                   type="password"
+                                   inputmode="numeric"
+                                   maxlength="1"
+                                   class="pin-box"
+                                   value="@GetPinDigit(idx)"
+                                   @oninput="@(e => OnPinInputAsync(idx, e))"
+                                   @onkeydown="@(e => OnPinKeyDownAsync(idx, e))"
+                                   disabled="@IsLoading" />
+                        }
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button class="btn btn-primary rounded-pill py-2 fw-bold" @onclick="SubmitResetPinAsync" disabled="@(IsLoading || GetCurrentPinString().Length < 4)">
+                            @if (IsLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @Loc["ConfirmActionBtn"]
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public enum PinModalMode
+    {
+        Verify,
+        SetupStep1,
+        SetupStep2,
+        ForgotOtpSend,
+        ForgotOtpVerify,
+        ForgotNewPin
+    }
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string PhoneNumber { get; set; } = string.Empty;
+    [Parameter] public PinModalMode Mode { get; set; } = PinModalMode.Verify;
+    [Parameter] public EventCallback<string> OnPinVerified { get; set; }
+
+    private PinModalMode CurrentMode;
+    private bool IsLoading = false;
+    private bool IsLocked = false;
+    private DateTime? LockoutEnd = null;
+    private string? ErrorMessage = null;
+    private string? SuccessMessage = null;
+
+    private ElementReference[] PinInputs = new ElementReference[4];
+    private string[] PinDigits = new string[4] { "", "", "", "" };
+    private string TempSetupPin = string.Empty;
+    private string OtpCode = string.Empty;
+    private string FirebaseIdToken = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && PhoneNumber != string.Empty && CurrentMode != Mode)
+        {
+            CurrentMode = Mode;
+            ResetFields();
+            await CheckCustomerLockStatusAsync();
+        }
+    }
+
+    private void ResetFields()
+    {
+        PinDigits = new string[4] { "", "", "", "" };
+        TempSetupPin = string.Empty;
+        OtpCode = string.Empty;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        IsLoading = false;
+    }
+
+    private string GetModalTitle()
+    {
+        return CurrentMode switch
+        {
+            PinModalMode.Verify => Loc["PinAuthTitle"],
+            PinModalMode.SetupStep1 or PinModalMode.SetupStep2 => Loc["SetupPinTitle"],
+            _ => Loc["ForgotPinModalTitle"]
+        };
+    }
+
+    private async Task CheckCustomerLockStatusAsync()
+    {
+        if (string.IsNullOrEmpty(PhoneNumber)) return;
+
+        var status = await MembershipApi.CheckStatusAsync(PhoneNumber);
+        if (status != null && status.Exists)
+        {
+            IsLocked = status.IsLocked;
+            LockoutEnd = status.LockoutEnd;
+            if (IsLocked)
+            {
+                ErrorMessage = status.Message;
+            }
+            else if (!status.IsPinSet && CurrentMode == PinModalMode.Verify)
+            {
+                // Nếu chưa có mã PIN thì chuyển tự động qua chế độ Setup
+                CurrentMode = PinModalMode.SetupStep1;
+            }
+        }
+    }
+
+    private string GetPinDigit(int index) => index >= 0 && index < 4 ? PinDigits[index] : "";
+    private string GetCurrentPinString() => string.Join("", PinDigits);
+
+    private async Task OnPinInputAsync(int index, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(val))
+        {
+            // Chỉ lấy chữ số cuối cùng nhập vào nếu có nhiều hơn 1 ký tự
+            char lastChar = val.Last(c => char.IsDigit(c));
+            PinDigits[index] = lastChar.ToString();
+
+            // Tự động chuyển focus sang ô tiếp theo
+            if (index < 3)
+            {
+                await PinInputs[index + 1].FocusAsync();
+            }
+            else
+            {
+                // Khi nhập đủ 4 ô, tự động gọi xử lý nếu ở chế độ Verify
+                if (CurrentMode == PinModalMode.Verify && GetCurrentPinString().Length == 4)
+                {
+                    await SubmitVerifyPinAsync();
+                }
+            }
+        }
+        else
+        {
+            PinDigits[index] = "";
+        }
+    }
+
+    private async Task OnPinKeyDownAsync(int index, KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace" && string.IsNullOrEmpty(PinDigits[index]) && index > 0)
+        {
+            PinDigits[index - 1] = "";
+            await PinInputs[index - 1].FocusAsync();
+        }
+    }
+
+    private async Task SubmitVerifyPinAsync()
+    {
+        if (IsLocked || GetCurrentPinString().Length < 4) return;
+
+        IsLoading = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        var response = await MembershipApi.VerifyPinAsync(new VerifyPinRequest
+        {
+            Phone = PhoneNumber,
+            PinCode = GetCurrentPinString()
+        });
+
+        IsLoading = false;
+
+        if (response != null && response.Success)
+        {
+            SuccessMessage = Loc["PinSuccessMsg"];
+            await AuthService.LoginAsync(PhoneNumber, response.AuthToken);
+            await OnPinVerified.InvokeAsync(response.AuthToken);
+            await CloseAsync();
+        }
+        else
+        {
+            ErrorMessage = response?.Message ?? "Mã PIN không chính xác.";
+            // Kiểm tra lại trạng thái khóa nếu sai nhiều lần
+            await CheckCustomerLockStatusAsync();
+            PinDigits = new string[4] { "", "", "", "" };
+            if (!IsLocked && PinInputs.Length > 0)
+            {
+                try { await PinInputs[0].FocusAsync(); } catch { }
+            }
+        }
+    }
+
+    private async Task SubmitSetupStepAsync()
+    {
+        string currentPin = GetCurrentPinString();
+        if (currentPin.Length < 4) return;
+
+        ErrorMessage = null;
+
+        if (CurrentMode == PinModalMode.SetupStep1)
+        {
+            TempSetupPin = currentPin;
+            CurrentMode = PinModalMode.SetupStep2;
+            PinDigits = new string[4] { "", "", "", "" };
+            try { await PinInputs[0].FocusAsync(); } catch { }
+        }
+        else if (CurrentMode == PinModalMode.SetupStep2)
+        {
+            if (currentPin != TempSetupPin)
+            {
+                ErrorMessage = Loc["PinMismatchError"];
+                PinDigits = new string[4] { "", "", "", "" };
+                try { await PinInputs[0].FocusAsync(); } catch { }
+                return;
+            }
+
+            IsLoading = true;
+            var response = await MembershipApi.SetupPinAsync(new SetupPinRequest
+            {
+                Phone = PhoneNumber,
+                PinCode = currentPin
+            });
+            IsLoading = false;
+
+            if (response != null && response.Success)
+            {
+                SuccessMessage = Loc["SetupPinSuccessMsg"];
+                await AuthService.LoginAsync(PhoneNumber, response.AuthToken);
+                await OnPinVerified.InvokeAsync(response.AuthToken);
+                await CloseAsync();
+            }
+            else
+            {
+                ErrorMessage = response?.Message ?? "Không thể thiết lập mã PIN.";
+            }
+        }
+    }
+
+    private void SwitchToForgotPin()
+    {
+        CurrentMode = PinModalMode.ForgotOtpSend;
+        ErrorMessage = null;
+    }
+
+    private async Task SendOtpAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var res = await JSRuntime.InvokeAsync<OtpResult>("window.firebasePinAuth.sendOtp", PhoneNumber);
+            if (res.Success)
+            {
+                SuccessMessage = res.Message;
+                CurrentMode = PinModalMode.ForgotOtpVerify;
+            }
+            else
+            {
+                ErrorMessage = res.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Lỗi khi gửi OTP: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task VerifyOtpAndProceedAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var res = await JSRuntime.InvokeAsync<OtpResult>("window.firebasePinAuth.verifyOtp", OtpCode);
+            if (res.Success && !string.IsNullOrEmpty(res.IdToken))
+            {
+                FirebaseIdToken = res.IdToken;
+                SuccessMessage = res.Message;
+                CurrentMode = PinModalMode.ForgotNewPin;
+                PinDigits = new string[4] { "", "", "", "" };
+            }
+            else
+            {
+                ErrorMessage = res.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Xác nhận OTP thất bại: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SubmitResetPinAsync()
+    {
+        string newPin = GetCurrentPinString();
+        if (newPin.Length < 4) return;
+
+        IsLoading = true;
+        ErrorMessage = null;
+
+        var response = await MembershipApi.ResetPinWithFirebaseAsync(new ResetPinWithFirebaseRequest
+        {
+            Phone = PhoneNumber,
+            FirebaseIdToken = FirebaseIdToken,
+            NewPinCode = newPin
+        });
+
+        IsLoading = false;
+
+        if (response != null && response.Success)
+        {
+            SuccessMessage = Loc["ResetPinSuccessMsg"];
+            await AuthService.LoginAsync(PhoneNumber, response.AuthToken);
+            await OnPinVerified.InvokeAsync(response.AuthToken);
+            await CloseAsync();
+        }
+        else
+        {
+            ErrorMessage = response?.Message ?? "Khôi phục PIN thất bại.";
+        }
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        if (!IsLoading)
+        {
+            await CloseAsync();
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private class OtpResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string? IdToken { get; set; }
+    }
+}

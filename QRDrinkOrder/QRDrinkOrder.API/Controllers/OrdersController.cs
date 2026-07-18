@@ -39,6 +39,15 @@ public class OrdersController : ControllerBase
             }
         }
 
+        if (string.IsNullOrEmpty(request.CustomerAuthToken))
+        {
+            var authHeader = Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                request.CustomerAuthToken = authHeader.Substring("Bearer ".Length).Trim();
+            }
+        }
+
         var order = await _orderService.CreateOrderAsync(sessionId, request);
         return Ok(order);
     }

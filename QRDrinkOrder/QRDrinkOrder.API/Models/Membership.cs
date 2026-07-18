@@ -10,6 +10,12 @@ public partial class Membership
 
     public int Points { get; set; }
 
+    public string? PinCodeHash { get; set; }
+
+    public int FailedPinAttempts { get; set; } = 0;
+
+    public DateTime? PinLockoutEnd { get; set; }
+
     public DateTime CreatedAt { get; set; } = TimeHelper.GetVietnamTime();
 
     public virtual ICollection<PointHistory> PointHistories { get; set; } = new List<PointHistory>();

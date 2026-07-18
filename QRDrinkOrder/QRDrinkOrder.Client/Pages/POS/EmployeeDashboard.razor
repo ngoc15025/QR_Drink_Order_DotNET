@@ -137,22 +137,25 @@
                                 @foreach (var item in order.Items)
                                 {
                                     <li class="order-item">
-                                        <span class="item-qty">@item.Quantity</span>
-                                        <span class="item-name">
-                                            @item.DrinkName
+                                        <div class="pos-item-header">
+                                            <span class="pos-item-qty">@item.Quantity×</span>
+                                            <span class="pos-item-name">@item.DrinkName</span>
+                                        </div>
+                                        <div class="pos-item-tags">
                                             @if (!string.IsNullOrEmpty(item.SizeName))
                                             {
-                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                                <span class="pos-tag pos-tag-size">Size: @item.SizeName</span>
                                             }
-                                        </span>
-                                        <span class="item-opts">
-                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            <span class="pos-tag pos-tag-base">Đá: @item.IceLevel% · Đường: @item.SweetnessLevel%</span>
                                             @if (item.ToppingNames != null && item.ToppingNames.Any())
                                             {
-                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                                <span class="pos-tag pos-tag-topping">+ @string.Join(", ", item.ToppingNames)</span>
                                             }
-                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
-                                        </span>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <span class="pos-tag pos-tag-note">Ghi chú: @item.ItemNote</span>
+                                            }
+                                        </div>
                                     </li>
                                 }
                             </ul>
@@ -235,22 +238,25 @@
                                 @foreach (var item in order.Items)
                                 {
                                     <li class="order-item">
-                                        <span class="item-qty">@item.Quantity</span>
-                                        <span class="item-name">
-                                            @item.DrinkName
+                                        <div class="pos-item-header">
+                                            <span class="pos-item-qty">@item.Quantity×</span>
+                                            <span class="pos-item-name">@item.DrinkName</span>
+                                        </div>
+                                        <div class="pos-item-tags">
                                             @if (!string.IsNullOrEmpty(item.SizeName))
                                             {
-                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                                <span class="pos-tag pos-tag-size">Size: @item.SizeName</span>
                                             }
-                                        </span>
-                                        <span class="item-opts">
-                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            <span class="pos-tag pos-tag-base">Đá: @item.IceLevel% · Đường: @item.SweetnessLevel%</span>
                                             @if (item.ToppingNames != null && item.ToppingNames.Any())
                                             {
-                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                                <span class="pos-tag pos-tag-topping">+ @string.Join(", ", item.ToppingNames)</span>
                                             }
-                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
-                                        </span>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <span class="pos-tag pos-tag-note">Ghi chú: @item.ItemNote</span>
+                                            }
+                                        </div>
                                     </li>
                                 }
                             </ul>
@@ -325,22 +331,25 @@
                                 @foreach (var item in order.Items)
                                 {
                                     <li class="order-item">
-                                        <span class="item-qty">@item.Quantity×</span>
-                                        <span class="item-name">
-                                            @item.DrinkName
+                                        <div class="pos-item-header">
+                                            <span class="pos-item-qty">@item.Quantity×</span>
+                                            <span class="pos-item-name">@item.DrinkName</span>
+                                        </div>
+                                        <div class="pos-item-tags">
                                             @if (!string.IsNullOrEmpty(item.SizeName))
                                             {
-                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                                <span class="pos-tag pos-tag-size">Size: @item.SizeName</span>
                                             }
-                                        </span>
-                                        <span class="item-opts">
-                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            <span class="pos-tag pos-tag-base">Đá: @item.IceLevel% · Đường: @item.SweetnessLevel%</span>
                                             @if (item.ToppingNames != null && item.ToppingNames.Any())
                                             {
-                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                                <span class="pos-tag pos-tag-topping">+ @string.Join(", ", item.ToppingNames)</span>
                                             }
-                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
-                                        </span>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <span class="pos-tag pos-tag-note">Ghi chú: @item.ItemNote</span>
+                                            }
+                                        </div>
                                     </li>
                                 }
                             </ul>
@@ -415,22 +424,25 @@
                                 @foreach (var item in order.Items)
                                 {
                                     <li class="order-item">
-                                        <span class="item-qty">@item.Quantity×</span>
-                                        <span class="item-name">
-                                            @item.DrinkName
+                                        <div class="pos-item-header">
+                                            <span class="pos-item-qty">@item.Quantity×</span>
+                                            <span class="pos-item-name">@item.DrinkName</span>
+                                        </div>
+                                        <div class="pos-item-tags">
                                             @if (!string.IsNullOrEmpty(item.SizeName))
                                             {
-                                                <span class="badge bg-secondary ms-1" style="font-size:0.7rem; padding: 2px 5px;">@item.SizeName</span>
+                                                <span class="pos-tag pos-tag-size">Size: @item.SizeName</span>
                                             }
-                                        </span>
-                                        <span class="item-opts">
-                                            đá @item.IceLevel% · đường @item.SweetnessLevel%
+                                            <span class="pos-tag pos-tag-base">Đá: @item.IceLevel% · Đường: @item.SweetnessLevel%</span>
                                             @if (item.ToppingNames != null && item.ToppingNames.Any())
                                             {
-                                                <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
+                                                <span class="pos-tag pos-tag-topping">+ @string.Join(", ", item.ToppingNames)</span>
                                             }
-                                            @(string.IsNullOrEmpty(item.ItemNote) ? "" : $" · ({item.ItemNote})")
-                                        </span>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <span class="pos-tag pos-tag-note">Ghi chú: @item.ItemNote</span>
+                                            }
+                                        </div>
                                     </li>
                                 }
                             </ul>

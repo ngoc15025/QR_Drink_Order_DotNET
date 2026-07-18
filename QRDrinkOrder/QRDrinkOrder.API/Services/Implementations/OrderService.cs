@@ -1,14 +1,14 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Hubs;
-using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
-using QRDrinkOrder.Shared.Exceptions;
-using QRDrinkOrder.Shared.Helpers;
+using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Implementations;
 
@@ -17,13 +17,15 @@ public class OrderService : IOrderService
     private readonly QrdrinkOrderDbContext _context;
     private readonly IHubContext<OrderHub> _hubContext;
     private readonly INotificationService _notificationService;
+    private readonly IMembershipService _membershipService;
     private readonly ILogger<OrderService> _logger;
 
-    public OrderService(QrdrinkOrderDbContext context, IHubContext<OrderHub> hubContext, INotificationService notificationService, ILogger<OrderService> logger)
+    public OrderService(QrdrinkOrderDbContext context, IHubContext<OrderHub> hubContext, INotificationService notificationService, IMembershipService membershipService, ILogger<OrderService> logger)
     {
         _context = context;
         _hubContext = hubContext;
         _notificationService = notificationService;
+        _membershipService = membershipService;
         _logger = logger;
     }
 
@@ -41,7 +43,7 @@ public class OrderService : IOrderService
                     SessionId = sessionId,
                     Phone = request.Phone,
                     PreferredLanguage = "vi",
-                    CreatedAt = TimeHelper.GetVietnamTime()
+                    CreatedAt = DateTime.Now
                 };
                 _context.CustomerSessions.Add(session);
             }
@@ -56,7 +58,7 @@ public class OrderService : IOrderService
             var drinkIds = request.Items.Select(i => i.DrinkId).ToList();
             var drinks = await _context.Drinks
                 .Include(d => d.DrinkTranslations)
-                .Where(d => drinkIds.Contains(d.DrinkId) && d.IsActive == true)
+                .Where(d => drinkIds.Contains(d.DrinkId))
                 .ToDictionaryAsync(d => d.DrinkId);
 
             var sizes = await _context.Sizes.ToDictionaryAsync(s => s.SizeId);
@@ -84,7 +86,7 @@ public class OrderService : IOrderService
                     }
                     else
                     {
-                        throw new BusinessException("Bạn đã sử dụng ưu đãi 50% dành cho nhân viên trong hôm nay.");
+                        throw new Exception("Bạn đã sử dụng ưu đãi 50% dành cho nhân viên trong hôm nay.");
                     }
                 }
             }
@@ -94,25 +96,74 @@ public class OrderService : IOrderService
             if (request.PointsToUse.HasValue && request.PointsToUse.Value > 0)
             {
                 if (string.IsNullOrEmpty(request.Phone))
-                    throw new BusinessException("Yêu cầu nhập số điện thoại để sử dụng điểm.");
+                    throw new Exception("Yêu cầu nhập số điện thoại để sử dụng điểm.");
 
                 var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == request.Phone);
                 if (membership == null || membership.Points < request.PointsToUse.Value)
-                    throw new BusinessException("Điểm tích lũy không đủ để sử dụng.");
+                    throw new Exception("Điểm tích lũy không đủ để sử dụng.");
+
+                // Kiểm tra bảo mật khi dùng điểm đổi quà (Yêu cầu PIN hoặc CustomerAuthToken hợp lệ)
+                bool isAuthorized = false;
+
+                // 1. Kiểm tra qua CustomerAuthToken (JWT)
+                if (!string.IsNullOrEmpty(request.CustomerAuthToken))
+                {
+                    try
+                    {
+                        var handler = new JwtSecurityTokenHandler();
+                        if (handler.CanReadToken(request.CustomerAuthToken))
+                        {
+                            var jwtToken = handler.ReadJwtToken(request.CustomerAuthToken);
+                            var phoneClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "Phone" || c.Type == ClaimTypes.MobilePhone)?.Value;
+                            if (string.Equals(phoneClaim, request.Phone, StringComparison.OrdinalIgnoreCase) && jwtToken.ValidTo > DateTime.UtcNow)
+                            {
+                                isAuthorized = true;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Token không hợp lệ, tiếp tục kiểm tra PIN
+                    }
+                }
+
+                // 2. Nếu chưa được xác thực qua token, kiểm tra qua PIN code
+                if (!isAuthorized)
+                {
+                    if (string.IsNullOrEmpty(request.PinCode))
+                    {
+                        if (string.IsNullOrEmpty(membership.PinCodeHash))
+                        {
+                            throw new Exception("Tài khoản chưa thiết lập mã PIN. Vui lòng thiết lập mã PIN mới trước khi sử dụng điểm.");
+                        }
+                        throw new Exception("Yêu cầu nhập mã PIN hoặc đăng nhập để sử dụng điểm đổi quà.");
+                    }
+
+                    var verifyResult = await _membershipService.VerifyPinAsync(new VerifyPinRequest
+                    {
+                        Phone = request.Phone,
+                        PinCode = request.PinCode
+                    });
+
+                    if (!verifyResult.Success)
+                    {
+                        throw new Exception(verifyResult.Message ?? "Mã PIN xác thực không chính xác.");
+                    }
+                }
 
                 var pointRateConfig = await _context.SystemConfigs.FindAsync("RedeemPointRate");
                 int redeemRate = pointRateConfig != null ? int.Parse(pointRateConfig.ConfigValue) : 1000;
 
                 decimal pointDiscount = request.PointsToUse.Value * redeemRate;
-
+                
                 if (discountAmount + pointDiscount > totalAmount)
                 {
-                    throw new BusinessException("Số điểm sử dụng vượt quá giá trị đơn hàng.");
+                    throw new Exception("Số điểm sử dụng vượt quá giá trị đơn hàng.");
                 }
 
                 discountAmount += pointDiscount;
                 pointsUsed = request.PointsToUse.Value;
-
+                
                 // Trừ điểm ngay lập tức
                 membership.Points -= pointsUsed;
                 _context.PointHistories.Add(new PointHistory
@@ -134,7 +185,7 @@ public class OrderService : IOrderService
                 PointsUsed = pointsUsed > 0 ? pointsUsed : null,
                 OrderStatus = (byte)OrderStatus.PendingPayment,
                 CouponId = coupon?.CouponId,
-                OrderDate = TimeHelper.GetVietnamTime(),
+                OrderDate = DateTime.Now,
                 Note = request.Note
             };
 
@@ -147,7 +198,7 @@ public class OrderService : IOrderService
                 var drink = drinks[item.DrinkId];
                 decimal unitPrice = drink.BasePrice;
                 if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size)) unitPrice += size.PriceOffset;
-
+                
                 if (item.ToppingIds != null)
                 {
                     foreach (var tId in item.ToppingIds) if (toppings.TryGetValue(tId, out var topping)) unitPrice += topping.Price;
@@ -197,10 +248,10 @@ public class OrderService : IOrderService
                     CouponId = coupon.CouponId,
                     Phone = request.Phone!,
                     OrderId = order.OrderId,
-                    UsedAt = TimeHelper.GetVietnamTime()
+                    UsedAt = DateTime.Now
                 };
                 _context.CouponUsages.Add(usage);
-                await _context.Coupons.Where(c => c.CouponId == coupon.CouponId).ExecuteUpdateAsync(s => s.SetProperty(c => c.UsedCount, c => c.UsedCount + 1));
+                coupon.UsedCount += 1;
             }
 
             // Ghi nhận phúc lợi nhân viên
@@ -289,70 +340,140 @@ public class OrderService : IOrderService
 
     public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status, int? employeeId = null, string? cancelReason = null)
     {
-        var order = await _context.Orders
-            .Include(o => o.Payment)
-            .Include(o => o.Session)
-            .Include(o => o.Coupon)
-            .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-        if (order == null)
-            return false;
-
-        order.OrderStatus = status;
-        if (employeeId.HasValue)
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            order.EmployeeId = employeeId;
-        }
+            var order = await _context.Orders
+                .Include(o => o.Payment)
+                .Include(o => o.Session)
+                .Include(o => o.Coupon)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
-        // Nếu trạng thái là Đã hủy hoặc Hoàn thành, cập nhật trạng thái thanh toán tương ứng
-        if (status == (byte)OrderStatus.Cancelled)
-        {
-            if (order.Payment != null)
+            if (order == null)
+                return false;
+
+            order.OrderStatus = status;
+            if (employeeId.HasValue)
             {
-                if (order.Payment.PaymentStatus == (byte)PaymentStatus.Success)
-                {
-                    order.Payment.PaymentStatus = (byte)PaymentStatus.Refunded;
-                }
-                else
+                order.EmployeeId = employeeId;
+            }
+
+            // Nếu trạng thái là Đã hủy hoặc Hoàn thành, cập nhật trạng thái thanh toán tương ứng
+            if (status == (byte)OrderStatus.Cancelled)
+            {
+                if (order.Payment != null)
                 {
                     order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
                 }
+
+                await RefundOrderRewardsAndBenefitsAsync(order);
+
+                string reasonText = !string.IsNullOrWhiteSpace(cancelReason)
+                    ? $" [Đã hủy bởi nhân viên: {cancelReason}]"
+                    : " [Đã hủy bởi nhân viên]";
+                order.Note = (order.Note ?? "") + reasonText;
+            }
+            else if (status == (byte)OrderStatus.Completed && order.Payment != null && order.Payment.PaymentMethod == (byte)PaymentMethod.Cash)
+            {
+                // Đối với tiền mặt, khi hoàn thành đơn nghĩa là đã thanh toán tại quầy
+                order.Payment.PaymentStatus = (byte)PaymentStatus.Success;
+                order.Payment.PaidAt = DateTime.Now;
             }
 
-            string reasonText = !string.IsNullOrWhiteSpace(cancelReason)
-                ? $" [Đã hủy bởi nhân viên: {cancelReason}]"
-                : " [Đã hủy bởi nhân viên]";
-            order.Note = (order.Note ?? "") + reasonText;
-
-            // Hoàn lại mã giảm giá
-            if (order.CouponId.HasValue && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
+            // Tích điểm khi đơn hàng hoàn thành
+            if (status == (byte)OrderStatus.Completed && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
             {
-                var usage = await _context.CouponUsages.FirstOrDefaultAsync(cu => cu.CouponId == order.CouponId.Value && cu.Phone == order.Session.Phone);
+                var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == order.Session.Phone);
+                if (membership == null)
+                {
+                    membership = new Membership { Phone = order.Session.Phone, Points = 0 };
+                    _context.Memberships.Add(membership);
+                }
+
+                var earnRateConfig = await _context.SystemConfigs.FindAsync("EarnPointRate");
+                int earnRate = earnRateConfig != null ? int.Parse(earnRateConfig.ConfigValue) : 10000;
+                
+                int earnedPoints = (int)((order.FinalAmount ?? 0) / earnRate);
+                if (earnedPoints > 0)
+                {
+                    membership.Points += earnedPoints;
+                    _context.PointHistories.Add(new PointHistory
+                    {
+                        Phone = membership.Phone,
+                        PointsChanged = earnedPoints,
+                        Reason = $"Tích điểm từ đơn hàng #{order.OrderId}"
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // Phát tín hiệu đồng bộ SignalR cập nhật trạng thái đơn
+            string statusName = GetStatusName(status);
+            await _hubContext.Clients.Group($"Customer_{order.SessionId}").SendAsync("ReceiveStatusUpdate", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
+            await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
+
+            // Gửi WebPush Notification cho khách hàng nếu có số điện thoại
+            if (order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
+            {
+                string message = $"Đơn hàng #{orderId} của bạn đã được cập nhật thành: {statusName}.";
+                if (status == (byte)OrderStatus.Completed)
+                {
+                    message = $"Đồ uống của bạn đã sẵn sàng tại quầy (Đơn #{orderId}). Chúc bạn ngon miệng!";
+                }
+                await _notificationService.SendNotificationToPhoneAsync(order.Session.Phone, "Cập nhật đơn hàng", message, $"/track-order/{orderId}");
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Lỗi khi cập nhật trạng thái đơn hàng #{OrderId} sang {Status}", orderId, status);
+            return false;
+        }
+    }
+
+    private async Task RefundOrderRewardsAndBenefitsAsync(Order order)
+    {
+        // Hoàn lại mã giảm giá
+        if (order.CouponId.HasValue)
+        {
+            var session = await _context.CustomerSessions.FindAsync(order.SessionId);
+            if (session != null && !string.IsNullOrEmpty(session.Phone))
+            {
+                var usage = await _context.CouponUsages.FirstOrDefaultAsync(cu => cu.CouponId == order.CouponId.Value && cu.Phone == session.Phone);
                 if (usage != null)
                 {
                     _context.CouponUsages.Remove(usage);
                 }
-
-                if (order.Coupon != null)
-                {
-                    order.Coupon.UsedCount = Math.Max(0, order.Coupon.UsedCount.GetValueOrDefault() - 1);
-                }
             }
 
-            // Hoàn lại phúc lợi nhân viên
-            if (order.EmployeeId.HasValue)
+            var coupon = order.Coupon ?? await _context.Coupons.FindAsync(order.CouponId.Value);
+            if (coupon != null)
             {
-                var benefit = await _context.StaffBenefits.FirstOrDefaultAsync(sb => sb.OrderId == order.OrderId);
-                if (benefit != null)
-                {
-                    _context.StaffBenefits.Remove(benefit);
-                }
+                coupon.UsedCount = Math.Max(0, coupon.UsedCount.GetValueOrDefault() - 1);
             }
+        }
 
-            // Hoàn lại điểm
-            if (order.PointsUsed.HasValue && order.PointsUsed.Value > 0 && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
+        // Hoàn lại phúc lợi nhân viên (nếu có)
+        if (order.EmployeeId.HasValue)
+        {
+            var benefit = await _context.StaffBenefits.FirstOrDefaultAsync(sb => sb.OrderId == order.OrderId);
+            if (benefit != null)
             {
-                var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == order.Session.Phone);
+                _context.StaffBenefits.Remove(benefit);
+            }
+        }
+
+        // Hoàn lại điểm (nếu dùng)
+        if (order.PointsUsed.HasValue && order.PointsUsed.Value > 0)
+        {
+            var session = await _context.CustomerSessions.FindAsync(order.SessionId);
+            if (session != null && !string.IsNullOrEmpty(session.Phone))
+            {
+                var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == session.Phone);
                 if (membership != null)
                 {
                     membership.Points += order.PointsUsed.Value;
@@ -360,63 +481,11 @@ public class OrderService : IOrderService
                     {
                         Phone = membership.Phone,
                         PointsChanged = order.PointsUsed.Value,
-                        Reason = $"Hoàn điểm do nhân viên hủy đơn #{order.OrderId}"
+                        Reason = $"Hoàn điểm do hủy đơn #{order.OrderId}"
                     });
                 }
             }
         }
-        else if (status == (byte)OrderStatus.Completed && order.Payment != null && order.Payment.PaymentMethod == (byte)PaymentMethod.Cash)
-        {
-            // Đối với tiền mặt, khi hoàn thành đơn nghĩa là đã thanh toán tại quầy
-            order.Payment.PaymentStatus = (byte)PaymentStatus.Success;
-            order.Payment.PaidAt = TimeHelper.GetVietnamTime();
-        }
-
-        // Tích điểm khi đơn hàng hoàn thành
-        if (status == (byte)OrderStatus.Completed && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
-        {
-            var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == order.Session.Phone);
-            if (membership == null)
-            {
-                membership = new Membership { Phone = order.Session.Phone, Points = 0 };
-                _context.Memberships.Add(membership);
-            }
-
-            var earnRateConfig = await _context.SystemConfigs.FindAsync("EarnPointRate");
-            int earnRate = earnRateConfig != null ? int.Parse(earnRateConfig.ConfigValue) : 10000;
-
-            int earnedPoints = (int)((order.FinalAmount ?? 0) / earnRate);
-            if (earnedPoints > 0)
-            {
-                membership.Points += earnedPoints;
-                _context.PointHistories.Add(new PointHistory
-                {
-                    Phone = membership.Phone,
-                    PointsChanged = earnedPoints,
-                    Reason = $"Tích điểm từ đơn hàng #{order.OrderId}"
-                });
-            }
-        }
-
-        await _context.SaveChangesAsync();
-
-        // Phát tín hiệu đồng bộ SignalR cập nhật trạng thái đơn
-        string statusName = GetStatusName(status);
-        await _hubContext.Clients.Group($"Customer_{order.SessionId}").SendAsync("ReceiveStatusUpdate", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
-        await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
-
-        // Gửi WebPush Notification cho khách hàng nếu có số điện thoại
-        if (order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
-        {
-            string message = $"Đơn hàng #{orderId} của bạn đã được cập nhật thành: {statusName}.";
-            if (status == (byte)OrderStatus.Completed)
-            {
-                message = $"Đồ uống của bạn đã sẵn sàng tại quầy (Đơn #{orderId}). Chúc bạn ngon miệng!";
-            }
-            await _notificationService.SendNotificationToPhoneAsync(order.Session.Phone, "Cập nhật đơn hàng", message, $"/track-order/{orderId}");
-        }
-
-        return true;
     }
 
     public async Task<bool> CancelOrderAsync(int orderId, Guid sessionId)
@@ -434,11 +503,11 @@ public class OrderService : IOrderService
 
             // Ràng buộc bảo mật: Đúng SessionId mới được hủy
             if (order.SessionId != sessionId)
-                throw new BusinessException(ErrorMessages.Unauthorized);
+                throw new Exception(ErrorMessages.Unauthorized);
 
             // Ràng buộc F&B: Chỉ được hủy khi chưa pha chế (OrderStatus == 0: Chờ thanh toán)
             if (order.OrderStatus != (byte)OrderStatus.PendingPayment)
-                throw new BusinessException(ErrorMessages.OrderCannotCancel);
+                throw new Exception(ErrorMessages.OrderCannotCancel);
 
             order.OrderStatus = (byte)OrderStatus.Cancelled;
 
@@ -447,54 +516,7 @@ public class OrderService : IOrderService
                 order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
             }
 
-            // Hoàn lại mã giảm giá
-            if (order.CouponId.HasValue)
-            {
-                var session = await _context.CustomerSessions.FindAsync(sessionId);
-                if (session != null && !string.IsNullOrEmpty(session.Phone))
-                {
-                    var usage = await _context.CouponUsages.FirstOrDefaultAsync(cu => cu.CouponId == order.CouponId.Value && cu.Phone == session.Phone);
-                    if (usage != null)
-                    {
-                        _context.CouponUsages.Remove(usage);
-                    }
-                }
-
-                if (order.Coupon != null)
-                {
-                    order.Coupon.UsedCount = Math.Max(0, order.Coupon.UsedCount.GetValueOrDefault() - 1);
-                }
-            }
-
-            // Hoàn lại phúc lợi nhân viên (nếu có)
-            if (order.EmployeeId.HasValue)
-            {
-                var benefit = await _context.StaffBenefits.FirstOrDefaultAsync(sb => sb.OrderId == order.OrderId);
-                if (benefit != null)
-                {
-                    _context.StaffBenefits.Remove(benefit);
-                }
-            }
-
-            // Hoàn lại điểm (nếu dùng)
-            if (order.PointsUsed.HasValue && order.PointsUsed.Value > 0)
-            {
-                var session = await _context.CustomerSessions.FindAsync(sessionId);
-                if (session != null && !string.IsNullOrEmpty(session.Phone))
-                {
-                    var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == session.Phone);
-                    if (membership != null)
-                    {
-                        membership.Points += order.PointsUsed.Value;
-                        _context.PointHistories.Add(new PointHistory
-                        {
-                            Phone = membership.Phone,
-                            PointsChanged = order.PointsUsed.Value,
-                            Reason = $"Hoàn điểm do hủy đơn #{order.OrderId}"
-                        });
-                    }
-                }
-            }
+            await RefundOrderRewardsAndBenefitsAsync(order);
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -525,11 +547,11 @@ public class OrderService : IOrderService
 
         // Ràng buộc bảo mật: Đúng SessionId mới được sửa
         if (order.SessionId != sessionId)
-            throw new BusinessException(ErrorMessages.Unauthorized);
+            throw new Exception(ErrorMessages.Unauthorized);
 
         // Chỉ được đổi phương thức khi chưa thanh toán
         if (order.Payment.PaymentStatus != (byte)PaymentStatus.Pending)
-            throw new BusinessException("Không thể thay đổi phương thức cho đơn hàng đã thanh toán.");
+            throw new Exception("Không thể thay đổi phương thức cho đơn hàng đã thanh toán.");
 
         order.Payment.PaymentMethod = paymentMethod;
 
@@ -537,11 +559,11 @@ public class OrderService : IOrderService
         await _context.SaveChangesAsync();
 
         // Gửi SignalR cho màn hình thu ngân cập nhật phương thức
-        await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new
-        {
-            OrderId = orderId,
-            Status = order.OrderStatus,
-            StatusName = GetStatusName(order.OrderStatus ?? 0),
+        await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new 
+        { 
+            OrderId = orderId, 
+            Status = order.OrderStatus, 
+            StatusName = GetStatusName(order.OrderStatus ?? 0), 
             PaymentStatus = order.Payment.PaymentStatus,
             PaymentMethod = paymentMethod
         });
@@ -578,7 +600,6 @@ public class OrderService : IOrderService
             (byte)PaymentStatus.Pending => "Đang chờ",
             (byte)PaymentStatus.Success => "Thành công",
             (byte)PaymentStatus.Failed => "Thất bại",
-            (byte)PaymentStatus.Refunded => "Đã hoàn tiền",
             _ => "Không xác định"
         };
     }
@@ -589,7 +610,7 @@ public class OrderService : IOrderService
         foreach (var item in items)
         {
             if (!drinks.TryGetValue(item.DrinkId, out var drink))
-                throw new BusinessException($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
+                throw new Exception($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
 
             decimal unitPrice = drink.BasePrice;
             if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size))
@@ -616,22 +637,22 @@ public class OrderService : IOrderService
     private async Task<(decimal discountAmount, Coupon? coupon, bool isApplied)> CalculateCouponDiscountAsync(string? phone, string? couponCode, decimal totalAmount)
     {
         if (string.IsNullOrEmpty(couponCode)) return (0, null, false);
-        if (string.IsNullOrEmpty(phone)) throw new BusinessException("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
+        if (string.IsNullOrEmpty(phone)) throw new Exception("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
 
         var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponCode == couponCode && c.IsActive == true);
-        if (coupon == null || TimeHelper.GetVietnamTime() < coupon.StartDate || TimeHelper.GetVietnamTime() > coupon.EndDate)
-            throw new BusinessException(ErrorMessages.InvalidCoupon);
+        if (coupon == null || DateTime.Now < coupon.StartDate || DateTime.Now > coupon.EndDate)
+            throw new Exception(ErrorMessages.InvalidCoupon);
 
         if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-            throw new BusinessException(ErrorMessages.CouponLimitReached);
+            throw new Exception(ErrorMessages.CouponLimitReached);
 
         if (totalAmount < coupon.MinOrderValue)
-            throw new BusinessException(ErrorMessages.MinOrderNotMet);
+            throw new Exception(ErrorMessages.MinOrderNotMet);
 
         // Chặn lạm dụng mã theo SĐT
         var hasUsed = await _context.CouponUsages.AnyAsync(cu => cu.CouponId == coupon.CouponId && cu.Phone == phone);
         if (hasUsed)
-            throw new BusinessException(ErrorMessages.CouponAlreadyUsed);
+            throw new Exception(ErrorMessages.CouponAlreadyUsed);
 
         // Tính toán số tiền giảm
         decimal discountAmount = 0;
@@ -669,7 +690,7 @@ public class OrderService : IOrderService
             CouponId = order.CouponId,
             CouponCode = order.Coupon?.CouponCode,
             PointsUsed = order.PointsUsed,
-            OrderDate = order.OrderDate ?? TimeHelper.GetVietnamTime(),
+            OrderDate = order.OrderDate ?? DateTime.Now,
             Note = order.Note,
             CustomerPhone = order.Session?.Phone,
             IsReviewed = order.Review != null,
@@ -727,4 +748,3 @@ public class OrderService : IOrderService
         return orders.Select(MapToOrderDto).ToList();
     }
 }
-

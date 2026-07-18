@@ -5,6 +5,7 @@ public class MembershipDto
     public int MembershipId { get; set; }
     public string Phone { get; set; } = string.Empty;
     public int Points { get; set; }
+    public bool IsPinSet { get; set; }
     public List<PointHistoryDto> PointHistories { get; set; } = new();
 }
 

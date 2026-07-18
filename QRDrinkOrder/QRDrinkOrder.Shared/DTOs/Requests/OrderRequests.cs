@@ -13,6 +13,10 @@ public class CreateOrderRequest
 
     public int? PointsToUse { get; set; }
 
+    public string? PinCode { get; set; } // Mã PIN của khách hàng khi dùng điểm
+
+    public string? CustomerAuthToken { get; set; } // Token xác thực của khách hàng (hoặc qua Header)
+
     public string? Note { get; set; }
 
     [Required(ErrorMessage = "Phương thức thanh toán là bắt buộc.")]

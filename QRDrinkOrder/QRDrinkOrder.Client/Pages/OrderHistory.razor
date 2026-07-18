@@ -1,6 +1,7 @@
 @page "/order"
 @inject QRDrinkOrder.Client.Services.ApiClients.OrderApiClient OrderApi
 @inject QRDrinkOrder.Client.Services.ApiClients.MembershipApiClient MembershipApi
+@inject QRDrinkOrder.Client.Services.CustomerAuthService CustomerAuth
 @inject Microsoft.Extensions.Localization.IStringLocalizer<QRDrinkOrder.Client.SharedResource> Loc
 @using QRDrinkOrder.Shared.DTOs.Responses
 
@@ -36,7 +37,19 @@
                         <h3 class="mb-0 fw-bold">@membership.Points <span class="fs-6 fw-normal">Pts</span></h3>
                     </div>
                 </div>
-                <p class="small mb-0 opacity-75">Dùng điểm để được giảm giá trực tiếp khi đặt hàng!</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <p class="small mb-0 opacity-75">Dùng điểm để được giảm giá trực tiếp khi đặt hàng!</p>
+                    @if (CustomerAuth.IsAuthenticated && CustomerAuth.CurrentPhone == phoneNumber)
+                    {
+                        <button class="btn btn-sm btn-light text-danger fw-bold shadow-sm" style="border-radius: 12px; z-index: 2;" @onclick="ClearPinSession">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-box-arrow-right me-1" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+                                <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                            </svg>
+                            Đăng xuất PIN
+                        </button>
+                    }
+                </div>
             </div>
             <!-- Decorative circle -->
             <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.2); border-radius: 50%;"></div>
@@ -66,7 +79,15 @@
         }
         else
         {
-            <h6 class="fw-bold mb-3">@Loc["RecentOrders"] (@orders.Count)</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">@Loc["RecentOrders"] (@orders.Count)</h6>
+                @if (CustomerAuth.IsAuthenticated && CustomerAuth.CurrentPhone == phoneNumber)
+                {
+                    <button class="btn btn-sm btn-outline-danger" style="border-radius: 8px;" @onclick="ClearPinSession">
+                        Đổi số / Khóa PIN
+                    </button>
+                }
+            </div>
             foreach (var order in orders)
             {
                 <div class="card mb-3" style="border: 1px solid #f0f0f0; border-radius: 12px; overflow: hidden; box-shadow: none;">
@@ -91,7 +112,11 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-2 d-flex align-items-center">
-                            <span class="fw-bold fs-6">@order.TotalAmount.ToString("N0")đ</span>
+                            @if (order.DiscountAmount > 0)
+                            {
+                                <span class="small text-decoration-line-through text-secondary me-1">@order.TotalAmount.ToString("N0")đ</span>
+                            }
+                            <span class="fw-bold fs-6 text-danger">@order.FinalAmount.ToString("N0")đ</span>
                             <span class="mx-2 text-secondary">•</span>
                             <span class="small text-secondary">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</span>
                         </div>
@@ -124,6 +149,11 @@
     }
 </div>
 
+<CustomerPinModal @bind-IsOpen="showPinModal"
+                  PhoneNumber="@phoneNumber"
+                  Mode="@pinModalMode"
+                  OnPinVerified="HandlePinVerified" />
+
 @code {
     [Parameter]
     [SupplyParameterFromQuery(Name = "phone")]
@@ -133,6 +163,9 @@
     private bool isLoading = false;
     private List<OrderDto>? orders;
     private MembershipDto? membership;
+    
+    private bool showPinModal = false;
+    private CustomerPinModal.PinModalMode pinModalMode = CustomerPinModal.PinModalMode.Verify;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -154,22 +187,62 @@
     private async Task SearchOrders()
     {
         if (string.IsNullOrWhiteSpace(phoneNumber)) return;
+        phoneNumber = phoneNumber.Trim();
 
         isLoading = true;
         try
         {
-            var ordersTask = OrderApi.GetOrderHistoryByPhoneAsync(phoneNumber);
-            var membershipTask = MembershipApi.GetMembershipByPhoneAsync(phoneNumber);
+            membership = await MembershipApi.GetMembershipByPhoneAsync(phoneNumber);
             
-            await Task.WhenAll(ordersTask, membershipTask);
-            
-            orders = await ordersTask;
-            membership = await membershipTask;
+            var savedPhone = CustomerAuth.CurrentPhone;
+            var savedToken = await CustomerAuth.GetAuthTokenAsync();
+
+            if (savedPhone == phoneNumber && !string.IsNullOrEmpty(savedToken))
+            {
+                await LoadOrdersInternal();
+            }
+            else if (membership != null && membership.IsPinSet)
+            {
+                pinModalMode = CustomerPinModal.PinModalMode.Verify;
+                showPinModal = true;
+            }
+            else
+            {
+                // Yêu cầu thiết lập mã PIN để bảo vệ tài khoản và đơn hàng
+                pinModalMode = CustomerPinModal.PinModalMode.SetupStep1;
+                showPinModal = true;
+            }
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private async Task LoadOrdersInternal()
+    {
+        isLoading = true;
+        try
+        {
+            orders = await OrderApi.GetOrderHistoryByPhoneAsync(phoneNumber);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandlePinVerified(string token)
+    {
+        await LoadOrdersInternal();
+    }
+
+    private async Task ClearPinSession()
+    {
+        await CustomerAuth.LogoutAsync();
+        orders = null;
+        StateHasChanged();
     }
 }
 

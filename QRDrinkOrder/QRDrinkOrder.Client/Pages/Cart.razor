@@ -5,6 +5,7 @@
 @inject QRDrinkOrder.Client.Services.ApiClients.CouponApiClient CouponApi
 @inject QRDrinkOrder.Client.Services.ApiClients.MembershipApiClient MembershipApi
 @inject QRDrinkOrder.Client.Services.PushNotificationService PushService
+@inject QRDrinkOrder.Client.Services.CustomerAuthService CustomerAuth
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Shared.Enums
 @using QRDrinkOrder.Client.Services
@@ -55,36 +56,48 @@ else
 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-secondary">@Loc["PhoneLabel"] <span class="text-danger">*</span></label>
-                    <input type="tel" class="form-control bg-light border-0" @bind="phone" @onblur="CheckMembership" placeholder="09xxxxxxx" />
+                    <input type="tel" class="form-control bg-light border-0" @bind="phone" @bind:event="oninput" @bind:after="CheckMembership" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" />
                 </div>
                 
-                @if (membership != null && membership.Points > 0)
+                @if (membership != null)
                 {
-                    <div class="bg-light p-3 rounded mb-3 border border-warning" style="background-color: #fff9e6 !important;">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <h6 class="fw-bold mb-0 text-warning d-flex align-items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill me-1" viewBox="0 0 16 16">
-                                      <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
-                                    </svg>
-                                    @Loc["RewardPointsTitle"]
-                                </h6>
-                                <small class="text-muted">Bạn có <strong>@membership.Points</strong> điểm</small>
+                    if (membership.Points > 0)
+                    {
+                        <div class="bg-light p-3 rounded mb-3 border border-warning" style="background-color: #fff9e6 !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-warning d-flex align-items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill me-1" viewBox="0 0 16 16">
+                                          <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                        </svg>
+                                        @Loc["RewardPointsTitle"]
+                                    </h6>
+                                    <small class="text-muted">Bạn có <strong>@membership.Points</strong> điểm</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="usePointsSwitch" checked="@usePoints" @onclick="TogglePoints">
+                                    <label class="form-check-label small fw-bold" for="usePointsSwitch">@Loc["UsePointsLabel"]</label>
+                                </div>
                             </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="usePointsSwitch" @bind="usePoints" @onclick="TogglePoints">
-                                <label class="form-check-label small fw-bold" for="usePointsSwitch">@Loc["UsePointsLabel"]</label>
-                            </div>
+                            
+                            @if (usePoints)
+                            {
+                                <div class="d-flex align-items-center mt-2 gap-2">
+                                    <input type="number" class="form-control form-control-sm" style="width: 80px;" @bind="pointsToUse" @bind:event="oninput" min="1" max="@membership.Points" />
+                                    <span class="small text-secondary">điểm để giảm <strong>@((pointsToUse * 1000).ToString("N0"))đ</strong></span>
+                                </div>
+                            }
                         </div>
-                        
-                        @if (usePoints)
-                        {
-                            <div class="d-flex align-items-center mt-2 gap-2">
-                                <input type="number" class="form-control form-control-sm" style="width: 80px;" @bind="pointsToUse" @bind:event="oninput" min="1" max="@membership.Points" />
-                                <span class="small text-secondary">điểm để giảm <strong>@((pointsToUse * 1000).ToString("N0"))đ</strong></span>
-                            </div>
-                        }
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="bg-light p-2 rounded mb-3 text-secondary small d-flex align-items-center border" style="border-radius: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star me-2 text-warning" viewBox="0 0 16 16">
+                              <path d="M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z"/>
+                            </svg>
+                            <span>@Loc["RewardPointsTitle"]: <strong>0 điểm</strong> (Sẽ tự động tích điểm sau khi hoàn tất đơn hàng này)</span>
+                        </div>
+                    }
                 }
                 
                 @if (isEmployee)
@@ -272,11 +285,22 @@ else
     </div>
 }
 
+<CustomerPinModal @bind-IsOpen="showPinModal"
+                  PhoneNumber="@phone"
+                  Mode="@pinModalMode"
+                  OnPinVerified="HandlePinVerified" />
+
 @code {
     private string phone = "";
     private string couponCode = "";
     private string orderNote = "";
     private byte paymentMethod = (byte)PaymentMethod.SePay;
+    
+    private bool showPinModal = false;
+    private CustomerPinModal.PinModalMode pinModalMode = CustomerPinModal.PinModalMode.Verify;
+    private bool pendingOrderSubmit = false;
+    private bool pendingPointsToggle = false;
+    private string verifiedAuthToken = "";
     
     private bool isSubmitting = false;
     private string errorMessage = "";
@@ -290,6 +314,8 @@ else
     private bool isApplyingCoupon = false;
     
     private MembershipDto? membership;
+    private MembershipDto? pendingMembership;
+    private string lastCheckedPhone = "";
     private bool usePoints = false;
     private int pointsToUse = 0;
     
@@ -325,27 +351,93 @@ else
     
     private async Task CheckMembership()
     {
-        if (!string.IsNullOrWhiteSpace(phone) && phone.Length >= 9)
+        if (!string.IsNullOrWhiteSpace(phone))
         {
-            membership = await MembershipApi.GetMembershipByPhoneAsync(phone);
-            if (membership != null && pointsToUse > membership.Points)
+            var cleanPhone = phone.Trim();
+            
+            bool isCompletePhone = (cleanPhone.Length == 10 && cleanPhone.StartsWith("0")) 
+                                || (cleanPhone.Length == 9 && !cleanPhone.StartsWith("0") && !cleanPhone.StartsWith("+"))
+                                || (cleanPhone.Length >= 11 && cleanPhone.StartsWith("+"));
+
+            if (isCompletePhone && cleanPhone != lastCheckedPhone)
             {
-                pointsToUse = membership.Points;
+                lastCheckedPhone = cleanPhone;
+                var savedToken = await CustomerAuth.GetAuthTokenAsync();
+                var isSavedTokenValid = !string.IsNullOrEmpty(savedToken) && CustomerAuth.CurrentPhone == cleanPhone;
+
+                var result = await MembershipApi.GetMembershipByPhoneAsync(cleanPhone);
+                
+                if (isSavedTokenValid)
+                {
+                    membership = result;
+                    verifiedAuthToken = savedToken;
+                    if (membership != null && pointsToUse > membership.Points)
+                    {
+                        pointsToUse = membership.Points;
+                    }
+                }
+                else
+                {
+                    // Yêu cầu xác thực/thiết lập PIN ngay sau khi nhập đủ số điện thoại vào ô!
+                    pendingMembership = result ?? new MembershipDto { Phone = cleanPhone, Points = 0, IsPinSet = false };
+                    pinModalMode = (result != null && result.IsPinSet) ? CustomerPinModal.PinModalMode.Verify : CustomerPinModal.PinModalMode.SetupStep1;
+                    showPinModal = true;
+                }
+                StateHasChanged();
             }
+            else if (cleanPhone != lastCheckedPhone && cleanPhone.Length < 9)
+            {
+                membership = null;
+                verifiedAuthToken = null;
+                usePoints = false;
+                pointsToUse = 0;
+                lastCheckedPhone = "";
+                StateHasChanged();
+            }
+        }
+        else if (membership != null || !string.IsNullOrEmpty(lastCheckedPhone))
+        {
+            membership = null;
+            pendingMembership = null;
+            verifiedAuthToken = null;
+            usePoints = false;
+            pointsToUse = 0;
+            lastCheckedPhone = "";
+            StateHasChanged();
         }
     }
     
-    private void TogglePoints()
+    private async Task TogglePoints()
     {
-        usePoints = !usePoints;
-        if (usePoints && membership != null)
+        if (!usePoints)
         {
-            pointsToUse = membership.Points; // Default to max points
+            if (membership == null) return;
+            var cleanPhone = phone.Trim();
+            var savedToken = await CustomerAuth.GetAuthTokenAsync();
+            var isSavedTokenValid = !string.IsNullOrEmpty(savedToken) && CustomerAuth.CurrentPhone == cleanPhone;
+
+            if (!string.IsNullOrEmpty(verifiedAuthToken) || isSavedTokenValid)
+            {
+                if (string.IsNullOrEmpty(verifiedAuthToken) && isSavedTokenValid)
+                    verifiedAuthToken = savedToken;
+
+                usePoints = true;
+                pointsToUse = membership.Points;
+            }
+            else
+            {
+                pendingPointsToggle = true;
+                pendingMembership = membership;
+                pinModalMode = membership.IsPinSet ? CustomerPinModal.PinModalMode.Verify : CustomerPinModal.PinModalMode.SetupStep1;
+                showPinModal = true;
+            }
         }
         else
         {
+            usePoints = false;
             pointsToUse = 0;
         }
+        StateHasChanged();
     }
     
     private async Task ApplyCoupon()
@@ -427,6 +519,29 @@ else
             return;
         }
 
+        if (usePoints && pointsToUse > 0)
+        {
+            if (string.IsNullOrEmpty(verifiedAuthToken))
+            {
+                var savedToken = await CustomerAuth.GetAuthTokenAsync();
+                if (!string.IsNullOrEmpty(savedToken) && CustomerAuth.CurrentPhone == phone.Trim())
+                {
+                    verifiedAuthToken = savedToken;
+                }
+                else
+                {
+                    pendingOrderSubmit = true;
+                    if (membership != null && membership.IsPinSet)
+                        pinModalMode = CustomerPinModal.PinModalMode.Verify;
+                    else
+                        pinModalMode = CustomerPinModal.PinModalMode.SetupStep1;
+
+                    showPinModal = true;
+                    return;
+                }
+            }
+        }
+
         try
         {
             isSubmitting = true;
@@ -440,6 +555,7 @@ else
                 TableNumber = tableStr,
                 CouponCode = appliedCoupon != null ? appliedCoupon.CouponCode : (string.IsNullOrWhiteSpace(couponCode) ? null : couponCode.ToUpper().Trim()),
                 PointsToUse = usePoints && pointsToUse > 0 ? pointsToUse : null,
+                CustomerAuthToken = usePoints && pointsToUse > 0 ? (!string.IsNullOrEmpty(verifiedAuthToken) ? verifiedAuthToken : await CustomerAuth.GetAuthTokenAsync()) : null,
                 PaymentMethod = paymentMethod,
                 Note = orderNote,
                 Items = CartState.Items.Select(i => new OrderItemRequest
@@ -487,6 +603,63 @@ else
         {
             isSubmitting = false;
         }
+    }
+
+    private async Task HandlePinVerified(string token)
+    {
+        showPinModal = false;
+        if (!string.IsNullOrEmpty(token))
+        {
+            verifiedAuthToken = token;
+            if (pendingMembership != null)
+            {
+                membership = pendingMembership;
+                membership.IsPinSet = true;
+            }
+            else if (membership == null)
+            {
+                membership = await MembershipApi.GetMembershipByPhoneAsync(phone.Trim());
+            }
+
+            if (pendingPointsToggle && membership != null)
+            {
+                pendingPointsToggle = false;
+                usePoints = true;
+                pointsToUse = membership.Points;
+            }
+            if (pendingOrderSubmit)
+            {
+                pendingOrderSubmit = false;
+                await SubmitOrder();
+            }
+        }
+        else
+        {
+            pendingPointsToggle = false;
+            pendingOrderSubmit = false;
+            usePoints = false;
+            pointsToUse = 0;
+            if (CustomerAuth.CurrentPhone != phone.Trim())
+            {
+                membership = null;
+                verifiedAuthToken = null;
+                lastCheckedPhone = "";
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task ClearPinSession()
+    {
+        await CustomerAuth.LogoutAsync();
+        verifiedAuthToken = null;
+        membership = null;
+        pendingMembership = null;
+        lastCheckedPhone = "";
+        usePoints = false;
+        pointsToUse = 0;
+        phone = "";
+        StateHasChanged();
     }
 }
 

@@ -22,6 +22,7 @@ public class Program
 
         // Đăng ký dịch vụ LocalStorage và Auth
         builder.Services.AddScoped<LocalStorageService>();
+        builder.Services.AddScoped<CustomerAuthService>();
         builder.Services.AddSingleton<OrderStateService>();
         builder.Services.AddAuthorizationCore();
         builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
@@ -56,6 +57,28 @@ public class Program
         var culture = result != null ? new System.Globalization.CultureInfo(result) : new System.Globalization.CultureInfo("vi-VN");
         System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
         System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+        // Tự động khởi tạo Firebase Auth từ cấu hình appsettings (nếu được inject khi build Vercel/Render)
+        var firebaseConfig = builder.Configuration.GetSection("Firebase");
+        if (firebaseConfig != null && !string.IsNullOrEmpty(firebaseConfig["ApiKey"]))
+        {
+            try
+            {
+                await js.InvokeVoidAsync("window.firebasePinAuth.init", new
+                {
+                    apiKey = firebaseConfig["ApiKey"],
+                    authDomain = firebaseConfig["AuthDomain"],
+                    projectId = firebaseConfig["ProjectId"],
+                    storageBucket = firebaseConfig["StorageBucket"],
+                    messagingSenderId = firebaseConfig["MessagingSenderId"],
+                    appId = firebaseConfig["AppId"]
+                });
+            }
+            catch
+            {
+                // Bỏ qua nếu JSInterop chưa sẵn sàng lúc khởi tạo
+            }
+        }
 
         await host.RunAsync();
     }

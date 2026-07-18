@@ -174,4 +174,64 @@
   <data name="AddBtn" xml:space="preserve">
     <value>Add</value>
   </data>
+  <data name="PinAuthTitle" xml:space="preserve">
+    <value>PIN Authentication</value>
+  </data>
+  <data name="SetupPinTitle" xml:space="preserve">
+    <value>Setup PIN Code</value>
+  </data>
+  <data name="ForgotPinBtn" xml:space="preserve">
+    <value>Forgot PIN?</value>
+  </data>
+  <data name="EnterPinPrompt" xml:space="preserve">
+    <value>Please enter your 4-digit PIN to verify</value>
+  </data>
+  <data name="SetupPinPrompt" xml:space="preserve">
+    <value>Please create a 4-digit PIN for your account</value>
+  </data>
+  <data name="ConfirmPinPrompt" xml:space="preserve">
+    <value>Re-enter your 4-digit PIN</value>
+  </data>
+  <data name="PinMismatchError" xml:space="preserve">
+    <value>PIN confirmation does not match</value>
+  </data>
+  <data name="ForgotPinModalTitle" xml:space="preserve">
+    <value>Reset PIN Code</value>
+  </data>
+  <data name="ForgotPinDesc" xml:space="preserve">
+    <value>We will send an OTP via SMS to your phone number to reset your PIN.</value>
+  </data>
+  <data name="SendOtpBtn" xml:space="preserve">
+    <value>Send OTP</value>
+  </data>
+  <data name="VerifyOtpBtn" xml:space="preserve">
+    <value>Verify OTP &amp; Reset PIN</value>
+  </data>
+  <data name="EnterOtpPrompt" xml:space="preserve">
+    <value>Enter 6-digit OTP</value>
+  </data>
+  <data name="NewPinPrompt" xml:space="preserve">
+    <value>Enter new 4-digit PIN</value>
+  </data>
+  <data name="PinLockedWarning" xml:space="preserve">
+    <value>Account temporarily locked for 15 minutes after 5 failed PIN attempts</value>
+  </data>
+  <data name="PinSuccessMsg" xml:space="preserve">
+    <value>Authentication successful</value>
+  </data>
+  <data name="SetupPinSuccessMsg" xml:space="preserve">
+    <value>PIN setup successful</value>
+  </data>
+  <data name="ResetPinSuccessMsg" xml:space="preserve">
+    <value>PIN reset successful</value>
+  </data>
+  <data name="PointsRequirePin" xml:space="preserve">
+    <value>Redeeming points requires PIN authentication</value>
+  </data>
+  <data name="OrderHistoryRequirePin" xml:space="preserve">
+    <value>Viewing order history requires PIN authentication</value>
+  </data>
+  <data name="ConfirmActionBtn" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
 </root>

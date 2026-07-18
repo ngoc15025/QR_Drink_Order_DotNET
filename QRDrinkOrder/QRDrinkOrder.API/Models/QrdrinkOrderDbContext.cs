@@ -485,6 +485,7 @@ public partial class QrdrinkOrderDbContext : DbContext
 
             entity.Property(e => e.Phone).HasMaxLength(15);
             entity.Property(e => e.Points).HasDefaultValue(0);
+            entity.Property(e => e.FailedPinAttempts).HasDefaultValue(0);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 

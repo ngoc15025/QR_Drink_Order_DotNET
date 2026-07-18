@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using QRDrinkOrder.API.Services.Interfaces;
+using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 
 namespace QRDrinkOrder.API.Controllers;
@@ -27,7 +28,7 @@ public class MembershipsController : ControllerBase
 
             if (membership == null)
             {
-                return Ok(new MembershipDto { Phone = phone, Points = 0 });
+                return Ok(new MembershipDto { Phone = phone, Points = 0, IsPinSet = false });
             }
 
             var dto = new MembershipDto
@@ -35,6 +36,7 @@ public class MembershipsController : ControllerBase
                 MembershipId = membership.MembershipId,
                 Phone = membership.Phone,
                 Points = membership.Points,
+                IsPinSet = !string.IsNullOrEmpty(membership.PinCodeHash),
                 PointHistories = membership.PointHistories.Select(h => new PointHistoryDto
                 {
                     HistoryId = h.HistoryId,
@@ -49,6 +51,83 @@ public class MembershipsController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPost("check-status")]
+    public async Task<IActionResult> CheckStatus([FromBody] CheckCustomerStatusRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.Phone))
+                return BadRequest(new { Message = "Số điện thoại không hợp lệ." });
+
+            var response = await _membershipService.CheckStatusAsync(request.Phone);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPost("verify-pin")]
+    public async Task<IActionResult> VerifyPin([FromBody] VerifyPinRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new CustomerAuthResponse { Success = false, Message = "Dữ liệu yêu cầu không hợp lệ." });
+
+            var response = await _membershipService.VerifyPinAsync(request);
+            if (!response.Success)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new CustomerAuthResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    [HttpPost("setup-pin")]
+    public async Task<IActionResult> SetupPin([FromBody] SetupPinRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new CustomerAuthResponse { Success = false, Message = "Dữ liệu yêu cầu không hợp lệ." });
+
+            var response = await _membershipService.SetupPinAsync(request);
+            if (!response.Success)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new CustomerAuthResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    [HttpPost("reset-pin-firebase")]
+    public async Task<IActionResult> ResetPinWithFirebase([FromBody] ResetPinWithFirebaseRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new CustomerAuthResponse { Success = false, Message = "Dữ liệu yêu cầu không hợp lệ." });
+
+            var response = await _membershipService.ResetPinWithFirebaseAsync(request);
+            if (!response.Success)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new CustomerAuthResponse { Success = false, Message = ex.Message });
         }
     }
 }

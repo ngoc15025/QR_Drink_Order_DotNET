@@ -147,9 +147,20 @@
             }
 
             <hr style="border-top: 1px dashed var(--tch-border);" />
+            <div class="d-flex justify-content-between pt-1">
+                <span class="text-secondary">Tổng tiền hàng:</span>
+                <span>@order.TotalAmount.ToString("N0")đ</span>
+            </div>
+            @if (order.DiscountAmount > 0)
+            {
+                <div class="d-flex justify-content-between pt-1">
+                    <span class="text-success">Khuyến mãi / Trừ điểm (@(order.PointsUsed > 0 ? $"{order.PointsUsed} điểm" : "Mã giảm giá")):</span>
+                    <span class="text-success fw-bold">-@order.DiscountAmount.ToString("N0")đ</span>
+                </div>
+            }
             <div class="d-flex justify-content-between pt-2">
-                <span class="fw-bold">Tổng cộng:</span>
-                <span class="fw-bold text-orange fs-5" style="color: var(--tch-orange);">@order.TotalAmount.ToString("N0")đ</span>
+                <span class="fw-bold">Thành tiền:</span>
+                <span class="fw-bold text-orange fs-5" style="color: var(--tch-orange);">@order.FinalAmount.ToString("N0")đ</span>
             </div>
         </div>
 
