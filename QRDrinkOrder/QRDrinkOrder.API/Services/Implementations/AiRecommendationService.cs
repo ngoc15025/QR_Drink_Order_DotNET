@@ -97,7 +97,7 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
 
             // 4. Call Gemini API
             var apiKey = _configuration["ExternalApis:Gemini:ApiKey"];
-            var model = _configuration["ExternalApis:Gemini:Model"] ?? "gemini-3-flash-preview";
+            var model = _configuration["ExternalApis:Gemini:Model"] ?? "gemini-1.5-pro";
             var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
             var requestBody = new GeminiRequest
@@ -111,9 +111,7 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
                 },
                 GenerationConfig = new GeminiGenerationConfig
                 {
-                    ResponseMimeType = "application/json",
-                    MaxOutputTokens = 200,
-                    Temperature = 0.4
+                    ResponseMimeType = "application/json"
                 }
             };
 
