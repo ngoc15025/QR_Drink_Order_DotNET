@@ -131,7 +131,15 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
                 {
                     try
                     {
-                        var parsedResult = JsonSerializer.Deserialize<AiRecommendationResult>(generatedText, new JsonSerializerOptions
+                        var cleanJson = generatedText;
+                        var startIndex = generatedText.IndexOf('{');
+                        var endIndex = generatedText.LastIndexOf('}');
+                        if (startIndex >= 0 && endIndex > startIndex)
+                        {
+                            cleanJson = generatedText.Substring(startIndex, endIndex - startIndex + 1);
+                        }
+
+                        var parsedResult = JsonSerializer.Deserialize<AiRecommendationResult>(cleanJson, new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true
                         });
