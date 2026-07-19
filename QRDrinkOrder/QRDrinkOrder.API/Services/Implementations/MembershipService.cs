@@ -6,6 +6,7 @@ using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Helpers;
+using QRDrinkOrder.Shared.Enums;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -304,5 +305,23 @@ public class MembershipService : IMembershipService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<int> GetMonthlyCupCountAsync(string phone)
+    {
+        if (string.IsNullOrEmpty(phone))
+            return 0;
+
+        var now = TimeHelper.GetVietnamTime();
+        var monthlyCups = await _context.OrderItems
+            .Where(oi => oi.Order.Session != null 
+                      && oi.Order.Session.Phone == phone 
+                      && oi.Order.OrderStatus != (byte)OrderStatus.Cancelled 
+                      && oi.Order.OrderDate.HasValue 
+                      && oi.Order.OrderDate.Value.Month == now.Month 
+                      && oi.Order.OrderDate.Value.Year == now.Year)
+            .SumAsync(oi => (int?)oi.Quantity) ?? 0;
+
+        return monthlyCups;
     }
 }

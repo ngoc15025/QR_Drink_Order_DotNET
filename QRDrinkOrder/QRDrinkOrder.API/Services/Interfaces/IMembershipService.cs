@@ -11,4 +11,5 @@ public interface IMembershipService
     Task<CustomerAuthResponse> VerifyPinAsync(VerifyPinRequest request);
     Task<CustomerAuthResponse> SetupPinAsync(SetupPinRequest request);
     Task<CustomerAuthResponse> ResetPinWithFirebaseAsync(ResetPinWithFirebaseRequest request);
+    Task<int> GetMonthlyCupCountAsync(string phone);
 }

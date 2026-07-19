@@ -25,10 +25,11 @@ public class MembershipsController : ControllerBase
                 return BadRequest(new { Message = "Số điện thoại là bắt buộc." });
 
             var membership = await _membershipService.GetMembershipByPhoneAsync(phone);
+            var monthlyCups = await _membershipService.GetMonthlyCupCountAsync(phone);
 
             if (membership == null)
             {
-                return Ok(new MembershipDto { Phone = phone, Points = 0, IsPinSet = false });
+                return Ok(new MembershipDto { Phone = phone, Points = 0, IsPinSet = false, MonthlyCupCount = monthlyCups });
             }
 
             var dto = new MembershipDto
@@ -37,6 +38,7 @@ public class MembershipsController : ControllerBase
                 Phone = membership.Phone,
                 Points = membership.Points,
                 IsPinSet = !string.IsNullOrEmpty(membership.PinCodeHash),
+                MonthlyCupCount = monthlyCups,
                 PointHistories = membership.PointHistories.Select(h => new PointHistoryDto
                 {
                     HistoryId = h.HistoryId,

@@ -6,6 +6,7 @@ public class MembershipDto
     public string Phone { get; set; } = string.Empty;
     public int Points { get; set; }
     public bool IsPinSet { get; set; }
+    public int MonthlyCupCount { get; set; }
     public List<PointHistoryDto> PointHistories { get; set; } = new();
 }
 

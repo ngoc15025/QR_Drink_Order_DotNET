@@ -8,6 +8,7 @@ using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
+using QRDrinkOrder.Shared.Helpers;
 using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -87,6 +88,77 @@ public class OrderService : IOrderService
                     else
                     {
                         throw new Exception("Bạn đã sử dụng ưu đãi 50% dành cho nhân viên trong hôm nay.");
+                    }
+                }
+            }
+
+            // 4.2. Áp dụng tự động ưu đãi Tích ly nhận quà (Mốc 13 ly: Giảm 20%, Mốc 19 ly: Tặng 1 ly miễn phí)
+            var customerPhone = !string.IsNullOrEmpty(request.Phone) ? request.Phone : session.Phone;
+            if (!string.IsNullOrEmpty(customerPhone))
+            {
+                var monthlyCups = await _membershipService.GetMonthlyCupCountAsync(customerPhone);
+                var now = TimeHelper.GetVietnamTime();
+
+                // Kiểm tra Mốc 19 ly: Tặng 1 ly miễn phí (Trừ giá ly rẻ nhất trong giỏ)
+                if (monthlyCups >= 19)
+                {
+                    bool hasUsed19CupsReward = await _context.Orders.AnyAsync(o => 
+                        o.Session != null && o.Session.Phone == customerPhone && 
+                        o.OrderDate.HasValue && o.OrderDate.Value.Month == now.Month && o.OrderDate.Value.Year == now.Year && 
+                        o.OrderStatus != (byte)OrderStatus.Cancelled && 
+                        o.Note != null && o.Note.Contains("[Ưu đãi Tích ly: Tặng 1 ly miễn phí - Mốc 19 ly]"));
+
+                    if (!hasUsed19CupsReward && request.Items.Any())
+                    {
+                        // Tìm giá của ly có đơn giá thấp nhất trong giỏ
+                        decimal cheapestDrinkPrice = decimal.MaxValue;
+                        foreach (var item in request.Items)
+                        {
+                            if (drinks.TryGetValue(item.DrinkId, out var d))
+                            {
+                                decimal unitPrice = d.BasePrice;
+                                if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var s)) unitPrice += s.PriceOffset;
+                                if (item.ToppingIds != null)
+                                {
+                                    foreach (var tId in item.ToppingIds) if (toppings.TryGetValue(tId, out var t)) unitPrice += t.Price;
+                                }
+                                if (unitPrice < cheapestDrinkPrice)
+                                {
+                                    cheapestDrinkPrice = unitPrice;
+                                }
+                            }
+                        }
+
+                        if (cheapestDrinkPrice != decimal.MaxValue && cheapestDrinkPrice > 0)
+                        {
+                            // Đảm bảo discountAmount không vượt quá totalAmount
+                            decimal actualDiscount = Math.Min(cheapestDrinkPrice, totalAmount - discountAmount);
+                            if (actualDiscount > 0)
+                            {
+                                discountAmount += actualDiscount;
+                                request.Note = (request.Note + $" [Ưu đãi Tích ly: Tặng 1 ly miễn phí - Mốc 19 ly (-{actualDiscount:N0}đ)]").Trim();
+                            }
+                        }
+                    }
+                }
+                // Kiểm tra Mốc 13 ly: Giảm 20% (Nếu chưa đạt hoặc đã dùng mốc 19, kiểm tra mốc 13)
+                else if (monthlyCups >= 13)
+                {
+                    bool hasUsed13CupsReward = await _context.Orders.AnyAsync(o => 
+                        o.Session != null && o.Session.Phone == customerPhone && 
+                        o.OrderDate.HasValue && o.OrderDate.Value.Month == now.Month && o.OrderDate.Value.Year == now.Year && 
+                        o.OrderStatus != (byte)OrderStatus.Cancelled && 
+                        o.Note != null && o.Note.Contains("[Ưu đãi Tích ly: Giảm 20% - Mốc 13 ly]"));
+
+                    if (!hasUsed13CupsReward)
+                    {
+                        decimal loyaltyDiscount = totalAmount * 0.20m;
+                        decimal actualDiscount = Math.Min(loyaltyDiscount, totalAmount - discountAmount);
+                        if (actualDiscount > 0)
+                        {
+                            discountAmount += actualDiscount;
+                            request.Note = (request.Note + $" [Ưu đãi Tích ly: Giảm 20% - Mốc 13 ly (-{actualDiscount:N0}đ)]").Trim();
+                        }
                     }
                 }
             }

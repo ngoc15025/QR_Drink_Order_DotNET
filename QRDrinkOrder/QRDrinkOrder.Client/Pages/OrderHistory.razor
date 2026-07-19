@@ -22,8 +22,29 @@
     </div>
 </div>
 
-@if (membership != null && !isLoading)
+@if (membership != null && !isLoading && CustomerAuth.IsAuthenticated && CustomerAuth.CurrentPhone == phoneNumber)
 {
+    int cups = membership.MonthlyCupCount;
+    double progressPercent = 0;
+    if (cups <= 0) progressPercent = 0;
+    else if (cups < 13) progressPercent = (cups / 13.0) * 50.0;
+    else if (cups < 19) progressPercent = 50.0 + ((cups - 13.0) / 6.0) * 50.0;
+    else progressPercent = 100.0;
+
+    string bannerText = "";
+    if (cups < 13)
+    {
+        bannerText = $"Bạn đã tích được {cups} ly trong tháng. Thêm {13 - cups} ly nữa để tự động mở khóa Giảm 20% cho đơn tiếp theo.";
+    }
+    else if (cups < 19)
+    {
+        bannerText = $"Chúc mừng bạn đã đạt mốc Giảm 20% (Tự động áp dụng khi đặt đơn mới). Thêm {19 - cups} ly nữa để nhận 1 Ly Miễn Phí.";
+    }
+    else
+    {
+        bannerText = "Bạn đã chinh phục trọn vẹn đặc quyền tháng này: Giảm 20% (Mốc 13 ly) và Tặng 1 Ly Miễn Phí (Mốc 19 ly).";
+    }
+
     <div class="px-4 mb-4">
         <div class="card border-0 text-white" style="border-radius: 16px; background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%); position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(255,154,158,0.3);">
             <div class="card-body p-4">
@@ -53,6 +74,71 @@
             </div>
             <!-- Decorative circle -->
             <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.2); border-radius: 50%;"></div>
+        </div>
+
+        <!-- Thanh tiến trình Tích ly nhận quà (Mô hình 1.1) - Giao diện nổi bật -->
+        <div class="card border-0 mt-3 text-white" style="border-radius: 16px; background: linear-gradient(135deg, #FF758C 0%, #FF7EB3 100%); position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(255, 117, 140, 0.35);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-1 text-white opacity-75">Chương trình thành viên</h6>
+                        <h5 class="mb-0 fw-bold text-white">Tích ly nhận quà (Tháng @DateTime.Now.Month)</h5>
+                    </div>
+                    <div>
+                        <span class="badge bg-white text-danger fw-bold px-3 py-2 shadow-sm" style="border-radius: 20px; font-size: 13px;">@cups ly đã đặt</span>
+                    </div>
+                </div>
+
+                <div class="p-3 mb-4 rounded-3" style="background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(4px);">
+                    <p class="small text-white mb-0" style="font-size: 13.5px; line-height: 1.5;">@bannerText</p>
+                </div>
+
+                <div class="px-4 my-4" style="padding-left: 36px !important; padding-right: 36px !important;">
+                    <!-- Inner relative track container: cả progress bar và các mốc hình tròn cùng nằm trong 1 hệ tọa độ -->
+                    <div class="position-relative" style="height: 65px;">
+                        <!-- Thanh tiến trình nền -->
+                        <div class="progress position-absolute" style="top: 7px; left: 0; right: 0; height: 12px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.22); border: 1px solid rgba(255, 255, 255, 0.35); box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); z-index: 1;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                                 style="width: @Math.Round(progressPercent, 1).ToString(System.Globalization.CultureInfo.InvariantCulture)%; background: #ffffff; border-radius: 10px; box-shadow: 0 0 12px rgba(255,255,255,0.9); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" 
+                                 aria-valuenow="@cups" aria-valuemin="0" aria-valuemax="19">
+                            </div>
+                        </div>
+
+                        <!-- Mốc 0 ly -->
+                        <div class="position-absolute text-center" style="top: 0; left: 0%; transform: translateX(-50%); width: 70px; z-index: 2;">
+                            <div style="width: 26px; height: 26px; border-radius: 50%; background: #ffffff; border: 4px solid #FF758C; box-shadow: 0 2px 6px rgba(0,0,0,0.18); margin: 0 auto;"></div>
+                            <span class="small fw-bold text-white d-block mt-2" style="font-size: 11px; letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">0 ly</span>
+                        </div>
+
+                        <!-- Mốc 13 ly (50% thanh tiến trình) -->
+                        <div class="position-absolute text-center" style="top: 0; left: 50%; transform: translateX(-50%); width: 84px; z-index: 2;">
+                            <div style="width: 26px; height: 26px; border-radius: 50%; background: @(cups >= 13 ? "#ffffff" : "rgba(255, 255, 255, 0.25)"); border: @(cups >= 13 ? "4px solid #ffffff" : "2px solid rgba(255, 255, 255, 0.6)"); box-shadow: @(cups >= 13 ? "0 0 14px rgba(255,255,255,0.95)" : "none"); margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                                @if (cups >= 13)
+                                {
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #FF758C;"></div>
+                                }
+                            </div>
+                            <span class="small @(cups >= 13 ? "fw-bold text-white" : "text-white opacity-75") d-block mt-2" style="font-size: 11px; letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">Mốc 13 ly</span>
+                            <span class="badge @(cups >= 13 ? "bg-white text-danger fw-bold shadow-sm" : "bg-light text-secondary") mt-1" style="font-size: 10px; border-radius: 6px; padding: 3px 7px;">Giảm 20%</span>
+                        </div>
+
+                        <!-- Mốc 19 ly (100% thanh tiến trình) -->
+                        <div class="position-absolute text-center" style="top: 0; left: 100%; transform: translateX(-50%); width: 84px; z-index: 2;">
+                            <div style="width: 26px; height: 26px; border-radius: 50%; background: @(cups >= 19 ? "#ffffff" : "rgba(255, 255, 255, 0.25)"); border: @(cups >= 19 ? "4px solid #ffffff" : "2px solid rgba(255, 255, 255, 0.6)"); box-shadow: @(cups >= 19 ? "0 0 14px rgba(255,255,255,0.95)" : "none"); margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                                @if (cups >= 19)
+                                {
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #FF758C;"></div>
+                                }
+                            </div>
+                            <span class="small @(cups >= 19 ? "fw-bold text-white" : "text-white opacity-75") d-block mt-2" style="font-size: 11px; letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">Mốc 19 ly</span>
+                            <span class="badge @(cups >= 19 ? "bg-white text-danger fw-bold shadow-sm" : "bg-light text-secondary") mt-1" style="font-size: 10px; border-radius: 6px; padding: 3px 7px;">Tặng 1 ly</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="height: 35px;"></div>
+            </div>
+            <!-- Decorative circle -->
+            <div style="position: absolute; bottom: -50px; right: -50px; width: 160px; height: 160px; background: rgba(255,255,255,0.15); border-radius: 50%; pointer-events: none;"></div>
         </div>
     </div>
 }
@@ -192,23 +278,28 @@
         isLoading = true;
         try
         {
-            membership = await MembershipApi.GetMembershipByPhoneAsync(phoneNumber);
+            var tempMembership = await MembershipApi.GetMembershipByPhoneAsync(phoneNumber);
             
             var savedPhone = CustomerAuth.CurrentPhone;
             var savedToken = await CustomerAuth.GetAuthTokenAsync();
 
             if (savedPhone == phoneNumber && !string.IsNullOrEmpty(savedToken))
             {
+                membership = tempMembership;
                 await LoadOrdersInternal();
             }
-            else if (membership != null && membership.IsPinSet)
+            else if (tempMembership != null && tempMembership.IsPinSet)
             {
+                membership = null;
+                orders = null;
                 pinModalMode = CustomerPinModal.PinModalMode.Verify;
                 showPinModal = true;
             }
             else
             {
                 // Yêu cầu thiết lập mã PIN để bảo vệ tài khoản và đơn hàng
+                membership = null;
+                orders = null;
                 pinModalMode = CustomerPinModal.PinModalMode.SetupStep1;
                 showPinModal = true;
             }
@@ -235,12 +326,14 @@
 
     private async Task HandlePinVerified(string token)
     {
+        membership = await MembershipApi.GetMembershipByPhoneAsync(phoneNumber);
         await LoadOrdersInternal();
     }
 
     private async Task ClearPinSession()
     {
         await CustomerAuth.LogoutAsync();
+        membership = null;
         orders = null;
         StateHasChanged();
     }
