@@ -33,10 +33,10 @@ public class AiRecommendationService : IAiRecommendationService
         _cache = cache;
     }
 
-    public async Task<AiRecommendationResult> GetDrinkRecommendationsAsync()
+    public async Task<AiRecommendationResult> GetDrinkRecommendationsAsync(bool isForceRefresh = false)
     {
         const string cacheKey = "AiRecommendation_Latest";
-        if (_cache.TryGetValue(cacheKey, out AiRecommendationResult? cachedResult) && cachedResult != null)
+        if (!isForceRefresh && _cache.TryGetValue(cacheKey, out AiRecommendationResult? cachedResult) && cachedResult != null)
         {
             return cachedResult;
         }
@@ -45,17 +45,9 @@ public class AiRecommendationService : IAiRecommendationService
 
         try
         {
-            // 1. Get current weather
-            var weather = await _weatherService.GetCurrentWeatherAsync();
-            var locationName = !string.IsNullOrEmpty(weather?.Name) ? weather.Name : "Quận 8, TP. Hồ Chí Minh";
-            var weatherDescription = $"tại khu vực {locationName}: thời tiết mát mẻ bình thường";
-            if (weather?.Weather != null && weather.Weather.Any() && weather.Main != null)
-            {
-                weatherDescription = $"tại khu vực {locationName}: nhiệt độ hiện tại {weather.Main.Temp}°C, {weather.Weather[0].Description}";
-            }
-
-            // 2. Fetch active drinks from DB
-            var activeDrinks = await _context.Drinks
+            // 1 & 2. Get current weather and fetch active drinks from DB in parallel
+            var weatherTask = _weatherService.GetCurrentWeatherAsync();
+            var drinksTask = _context.Drinks
                 .Include(d => d.DrinkTranslations)
                 .Where(d => d.IsActive == true)
                 .Select(d => new
@@ -67,6 +59,17 @@ public class AiRecommendationService : IAiRecommendationService
                     TemperatureType = d.TemperatureType.ToString()
                 })
                 .ToListAsync();
+
+            await Task.WhenAll(weatherTask, drinksTask);
+            var weather = await weatherTask;
+            var activeDrinks = await drinksTask;
+
+            var locationName = !string.IsNullOrEmpty(weather?.Name) ? weather.Name : "Quận 8, TP. Hồ Chí Minh";
+            var weatherDescription = $"tại khu vực {locationName}: thời tiết mát mẻ bình thường";
+            if (weather?.Weather != null && weather.Weather.Any() && weather.Main != null)
+            {
+                weatherDescription = $"tại khu vực {locationName}: nhiệt độ hiện tại {weather.Main.Temp}°C, {weather.Weather[0].Description}";
+            }
 
             if (!activeDrinks.Any())
             {
@@ -108,7 +111,9 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
                 },
                 GenerationConfig = new GeminiGenerationConfig
                 {
-                    ResponseMimeType = "application/json"
+                    ResponseMimeType = "application/json",
+                    MaxOutputTokens = 200,
+                    Temperature = 0.4
                 }
             };
 
@@ -133,8 +138,8 @@ Không trả về bất kỳ text nào ngoài JSON. Không bọc JSON trong dấ
 
                         if (parsedResult != null)
                         {
-                            // Lưu vào cache 15 phút
-                            _cache.Set(cacheKey, parsedResult, TimeSpan.FromMinutes(15));
+                            // Lưu vào cache 45 phút (phù hợp với chu kỳ làm mới mỗi 30 phút của BackgroundService)
+                            _cache.Set(cacheKey, parsedResult, TimeSpan.FromMinutes(45));
                             return parsedResult;
                         }
                     }

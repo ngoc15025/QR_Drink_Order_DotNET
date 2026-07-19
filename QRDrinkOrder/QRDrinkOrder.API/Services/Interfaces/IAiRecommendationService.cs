@@ -4,5 +4,5 @@ namespace QRDrinkOrder.API.Services.Interfaces;
 
 public interface IAiRecommendationService
 {
-    Task<AiRecommendationResult> GetDrinkRecommendationsAsync();
+    Task<AiRecommendationResult> GetDrinkRecommendationsAsync(bool isForceRefresh = false);
 }

@@ -27,6 +27,12 @@ public class GeminiGenerationConfig
 {
     [JsonPropertyName("responseMimeType")]
     public string ResponseMimeType { get; set; } = "application/json";
+
+    [JsonPropertyName("maxOutputTokens")]
+    public int? MaxOutputTokens { get; set; }
+
+    [JsonPropertyName("temperature")]
+    public double? Temperature { get; set; }
 }
 
 public class GeminiResponse

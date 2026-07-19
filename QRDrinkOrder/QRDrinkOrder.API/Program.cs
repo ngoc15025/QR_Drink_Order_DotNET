@@ -49,6 +49,7 @@ namespace QRDrinkOrder.API
             builder.Services.AddMemoryCache();
             builder.Services.AddScoped<IWeatherService, WeatherService>();
             builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
+            builder.Services.AddHostedService<AiRecommendationWarmupService>();
             builder.Services.AddScoped<IImageService, CloudinaryImageService>();
 
             // 4. Đăng ký SignalR để xử lý thông báo thời gian thực
@@ -190,25 +191,6 @@ namespace QRDrinkOrder.API
             });
 
             var app = builder.Build();
-
-            // Tự động kiểm tra và bổ sung cột bảo mật PIN cho bảng Memberships nếu DB cũ chưa có
-            using (var scope = app.Services.CreateScope())
-            {
-                try
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<QrdrinkOrderDbContext>();
-                    db.Database.ExecuteSqlRaw(@"
-                        IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Memberships')
-                        AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Memberships') AND name = 'PinCodeHash')
-                        BEGIN
-                            ALTER TABLE Memberships ADD PinCodeHash NVARCHAR(MAX) NULL, FailedPinAttempts INT NOT NULL DEFAULT 0, PinLockoutEnd DATETIME2 NULL;
-                        END");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Schema Check Warning] Không thể tự động thêm cột vào Memberships: {ex.Message}");
-                }
-            }
 
             app.UseForwardedHeaders();
 
