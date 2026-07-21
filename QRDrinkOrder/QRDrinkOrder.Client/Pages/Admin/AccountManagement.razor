@@ -128,7 +128,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Số điện thoại</label>
-                            <InputText class="form-control" @bind-Value="newAccount.Phone" type="tel" />
+                            <input type="tel" maxlength="10" inputmode="numeric" class="form-control" value="@newAccount.Phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx" />
                             <ValidationMessage For="@(() => newAccount.Phone)" class="text-danger small" />
                         </div>
                         <div class="mb-4">
@@ -207,6 +207,14 @@
         {
             isLoading = false;
         }
+    }
+
+    private void OnPhoneInput(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        var digits = new string(val.Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits.Substring(0, 10);
+        newAccount.Phone = digits;
     }
 
     private async Task HandleCreate()

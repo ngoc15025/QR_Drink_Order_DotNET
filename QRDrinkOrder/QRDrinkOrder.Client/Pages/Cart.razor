@@ -56,7 +56,7 @@ else
 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-secondary">@Loc["PhoneLabel"] <span class="text-danger">*</span></label>
-                    <input type="tel" class="form-control bg-light border-0" @bind="phone" @bind:event="oninput" @bind:after="CheckMembership" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" />
+                    <input type="tel" maxlength="10" inputmode="numeric" class="form-control bg-light border-0" value="@phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" />
                 </div>
                 
                 @if (membership != null)
@@ -149,13 +149,27 @@ else
                         <div class="ms-3 flex-grow-1">
                             <div class="fw-bold" style="font-size: 0.95rem;">@item.Drink.DrinkName</div>
                             <div class="small text-secondary">
-                                Đá: @item.IceLevel%, Đường: @item.SweetnessLevel%
-                                @if (item.SelectedSize != null)
+                                @if (item.Drink.TemperatureType != QRDrinkOrder.Shared.Enums.DrinkTemperature.Other &&
+                                     !(item.Drink.CategoryName?.Contains("Bánh", StringComparison.OrdinalIgnoreCase) ?? false) &&
+                                     !(item.Drink.CategoryName?.Contains("Khác", StringComparison.OrdinalIgnoreCase) ?? false) &&
+                                     !(item.Drink.CategoryName?.Contains("Cake", StringComparison.OrdinalIgnoreCase) ?? false) &&
+                                     !(item.Drink.CategoryName?.Contains("Other", StringComparison.OrdinalIgnoreCase) ?? false))
                                 {
-                                    <text> | Size: @item.SelectedSize.Name</text>
+                                    <span>Đá: @item.IceLevel%, Đường: @item.SweetnessLevel%</span>
+                                    @if (item.SelectedSize != null)
+                                    {
+                                        <span> | Size: @item.SelectedSize.Name</span>
+                                    }
+                                }
+                                else if (item.SelectedSize != null)
+                                {
+                                    <span>Size: @item.SelectedSize.Name</span>
                                 }
                             </div>
-                            @if (item.SelectedToppings.Any())
+                            @if (item.SelectedToppings.Any() &&
+                                 item.Drink.TemperatureType != QRDrinkOrder.Shared.Enums.DrinkTemperature.Other &&
+                                 !(item.Drink.CategoryName?.Contains("Bánh", StringComparison.OrdinalIgnoreCase) ?? false) &&
+                                 !(item.Drink.CategoryName?.Contains("Khác", StringComparison.OrdinalIgnoreCase) ?? false))
                             {
                                 <div class="small text-secondary">
                                     Topping: @string.Join(", ", item.SelectedToppings.Select(t => t.Name))
@@ -349,6 +363,15 @@ else
         return final > 0 ? final : 0;
     }
     
+    private async Task OnPhoneInput(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        var digits = new string(val.Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits.Substring(0, 10);
+        phone = digits;
+        await CheckMembership();
+    }
+
     private async Task CheckMembership()
     {
         if (!string.IsNullOrWhiteSpace(phone))

@@ -187,6 +187,17 @@ namespace QRDrinkOrder.API
                             QueueLimit = 0,
                             Window = TimeSpan.FromMinutes(1)
                         }));
+
+                options.AddPolicy("LookupLimiter", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+                        factory: partition => new FixedWindowRateLimiterOptions
+                        {
+                            AutoReplenishment = true,
+                            PermitLimit = 30,
+                            QueueLimit = 0,
+                            Window = TimeSpan.FromMinutes(1)
+                        }));
                 options.RejectionStatusCode = 429;
             });
 

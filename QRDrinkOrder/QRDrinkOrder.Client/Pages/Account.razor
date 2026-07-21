@@ -67,7 +67,7 @@
                     <p class="text-secondary small">@Loc["OrderLookupDesc"]</p>
                 </div>
                 <div class="mb-3">
-                    <input type="tel" class="form-control py-2" placeholder="@Loc["EnterPhonePlaceholder"]" @bind="customerPhone" @onkeyup="HandleKeyUp" />
+                    <input type="tel" maxlength="10" inputmode="numeric" class="form-control py-2" placeholder="@Loc["EnterPhonePlaceholder"]" value="@customerPhone" @oninput="OnPhoneInput" @onkeyup="HandleKeyUp" />
                 </div>
                 <button class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 24px;" @onclick="SearchOrder">@Loc["TrackNowBtn"]</button>
             </div>
@@ -125,6 +125,14 @@
         {
             NavigationManager.NavigateTo($"/order?phone={customerPhone}");
         }
+    }
+
+    private void OnPhoneInput(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        var digits = new string(val.Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits.Substring(0, 10);
+        customerPhone = digits;
     }
 
     private void HandleKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)

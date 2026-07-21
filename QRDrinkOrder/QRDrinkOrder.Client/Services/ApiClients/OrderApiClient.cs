@@ -43,23 +43,48 @@ public class OrderApiClient
 
     public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
     {
-        var order = await _httpClient.GetFromJsonAsync<OrderDto>($"api/orders/{orderId}");
-        ResolveOrderImages(order);
-        return order;
+        try
+        {
+            var order = await _httpClient.GetFromJsonAsync<OrderDto>($"api/orders/{orderId}");
+            ResolveOrderImages(order);
+            return order;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<List<OrderDto>> GetActiveOrdersAsync()
     {
-        var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>("api/orders/active") ?? new List<OrderDto>();
-        ResolveOrderImages(orders);
-        return orders;
+        try
+        {
+            var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>("api/orders/active") ?? new List<OrderDto>();
+            ResolveOrderImages(orders);
+            return orders;
+        }
+        catch
+        {
+            return new List<OrderDto>();
+        }
     }
 
     public async Task<List<OrderDto>> GetOrderHistoryByPhoneAsync(string phone)
     {
-        var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>($"api/orders/history?phone={phone}") ?? new List<OrderDto>();
-        ResolveOrderImages(orders);
-        return orders;
+        try
+        {
+            var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>($"api/orders/history?phone={phone}") ?? new List<OrderDto>();
+            ResolveOrderImages(orders);
+            return orders;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+        {
+            throw new Exception("Bạn đã tra cứu quá nhiều lần. Vui lòng đợi 1 phút rồi thử lại.");
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Lỗi kết nối tới máy chủ khi tải lịch sử đơn hàng. Vui lòng thử lại sau.");
+        }
     }
 
     public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status, string? cancelReason = null)
@@ -95,21 +120,28 @@ public class OrderApiClient
 
     public async Task<List<OrderDto>> GetAllOrdersAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var url = "api/orders";
-        var queryParams = new List<string>();
+        try
+        {
+            var url = "api/orders";
+            var queryParams = new List<string>();
 
-        if (startDate.HasValue)
-            queryParams.Add($"startDate={startDate.Value:yyyy-MM-dd}");
+            if (startDate.HasValue)
+                queryParams.Add($"startDate={startDate.Value:yyyy-MM-dd}");
 
-        if (endDate.HasValue)
-            queryParams.Add($"endDate={endDate.Value:yyyy-MM-dd}");
+            if (endDate.HasValue)
+                queryParams.Add($"endDate={endDate.Value:yyyy-MM-dd}");
 
-        if (queryParams.Count > 0)
-            url += "?" + string.Join("&", queryParams);
+            if (queryParams.Count > 0)
+                url += "?" + string.Join("&", queryParams);
 
-        var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>(url) ?? new List<OrderDto>();
-        ResolveOrderImages(orders);
-        return orders;
+            var orders = await _httpClient.GetFromJsonAsync<List<OrderDto>>(url) ?? new List<OrderDto>();
+            ResolveOrderImages(orders);
+            return orders;
+        }
+        catch
+        {
+            return new List<OrderDto>();
+        }
     }
 
     private void ResolveOrderImages(OrderDto? order)

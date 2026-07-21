@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
@@ -11,15 +13,39 @@ public class MenuService : IMenuService
 {
     private readonly QrdrinkOrderDbContext _context;
     private readonly ILogger<MenuService> _logger;
+    private readonly IMemoryCache _cache;
+    private static CancellationTokenSource _cacheResetToken = new();
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(15);
 
-    public MenuService(QrdrinkOrderDbContext context, ILogger<MenuService> logger)
+    public MenuService(QrdrinkOrderDbContext context, ILogger<MenuService> logger, IMemoryCache cache)
     {
         _context = context;
         _logger = logger;
+        _cache = cache;
+    }
+
+    private void ClearMenuCache()
+    {
+        try
+        {
+            _cacheResetToken.Cancel();
+            _cacheResetToken.Dispose();
+        }
+        catch { }
+        finally
+        {
+            _cacheResetToken = new CancellationTokenSource();
+        }
     }
 
     public async Task<List<CategoryDto>> GetCategoriesAsync(string langCode, bool includeInactive = false)
     {
+        var cacheKey = $"Menu_Categories_{langCode}_{includeInactive}";
+        if (_cache.TryGetValue(cacheKey, out List<CategoryDto>? cachedList) && cachedList != null)
+        {
+            return cachedList;
+        }
+
         var query = _context.Categories
             .AsNoTracking()
             .Include(c => c.CategoryTranslations)
@@ -32,8 +58,14 @@ public class MenuService : IMenuService
         }
 
         var categories = await query.OrderBy(c => c.DisplayOrder).ToListAsync();
+        var result = categories.Select(c => MapToCategoryDto(c, langCode)).ToList();
 
-        return categories.Select(c => MapToCategoryDto(c, langCode)).ToList();
+        var options = new MemoryCacheEntryOptions()
+            .SetAbsoluteExpiration(CacheDuration)
+            .AddExpirationToken(new CancellationChangeToken(_cacheResetToken.Token));
+        _cache.Set(cacheKey, result, options);
+
+        return result;
     }
 
     public async Task<CategoryDto?> GetCategoryByIdAsync(int id, string langCode)
@@ -84,6 +116,8 @@ public class MenuService : IMenuService
 
             await transaction.CommitAsync();
 
+            ClearMenuCache();
+
             // Load translations explicitly to return
             category.CategoryTranslations = new List<CategoryTranslation> { viTranslation, enTranslation };
             return MapToCategoryDto(category, "vi");
@@ -127,6 +161,8 @@ public class MenuService : IMenuService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
+            ClearMenuCache();
+
             return MapToCategoryDto(category, "vi");
         }
         catch (Exception ex)
@@ -150,11 +186,18 @@ public class MenuService : IMenuService
 
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();
+        ClearMenuCache();
         return true;
     }
 
     public async Task<List<DrinkDto>> GetDrinksAsync(string langCode, int? categoryId = null, bool includeInactive = false)
     {
+        var cacheKey = $"Menu_Drinks_{langCode}_{categoryId?.ToString() ?? "all"}_{includeInactive}";
+        if (_cache.TryGetValue(cacheKey, out List<DrinkDto>? cachedList) && cachedList != null)
+        {
+            return cachedList;
+        }
+
         var query = _context.Drinks
             .AsNoTracking()
             .Include(d => d.DrinkTranslations)
@@ -174,8 +217,14 @@ public class MenuService : IMenuService
         }
 
         var drinks = await query.OrderByDescending(d => d.DrinkId).ToListAsync();
+        var result = drinks.Select(d => MapToDrinkDto(d, langCode)).ToList();
 
-        return drinks.Select(d => MapToDrinkDto(d, langCode)).ToList();
+        var options = new MemoryCacheEntryOptions()
+            .SetAbsoluteExpiration(CacheDuration)
+            .AddExpirationToken(new CancellationChangeToken(_cacheResetToken.Token));
+        _cache.Set(cacheKey, result, options);
+
+        return result;
     }
 
     public async Task<DrinkDto?> GetDrinkByIdAsync(int id, string langCode)
@@ -239,6 +288,7 @@ public class MenuService : IMenuService
                     .ThenInclude(c => c.CategoryTranslations)
                 .FirstAsync(d => d.DrinkId == drink.DrinkId);
 
+            ClearMenuCache();
             return MapToDrinkDto(loadedDrink, "vi");
         }
         catch (Exception ex)
@@ -299,6 +349,7 @@ public class MenuService : IMenuService
                     .ThenInclude(c => c.CategoryTranslations)
                 .FirstAsync(d => d.DrinkId == id);
 
+            ClearMenuCache();
             return MapToDrinkDto(loadedDrink, "vi");
         }
         catch (Exception ex)
@@ -327,6 +378,7 @@ public class MenuService : IMenuService
         }
 
         await _context.SaveChangesAsync();
+        ClearMenuCache();
         return true;
     }
 
@@ -338,6 +390,7 @@ public class MenuService : IMenuService
 
         drink.IsActive = !(drink.IsActive ?? true);
         await _context.SaveChangesAsync();
+        ClearMenuCache();
         return true;
     }
 
@@ -411,6 +464,12 @@ public class MenuService : IMenuService
 
     public async Task<List<PromotionDto>> GetPromotionsAsync(string langCode, bool includeInactive = false)
     {
+        var cacheKey = $"Menu_Promotions_{langCode}_{includeInactive}";
+        if (_cache.TryGetValue(cacheKey, out List<PromotionDto>? cachedList) && cachedList != null)
+        {
+            return cachedList;
+        }
+
         var query = _context.Promotions
             .AsNoTracking()
             .Include(p => p.PromotionTranslations)
@@ -427,7 +486,7 @@ public class MenuService : IMenuService
             .OrderByDescending(p => p.PromotionId)
             .ToListAsync();
 
-        return promotions.Select(p =>
+        var result = promotions.Select(p =>
         {
             var trans = p.PromotionTranslations.FirstOrDefault(t => t.LanguageCode.Trim() == langCode)
                         ?? p.PromotionTranslations.FirstOrDefault(t => t.LanguageCode.Trim() == "vi")
@@ -448,6 +507,13 @@ public class MenuService : IMenuService
                 Description = trans?.Content
             };
         }).ToList();
+
+        var options = new MemoryCacheEntryOptions()
+            .SetAbsoluteExpiration(CacheDuration)
+            .AddExpirationToken(new CancellationChangeToken(_cacheResetToken.Token));
+        _cache.Set(cacheKey, result, options);
+
+        return result;
     }
 
     public async Task<PromotionDto?> GetPromotionByIdAsync(int id, string langCode)
@@ -518,6 +584,8 @@ public class MenuService : IMenuService
 
             await transaction.CommitAsync();
 
+            ClearMenuCache();
+
             return new PromotionDto
             {
                 PromotionId = promotion.PromotionId,
@@ -576,6 +644,8 @@ public class MenuService : IMenuService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
+            ClearMenuCache();
+
             return new PromotionDto
             {
                 PromotionId = promotion.PromotionId,
@@ -601,6 +671,7 @@ public class MenuService : IMenuService
 
         _context.Promotions.Remove(promotion);
         await _context.SaveChangesAsync();
+        ClearMenuCache();
         return true;
     }
 

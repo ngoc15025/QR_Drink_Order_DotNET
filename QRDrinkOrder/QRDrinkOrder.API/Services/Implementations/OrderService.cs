@@ -390,13 +390,71 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetOrderHistoryByPhoneAsync(string phone)
     {
-        var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
-        var orders = await query
+        var orders = await _context.Orders
+            .AsNoTracking()
             .Where(o => o.Session.Phone == phone)
             .OrderByDescending(o => o.OrderDate)
+            .Select(order => new OrderDto
+            {
+                OrderId = order.OrderId,
+                SessionId = order.SessionId,
+                EmployeeId = order.EmployeeId,
+                EmployeeName = order.Employee != null ? order.Employee.FullName : null,
+                TableNumber = order.TableNumber,
+                TotalAmount = order.TotalAmount,
+                DiscountAmount = order.DiscountAmount ?? 0,
+                FinalAmount = order.FinalAmount ?? (order.TotalAmount - (order.DiscountAmount ?? 0)),
+                OrderStatus = order.OrderStatus ?? 0,
+                OrderStatusName = order.OrderStatus == (byte)OrderStatus.PendingPayment ? "Chờ thanh toán" :
+                                  order.OrderStatus == (byte)OrderStatus.Preparing ? "Đang chuẩn bị" :
+                                  order.OrderStatus == (byte)OrderStatus.Completed ? "Hoàn thành" :
+                                  order.OrderStatus == (byte)OrderStatus.Cancelled ? "Đã hủy" : "Không xác định",
+                CouponId = order.CouponId,
+                CouponCode = order.Coupon != null ? order.Coupon.CouponCode : null,
+                PointsUsed = order.PointsUsed,
+                OrderDate = order.OrderDate ?? DateTime.Now,
+                Note = order.Note,
+                CustomerPhone = order.Session != null ? order.Session.Phone : null,
+                IsReviewed = order.Review != null,
+                Items = order.OrderItems.Select(oi => new OrderItemDto
+                {
+                    OrderItemId = oi.OrderItemId,
+                    OrderId = oi.OrderId,
+                    DrinkId = oi.DrinkId,
+                    DrinkName = oi.Drink != null 
+                        ? (oi.Drink.DrinkTranslations.FirstOrDefault(t => t.LanguageCode.Trim() == "vi") != null 
+                            ? oi.Drink.DrinkTranslations.FirstOrDefault(t => t.LanguageCode.Trim() == "vi")!.DrinkName 
+                            : "Sản phẩm") 
+                        : "Sản phẩm",
+                    ImageUrl = oi.Drink != null ? (oi.Drink.ImageUrl ?? "") : "",
+                    Quantity = oi.Quantity,
+                    SweetnessLevel = oi.SweetnessLevel,
+                    IceLevel = oi.IceLevel,
+                    SizeName = oi.Size != null ? oi.Size.Name : null,
+                    ToppingNames = oi.OrderItemToppings.Select(oit => oit.Topping.Name).ToList(),
+                    ItemNote = oi.ItemNote,
+                    UnitPrice = oi.UnitPrice,
+                    SubTotal = oi.SubTotal ?? (oi.Quantity * oi.UnitPrice)
+                }).ToList(),
+                Payment = order.Payment == null ? null : new PaymentDto
+                {
+                    PaymentId = order.Payment.PaymentId,
+                    OrderId = order.Payment.OrderId,
+                    PaymentMethod = order.Payment.PaymentMethod,
+                    PaymentMethodName = order.Payment.PaymentMethod == (byte)PaymentMethod.Cash ? "Tiền mặt" :
+                                        order.Payment.PaymentMethod == (byte)PaymentMethod.SePay ? "SePay VietQR" : "Không xác định",
+                    PaymentStatus = order.Payment.PaymentStatus ?? 0,
+                    PaymentStatusName = order.Payment.PaymentStatus == (byte)PaymentStatus.Pending ? "Đang chờ" :
+                                        order.Payment.PaymentStatus == (byte)PaymentStatus.Success ? "Thành công" :
+                                        order.Payment.PaymentStatus == (byte)PaymentStatus.Failed ? "Thất bại" : "Không xác định",
+                    TransactionId = order.Payment.TransactionId,
+                    Amount = order.Payment.Amount,
+                    PaidAt = order.Payment.PaidAt
+                }
+            })
             .ToListAsync();
 
-        return orders.Select(MapToOrderDto).ToList();
+        return orders;
     }
 
     public async Task<OrderDto?> GetOrderByIdAsync(int orderId)

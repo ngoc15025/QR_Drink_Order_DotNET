@@ -346,35 +346,38 @@ else
                     </div>
                 }
 
-                <div class="tch-section-bar">@Loc["SizeSectionTitle"]</div>
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    @foreach (var size in sizes)
-                    {
-                        <button type="button" 
-                                class="tch-opt-btn @(selectedSize?.SizeId == size.SizeId ? "active" : "")" 
-                                @onclick="() => SelectSize(size)">
-                            <span class="d-block">@size.Name @(size.PriceOffset > 0 ? $"({size.PriceOffset.ToString("N0")}đ)" : "")</span>
-                        </button>
-                    }
-                </div>
+                @if (!IsCakeOrOtherDrink)
+                {
+                    <div class="tch-section-bar">@Loc["SizeSectionTitle"]</div>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @foreach (var size in sizes)
+                        {
+                            <button type="button" 
+                                    class="tch-opt-btn @(selectedSize?.SizeId == size.SizeId ? "active" : "")" 
+                                    @onclick="() => SelectSize(size)">
+                                <span class="d-block">@size.Name @(size.PriceOffset > 0 ? $"({size.PriceOffset.ToString("N0")}đ)" : "")</span>
+                            </button>
+                        }
+                    </div>
 
-                <div class="tch-section-bar">@Loc["IceSectionTitle"]</div>
-                <div class="d-flex gap-2 flex-wrap mb-3">
-                    <button type="button" class="tch-opt-btn @(ice == 0 ? "active" : "")" @onclick="() => ice = 0">0%</button>
-                    <button type="button" class="tch-opt-btn @(ice == 50 ? "active" : "")" @onclick="() => ice = 50">50%</button>
-                    <button type="button" class="tch-opt-btn @(ice == 100 ? "active" : "")" @onclick="() => ice = 100">100%</button>
-                </div>
+                    <div class="tch-section-bar">@Loc["IceSectionTitle"]</div>
+                    <div class="d-flex gap-2 flex-wrap mb-3">
+                        <button type="button" class="tch-opt-btn @(ice == 0 ? "active" : "")" @onclick="() => ice = 0">0%</button>
+                        <button type="button" class="tch-opt-btn @(ice == 50 ? "active" : "")" @onclick="() => ice = 50">50%</button>
+                        <button type="button" class="tch-opt-btn @(ice == 100 ? "active" : "")" @onclick="() => ice = 100">100%</button>
+                    </div>
 
-                <div class="tch-section-bar">@Loc["SweetnessSectionTitle"]</div>
-                <div class="d-flex gap-2 flex-wrap mb-3">
-                    <button type="button" class="tch-opt-btn @(sweetness == 0 ? "active" : "")" @onclick="() => sweetness = 0">0%</button>
-                    <button type="button" class="tch-opt-btn @(sweetness == 30 ? "active" : "")" @onclick="() => sweetness = 30">30%</button>
-                    <button type="button" class="tch-opt-btn @(sweetness == 50 ? "active" : "")" @onclick="() => sweetness = 50">50%</button>
-                    <button type="button" class="tch-opt-btn @(sweetness == 70 ? "active" : "")" @onclick="() => sweetness = 70">70%</button>
-                    <button type="button" class="tch-opt-btn @(sweetness == 100 ? "active" : "")" @onclick="() => sweetness = 100">100%</button>
-                </div>
+                    <div class="tch-section-bar">@Loc["SweetnessSectionTitle"]</div>
+                    <div class="d-flex gap-2 flex-wrap mb-3">
+                        <button type="button" class="tch-opt-btn @(sweetness == 0 ? "active" : "")" @onclick="() => sweetness = 0">0%</button>
+                        <button type="button" class="tch-opt-btn @(sweetness == 30 ? "active" : "")" @onclick="() => sweetness = 30">30%</button>
+                        <button type="button" class="tch-opt-btn @(sweetness == 50 ? "active" : "")" @onclick="() => sweetness = 50">50%</button>
+                        <button type="button" class="tch-opt-btn @(sweetness == 70 ? "active" : "")" @onclick="() => sweetness = 70">70%</button>
+                        <button type="button" class="tch-opt-btn @(sweetness == 100 ? "active" : "")" @onclick="() => sweetness = 100">100%</button>
+                    </div>
+                }
 
-                @if (toppings.Any())
+                @if (!IsCakeOrOtherDrink && toppings.Any())
                 {
                     <div class="tch-section-bar">@Loc["ToppingSectionTitle"]</div>
                     <div class="d-flex flex-column gap-2 mb-3">
@@ -565,11 +568,19 @@ else
         try
         {
             isLoading = true;
-            categories = await MenuApi.GetCategoriesAsync();
-            allDrinks = await MenuApi.GetDrinksAsync();
-            promotions = await MenuApi.GetPromotionsAsync();
-            sizes = await MenuApi.GetSizesAsync();
-            toppings = await MenuApi.GetToppingsAsync();
+            var catTask = MenuApi.GetCategoriesAsync();
+            var drinkTask = MenuApi.GetDrinksAsync();
+            var promoTask = MenuApi.GetPromotionsAsync();
+            var sizeTask = MenuApi.GetSizesAsync();
+            var topTask = MenuApi.GetToppingsAsync();
+
+            await Task.WhenAll(catTask, drinkTask, promoTask, sizeTask, topTask);
+
+            categories = await catTask;
+            allDrinks = await drinkTask;
+            promotions = await promoTask;
+            sizes = await sizeTask;
+            toppings = await topTask;
         }
         finally
         {
@@ -612,12 +623,20 @@ else
         }
 
         selectedDrink = drink;
-        // Reset options
-        sweetness = 100;
-        ice = 100;
+        if (IsCakeOrOtherDrink)
+        {
+            sweetness = 0;
+            ice = 0;
+            selectedSize = null;
+        }
+        else
+        {
+            sweetness = 100;
+            ice = 100;
+            selectedSize = sizes.FirstOrDefault();
+        }
         quantity = 1;
         note = "";
-        selectedSize = sizes.FirstOrDefault();
         selectedToppings.Clear();
         UpdateSmartPairings(drink);
         isModalOpen = true;
@@ -701,6 +720,16 @@ else
                 .ToList();
         }
     }
+
+    private bool IsCakeOrOtherDrink => selectedDrink != null && (
+        selectedDrink.TemperatureType == QRDrinkOrder.Shared.Enums.DrinkTemperature.Other ||
+        (!string.IsNullOrEmpty(selectedDrink.CategoryName) && (
+            selectedDrink.CategoryName.Contains("Bánh", StringComparison.OrdinalIgnoreCase) ||
+            selectedDrink.CategoryName.Contains("Khác", StringComparison.OrdinalIgnoreCase) ||
+            selectedDrink.CategoryName.Contains("Cake", StringComparison.OrdinalIgnoreCase) ||
+            selectedDrink.CategoryName.Contains("Other", StringComparison.OrdinalIgnoreCase)
+        ))
+    );
 
     private void CloseModal()
     {

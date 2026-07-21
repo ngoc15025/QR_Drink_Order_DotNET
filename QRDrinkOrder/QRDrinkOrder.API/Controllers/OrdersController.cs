@@ -61,7 +61,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("history")]
-    [EnableRateLimiting("LoginLimiter")]
+    [EnableRateLimiting("LookupLimiter")]
     public async Task<IActionResult> GetOrderHistoryByPhone([FromQuery] string phone)
     {
         if (string.IsNullOrEmpty(phone))
