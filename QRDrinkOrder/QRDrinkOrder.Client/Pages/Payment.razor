@@ -168,7 +168,7 @@
     private string bankName = "...";
     private string accountNumber = "...";
     private string accountName = "...";
-    private string deepLinkUrl = "https://dl.vietqr.io/pay?app=vietqr";
+    private string deepLinkUrl = "https://dl.vietqr.io/pay";
 
     private HubConnection? hubConnection;
     private bool isConnecting = true;
@@ -207,7 +207,7 @@
                     accountName = activeBank.AccountName;
                     long amountStr = (long)order.FinalAmount;
                     qrUrl = $"https://img.vietqr.io/image/{activeBank.BankCode}-{activeBank.AccountNumber}-compact.png?amount={amountStr}&addInfo=UwU{order.OrderId}&accountName={Uri.EscapeDataString(activeBank.AccountName)}";
-                    deepLinkUrl = $"https://dl.vietqr.io/pay?app=vietqr&ba={activeBank.AccountNumber}@{activeBank.BankCode}&am={amountStr}&tn=UwU{order.OrderId}";
+                    deepLinkUrl = $"https://dl.vietqr.io/pay?ba={activeBank.AccountNumber}@{activeBank.BankCode}&am={amountStr}&tn=UwU{order.OrderId}";
                 }
                 
                 StartTimer();

@@ -321,6 +321,9 @@ CREATE TABLE Memberships (
     MembershipId INT PRIMARY KEY IDENTITY(1,1),
     Phone NVARCHAR(15) NOT NULL UNIQUE,
     Points INT DEFAULT 0,
+    PinCodeHash NVARCHAR(MAX) NULL,
+    FailedPinAttempts INT DEFAULT 0,
+    PinLockoutEnd DATETIME2 NULL,
     CreatedAt DATETIME2 DEFAULT GETDATE()
 );
 
