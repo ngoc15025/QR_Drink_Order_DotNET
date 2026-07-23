@@ -185,7 +185,10 @@
 
         long amountStr = (long)order.FinalAmount;
         string appId = GetVietQRAppId(targetBankApp);
-        return $"https://dl.vietqr.io/pay?app={appId}&ba={accountNumber}@{bankName}&am={amountStr}&tn=UwU{order.OrderId}";
+        string receiverBankId = GetVietQRAppId(bankName);
+        string tn = Uri.EscapeDataString($"UwU{order.OrderId}");
+        string bn = Uri.EscapeDataString(accountName);
+        return $"https://dl.vietqr.io/pay?app={appId}&ba={accountNumber}@{receiverBankId}&am={amountStr}&amount={amountStr}&tn={tn}&addInfo={tn}&bn={bn}";
     }
 
     private string GetVietQRAppId(string bankCode)
@@ -248,8 +251,7 @@
                     accountName = activeBank.AccountName;
                     long amountStr = (long)order.FinalAmount;
                     qrUrl = $"https://img.vietqr.io/image/{activeBank.BankCode}-{activeBank.AccountNumber}-compact.png?amount={amountStr}&addInfo=UwU{order.OrderId}&accountName={Uri.EscapeDataString(activeBank.AccountName)}";
-                    string appId = GetVietQRAppId(activeBank.BankCode);
-                    deepLinkUrl = $"https://dl.vietqr.io/pay?app={appId}&ba={activeBank.AccountNumber}@{activeBank.BankCode}&am={amountStr}&tn=UwU{order.OrderId}";
+                    deepLinkUrl = GetVietQRDeepLink(activeBank.BankCode);
                 }
                 
                 StartTimer();
