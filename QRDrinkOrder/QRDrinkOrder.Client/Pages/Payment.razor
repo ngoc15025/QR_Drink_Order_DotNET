@@ -82,7 +82,7 @@
                 }
             </div>
             
-            <div class="d-flex justify-content-center gap-2 mb-2">
+            <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
                 <a href="@qrUrl" download="VietQR_Order_@(order.OrderId)" target="_blank" class="btn btn-sm btn-outline-secondary d-flex align-items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
                         <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
@@ -90,18 +90,26 @@
                     </svg>
                     Lưu ảnh
                 </a>
-                <a href="@deepLinkUrl" target="_blank" class="btn btn-sm btn-outline-primary d-flex align-items-center">
+                <a href="@deepLinkUrl" target="_blank" class="btn btn-sm btn-primary d-flex align-items-center fw-bold">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-phone me-1" viewBox="0 0 16 16">
                         <path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/>
                         <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
                     </svg>
-                    Mở App Ngân hàng
+                    Mở App (@bankName)
                 </a>
             </div>
             <div class="text-center mb-3">
-                <small class="text-muted" style="font-size: 0.8rem;">
-                    💡 Bấm "Mở App Ngân hàng" trên điện thoại để tự động chuyển sang app ngân hàng với đầy đủ thông tin.
+                <small class="text-muted d-block mb-1" style="font-size: 0.8rem;">
+                    💡 Chọn ứng dụng ngân hàng của bạn để tự động điền thông tin:
                 </small>
+                <div class="d-flex justify-content-center flex-wrap gap-1">
+                    <a href="@GetVietQRDeepLink("mb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">MBBank</a>
+                    <a href="@GetVietQRDeepLink("vcb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">Vietcombank</a>
+                    <a href="@GetVietQRDeepLink("tcb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">Techcombank</a>
+                    <a href="@GetVietQRDeepLink("icb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">VietinBank</a>
+                    <a href="@GetVietQRDeepLink("bidv")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">BIDV</a>
+                    <a href="@GetVietQRDeepLink("tpb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">TPBank</a>
+                </div>
             </div>
             
             <div class="bg-light p-3 rounded mb-4 text-start">
@@ -168,7 +176,40 @@
     private string bankName = "...";
     private string accountNumber = "...";
     private string accountName = "...";
-    private string deepLinkUrl = "https://dl.vietqr.io/pay";
+    private string deepLinkUrl = "https://dl.vietqr.io/pay?app=mb";
+
+    private string GetVietQRDeepLink(string targetBankApp)
+    {
+        if (order == null || string.IsNullOrEmpty(accountNumber) || string.IsNullOrEmpty(bankName))
+            return "#";
+
+        long amountStr = (long)order.FinalAmount;
+        string appId = GetVietQRAppId(targetBankApp);
+        return $"https://dl.vietqr.io/pay?app={appId}&ba={accountNumber}@{bankName}&am={amountStr}&tn=UwU{order.OrderId}";
+    }
+
+    private string GetVietQRAppId(string bankCode)
+    {
+        if (string.IsNullOrWhiteSpace(bankCode)) return "mb";
+        var code = bankCode.Trim().ToLower();
+        return code switch
+        {
+            "vietcombank" or "vcb" => "vcb",
+            "mbbank" or "mb" => "mb",
+            "vietinbank" or "icb" or "ctg" => "icb",
+            "techcombank" or "tcb" => "tcb",
+            "bidv" => "bidv",
+            "tpbank" or "tpb" => "tpb",
+            "vpbank" or "vpb" => "vpb",
+            "acb" => "acb",
+            "sacombank" or "stb" => "stb",
+            "hdbank" or "hdb" => "hdb",
+            "ocb" => "ocb",
+            "msb" => "msb",
+            "agribank" or "vba" => "vba",
+            _ => code
+        };
+    }
 
     private HubConnection? hubConnection;
     private bool isConnecting = true;
@@ -207,7 +248,8 @@
                     accountName = activeBank.AccountName;
                     long amountStr = (long)order.FinalAmount;
                     qrUrl = $"https://img.vietqr.io/image/{activeBank.BankCode}-{activeBank.AccountNumber}-compact.png?amount={amountStr}&addInfo=UwU{order.OrderId}&accountName={Uri.EscapeDataString(activeBank.AccountName)}";
-                    deepLinkUrl = $"https://dl.vietqr.io/pay?ba={activeBank.AccountNumber}@{activeBank.BankCode}&am={amountStr}&tn=UwU{order.OrderId}";
+                    string appId = GetVietQRAppId(activeBank.BankCode);
+                    deepLinkUrl = $"https://dl.vietqr.io/pay?app={appId}&ba={activeBank.AccountNumber}@{activeBank.BankCode}&am={amountStr}&tn=UwU{order.OrderId}";
                 }
                 
                 StartTimer();
