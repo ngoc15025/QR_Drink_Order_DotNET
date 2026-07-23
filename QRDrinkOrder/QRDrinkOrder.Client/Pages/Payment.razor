@@ -12,6 +12,19 @@
 
 <PageTitle>Thanh toán - Ngoc UwU Coffee</PageTitle>
 
+@if (showToast)
+{
+    <div class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 9999; margin-top: 15px;">
+        <div class="toast show align-items-center text-white bg-dark border-0 shadow-lg" role="alert">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center py-2 px-3 fw-bold" style="font-size: 0.95rem;">
+                    <span class="me-2 fs-5">📋</span> @toastMessage
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="mb-3 px-3 pt-3">
     <a href="/cart" class="text-decoration-none" style="color: var(--tch-text-main);">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left me-2" viewBox="0 0 16 16">
@@ -46,7 +59,7 @@
     }
     else if (isExpired)
     {
-        <div class="text-center py-5">
+        <div class="bg-white p-4 rounded shadow-sm text-center mb-4 border">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#ef4444" class="bi bi-x-circle mb-3" viewBox="0 0 16 16">
               <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
               <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
@@ -58,14 +71,14 @@
     }
     else
     {
-        <div class="bg-white p-4 rounded shadow-sm text-center mb-4">
-            <h5 class="fw-bold mb-3">Thanh toán qua VietQR</h5>
+        <div class="bg-white p-4 rounded-4 shadow-sm text-center mb-4 border">
+            <h5 class="fw-bold mb-3 text-dark">Thanh toán qua VietQR</h5>
             
             <div class="mb-3 d-flex justify-content-center">
                 @if (qrUrl != null)
                 {
-                    <div class="qr-container position-relative" style="max-width: 250px;">
-                        <img src="@qrUrl" alt="QR Code" class="img-fluid border p-2 rounded" />
+                    <div class="qr-container position-relative" style="max-width: 240px;">
+                        <img src="@qrUrl" alt="QR Code" class="img-fluid border p-2 rounded-3 bg-white shadow-sm" />
                         <div class="qr-overlay d-flex align-items-center justify-content-center" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;">
                             @if (isConnecting)
                             {
@@ -82,68 +95,97 @@
                 }
             </div>
             
-            <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
-                <a href="@qrUrl" download="VietQR_Order_@(order.OrderId)" target="_blank" class="btn btn-sm btn-outline-secondary d-flex align-items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
+            <div class="d-flex justify-content-center gap-2 mb-3 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center rounded-3 px-3 py-1.5" @onclick="DownloadQrImage" disabled="@isDownloadingQr">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-download me-1.5" viewBox="0 0 16 16">
                         <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                         <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
                     </svg>
-                    Lưu ảnh
-                </a>
-                <a href="@deepLinkUrl" target="_blank" class="btn btn-sm btn-primary d-flex align-items-center fw-bold">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-phone me-1" viewBox="0 0 16 16">
+                    @if (isDownloadingQr)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    Lưu ảnh QR
+                </button>
+                <a href="@deepLinkUrl" target="_blank" class="btn btn-sm btn-dark d-flex align-items-center fw-bold rounded-3 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-phone me-1.5" viewBox="0 0 16 16">
                         <path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/>
                         <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
                     </svg>
-                    Mở App (@bankName)
+                    Mở App Ngân hàng
                 </a>
             </div>
-            <div class="text-center mb-3">
-                <small class="text-muted d-block mb-1" style="font-size: 0.8rem;">
-                    💡 Chọn ứng dụng ngân hàng của bạn để tự động điền thông tin:
+
+            <!-- Clean Spaced Bank Pills -->
+            <div class="text-center mb-4">
+                <small class="text-muted d-block mb-2" style="font-size: 0.82rem;">
+                    💡 Chọn nhanh App ngân hàng trên máy:
                 </small>
-                <div class="d-flex justify-content-center flex-wrap gap-1">
-                    <a href="@GetVietQRDeepLink("mb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">MBBank</a>
-                    <a href="@GetVietQRDeepLink("vcb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">Vietcombank</a>
-                    <a href="@GetVietQRDeepLink("tcb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">Techcombank</a>
-                    <a href="@GetVietQRDeepLink("icb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">VietinBank</a>
-                    <a href="@GetVietQRDeepLink("bidv")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">BIDV</a>
-                    <a href="@GetVietQRDeepLink("tpb")" target="_blank" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size: 0.78rem;">TPBank</a>
+                <div class="d-flex justify-content-center flex-wrap gap-2">
+                    <a href="@GetVietQRDeepLink("mb")" target="_blank" class="btn btn-sm btn-light border text-dark px-3 py-1" style="font-size: 0.78rem; border-radius: 20px; text-decoration: none; font-weight: 600; box-shadow: none !important; border-color: #cbd5e1 !important;">MBBank</a>
+                    <a href="@GetVietQRDeepLink("vcb")" target="_blank" class="btn btn-sm btn-light border text-dark px-3 py-1" style="font-size: 0.78rem; border-radius: 20px; text-decoration: none; font-weight: 600; box-shadow: none !important; border-color: #cbd5e1 !important;">Vietcombank</a>
+                    <a href="@GetVietQRDeepLink("tcb")" target="_blank" class="btn btn-sm btn-light border text-dark px-3 py-1" style="font-size: 0.78rem; border-radius: 20px; text-decoration: none; font-weight: 600; box-shadow: none !important; border-color: #cbd5e1 !important;">Techcombank</a>
+                    <a href="@GetVietQRDeepLink("icb")" target="_blank" class="btn btn-sm btn-light border text-dark px-3 py-1" style="font-size: 0.78rem; border-radius: 20px; text-decoration: none; font-weight: 600; box-shadow: none !important; border-color: #cbd5e1 !important;">VietinBank</a>
+                    <a href="@GetVietQRDeepLink("bidv")" target="_blank" class="btn btn-sm btn-light border text-dark px-3 py-1" style="font-size: 0.78rem; border-radius: 20px; text-decoration: none; font-weight: 600; box-shadow: none !important; border-color: #cbd5e1 !important;">BIDV</a>
                 </div>
             </div>
             
-            <div class="bg-light p-3 rounded mb-4 text-start">
-                <div class="d-flex justify-content-between mb-2">
+            <div class="bg-light p-3.5 rounded-3 mb-4 text-start border" style="background-color: #f8fafc !important; border-color: #e2e8f0 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-2 px-2">
                     <span class="text-secondary small">Ngân hàng:</span>
-                    <strong class="text-dark">@bankName</strong>
+                    <strong class="text-dark fs-6">@bankName</strong>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom px-2">
                     <span class="text-secondary small">Chủ TK:</span>
-                    <strong class="text-dark">@accountName</strong>
+                    <strong class="text-dark fs-6">@accountName</strong>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary small">Số tài khoản:</span>
-                    <strong class="text-dark fs-6">@accountNumber</strong>
+
+                <!-- Số tài khoản + Flat Copy Button -->
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom px-2">
+                    <div class="py-1">
+                        <span class="text-secondary small d-block">Số tài khoản:</span>
+                        <strong class="text-dark fs-6 font-monospace fw-bold me-2">@accountNumber</strong>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border px-3 py-1.5 text-dark bg-white fw-bold d-flex align-items-center" style="font-size: 0.78rem; border-color: #cbd5e1 !important; box-shadow: none !important;" @onclick='() => CopyToClipboard(accountNumber, "số tài khoản")'>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-copy me-1.5" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                        Sao chép
+                    </button>
                 </div>
-                <hr style="border-top: 1px dashed var(--tch-border);" />
-                <div class="d-flex justify-content-between mb-2">
+
+                <div class="d-flex justify-content-between align-items-center mb-2 px-2">
                     <span class="text-secondary small">Tổng tiền gốc:</span>
                     <span>@order.TotalAmount.ToString("N0") đ</span>
                 </div>
                 @if (order.DiscountAmount > 0)
                 {
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-success small">Giảm giá / Đổi điểm (@(order.PointsUsed > 0 ? $"{order.PointsUsed} điểm" : "Khuyến mãi")):</span>
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                        <span class="text-success small">Giảm giá / Đổi điểm:</span>
                         <span class="text-success fw-bold">-@order.DiscountAmount.ToString("N0") đ</span>
                     </div>
                 }
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary small">Số tiền cần chuyển:</span>
-                    <strong class="text-primary fs-5">@order.FinalAmount.ToString("N0") đ</strong>
+
+                <!-- Số tiền cần chuyển (VERY BOLD EMERALD GREEN) + Flat Copy Button -->
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom px-2">
+                    <div class="py-1">
+                        <span class="text-secondary small d-block mb-1">Số tiền cần chuyển:</span>
+                        <strong class="fs-4 font-monospace d-inline-block" style="color: #059669 !important; font-size: 1.35rem !important; font-weight: 800 !important;">@order.FinalAmount.ToString("N0") đ</strong>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border px-3 py-1.5 text-dark bg-white fw-bold d-flex align-items-center" style="font-size: 0.78rem; border-color: #cbd5e1 !important; box-shadow: none !important;" @onclick='() => CopyToClipboard(((long)order.FinalAmount).ToString(), "số tiền")'>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-copy me-1.5" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                        Sao chép
+                    </button>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary small">Nội dung CK:</span>
-                    <strong class="text-success fs-6">UwU@(order.OrderId)</strong>
+
+                <!-- Nội dung CK + Generous Inner Padding -->
+                <div class="d-flex justify-content-between align-items-center p-3 rounded-3 border" style="background-color: #fffbeb; border-color: #fde68a !important; box-shadow: none !important;">
+                    <div class="px-1 py-1">
+                        <span class="small d-block fw-bold mb-1" style="color: #92400e; font-size: 0.82rem;">Nội dung chuyển khoản (bắt buộc):</span>
+                        <strong class="fs-5 font-monospace fw-bold d-inline-block" style="color: #dc2626 !important; font-size: 1.25rem !important; font-weight: 800 !important;">UwU@(order.OrderId)</strong>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1.5 border-0 d-flex align-items-center" style="font-size: 0.78rem; background-color: #f59e0b !important; color: #78350f !important; box-shadow: none !important;" @onclick='() => CopyToClipboard($"UwU{order.OrderId}", "nội dung chuyển khoản")'>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-copy me-1.5" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                        Sao chép
+                    </button>
                 </div>
             </div>
 
@@ -177,6 +219,78 @@
     private string accountNumber = "...";
     private string accountName = "...";
     private string deepLinkUrl = "https://dl.vietqr.io/pay?app=mb";
+
+    private string? toastMessage;
+    private bool showToast = false;
+    private System.Timers.Timer? toastTimer;
+
+    private async Task CopyToClipboard(string text, string label)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            toastMessage = $"Đã sao chép {label}: {text}";
+            showToast = true;
+            StateHasChanged();
+
+            toastTimer?.Stop();
+            toastTimer?.Dispose();
+            toastTimer = new System.Timers.Timer(2500);
+            toastTimer.Elapsed += (s, e) =>
+            {
+                showToast = false;
+                InvokeAsync(StateHasChanged);
+                toastTimer.Dispose();
+            };
+            toastTimer.Start();
+        }
+        catch
+        {
+            toastMessage = $"Đã chọn {label}: {text}";
+            showToast = true;
+            StateHasChanged();
+        }
+    }
+
+    private bool isDownloadingQr = false;
+
+    private async Task DownloadQrImage()
+    {
+        if (string.IsNullOrEmpty(qrUrl) || order == null) return;
+        
+        isDownloadingQr = true;
+        try
+        {
+            var fileName = $"VietQR_Order_{order.OrderId}.png";
+            var jsCode = @"
+                async (src, name) => {
+                    const resp = await fetch(src);
+                    const blob = await resp.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            ";
+            await JS.InvokeVoidAsync("eval", $"({jsCode})('{qrUrl}', '{fileName}')");
+            toastMessage = "Đã tải mã QR về máy thành công!";
+            showToast = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Lỗi khi tải mã QR");
+            await JS.InvokeVoidAsync("open", qrUrl, "_blank");
+        }
+        finally
+        {
+            isDownloadingQr = false;
+        }
+    }
 
     private string GetVietQRDeepLink(string targetBankApp)
     {
@@ -268,35 +382,58 @@
 
     private void StartTimer()
     {
+        UpdateRemainingTime();
+
+        _timer?.Stop();
+        _timer?.Dispose();
         _timer = new System.Timers.Timer(1000);
         _timer.Elapsed += async (sender, e) =>
         {
-            _remainingSeconds--;
-            if (_remainingSeconds <= 0)
-            {
-                _timer.Stop();
-                isExpired = true;
-                
-                // Tự động hủy đơn khi hết giờ
-                try {
-                    if (order != null) {
-                        await OrderApi.CancelOrderAsync(order.OrderId, order.SessionId);
-                    }
-                } catch (Exception ex) { 
-                    Logger.LogError(ex, "Failed to auto-cancel order {OrderId}", order?.OrderId);
-                }
-                
-                await InvokeAsync(StateHasChanged);
-            }
-            else
-            {
-                var min = _remainingSeconds / 60;
-                var sec = _remainingSeconds % 60;
-                timeRemainingStr = $"{min:D2}:{sec:D2}";
-                await InvokeAsync(StateHasChanged);
-            }
+            UpdateRemainingTime();
+            await InvokeAsync(StateHasChanged);
         };
         _timer.Start();
+    }
+
+    private void UpdateRemainingTime()
+    {
+        if (order == null) return;
+
+        // Tính toán thời gian còn lại thực tế dựa theo mốc khởi tạo đơn hàng (OrderDate)
+        var orderTime = order.OrderDate;
+        var now = QRDrinkOrder.Shared.Helpers.TimeHelper.GetVietnamTime();
+        var elapsedSeconds = (int)(now - orderTime).TotalSeconds;
+        int remaining = (15 * 60) - elapsedSeconds;
+
+        if (remaining <= 0)
+        {
+            _remainingSeconds = 0;
+            timeRemainingStr = "00:00";
+            isExpired = true;
+            _timer?.Stop();
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    if (order != null)
+                    {
+                        await OrderApi.CancelOrderAsync(order.OrderId, order.SessionId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Failed to auto-cancel order {OrderId}", order?.OrderId);
+                }
+            });
+        }
+        else
+        {
+            _remainingSeconds = remaining;
+            int mins = remaining / 60;
+            int secs = remaining % 60;
+            timeRemainingStr = $"{mins:D2}:{secs:D2}";
+        }
     }
 
     private async Task ConnectSignalR()

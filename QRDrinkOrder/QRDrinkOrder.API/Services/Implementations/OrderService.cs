@@ -379,6 +379,7 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetActiveOrdersAsync()
     {
+        await AutoCancelExpiredPendingOrdersAsync();
         var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
         var orders = await query
             .Where(o => o.OrderStatus != (byte)OrderStatus.Completed && o.OrderStatus != (byte)OrderStatus.Cancelled)
@@ -390,6 +391,7 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetOrderHistoryByPhoneAsync(string phone)
     {
+        await AutoCancelExpiredPendingOrdersAsync();
         var orders = await _context.Orders
             .AsNoTracking()
             .Where(o => o.Session.Phone == phone)
@@ -459,6 +461,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
     {
+        await AutoCancelExpiredPendingOrdersAsync();
         var query = IncludeOrderDetails(_context.Orders.AsNoTracking().AsSplitQuery());
         var order = await query.FirstOrDefaultAsync(o => o.OrderId == orderId);
 
@@ -466,6 +469,41 @@ public class OrderService : IOrderService
             return null;
 
         return MapToOrderDto(order);
+    }
+
+    private async Task AutoCancelExpiredPendingOrdersAsync()
+    {
+        try
+        {
+            var cutoffTime = TimeHelper.GetVietnamTime().AddMinutes(-15);
+            var expiredOrders = await _context.Orders
+                .Include(o => o.Payment)
+                .Include(o => o.Session)
+                .Include(o => o.Coupon)
+                .Where(o => o.OrderStatus == (byte)OrderStatus.PendingPayment 
+                         && o.OrderDate.HasValue 
+                         && o.OrderDate.Value < cutoffTime)
+                .ToListAsync();
+
+            if (expiredOrders.Any())
+            {
+                foreach (var order in expiredOrders)
+                {
+                    order.OrderStatus = (byte)OrderStatus.Cancelled;
+                    if (order.Payment != null)
+                    {
+                        order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
+                    }
+                    await RefundOrderRewardsAndBenefitsAsync(order);
+                    order.Note = (order.Note ?? "") + " [Tự động hủy: Hết thời gian thanh toán 15 phút]";
+                }
+                await _context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tự động hủy đơn hàng quá hạn thanh toán 15 phút");
+        }
     }
 
     public async Task<bool> UpdateOrderStatusAsync(int orderId, byte status, int? employeeId = null, string? cancelReason = null)
