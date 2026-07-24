@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QRDrinkOrder.API.Models;
@@ -29,6 +30,7 @@ public class SystemConfigsController : ControllerBase
     }
 
     [HttpPut("{key}")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> UpdateConfig(string key, [FromBody] SystemConfigDto update)
     {
         var config = await _context.SystemConfigs.FindAsync(key);

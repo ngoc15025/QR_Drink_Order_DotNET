@@ -37,6 +37,7 @@ public class AccountsController : ControllerBase
     }
 
     [HttpPost("register")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try

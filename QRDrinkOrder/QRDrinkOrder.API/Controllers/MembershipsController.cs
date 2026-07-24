@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
@@ -74,6 +75,7 @@ public class MembershipsController : ControllerBase
     }
 
     [HttpPost("verify-pin")]
+    [EnableRateLimiting("LoginLimiter")]
     public async Task<IActionResult> VerifyPin([FromBody] VerifyPinRequest request)
     {
         try
@@ -94,6 +96,7 @@ public class MembershipsController : ControllerBase
     }
 
     [HttpPost("setup-pin")]
+    [EnableRateLimiting("LoginLimiter")]
     public async Task<IActionResult> SetupPin([FromBody] SetupPinRequest request)
     {
         try
@@ -114,6 +117,7 @@ public class MembershipsController : ControllerBase
     }
 
     [HttpPost("reset-pin-firebase")]
+    [EnableRateLimiting("LoginLimiter")]
     public async Task<IActionResult> ResetPinWithFirebase([FromBody] ResetPinWithFirebaseRequest request)
     {
         try
