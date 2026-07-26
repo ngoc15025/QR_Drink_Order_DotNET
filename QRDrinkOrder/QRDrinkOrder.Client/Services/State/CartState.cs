@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.JSInterop;
 using QRDrinkOrder.Shared.DTOs.Responses;
 
@@ -6,6 +7,7 @@ namespace QRDrinkOrder.Client.Services.State;
 public class CartState
 {
     private readonly IJSRuntime _jsRuntime;
+    private const string CartStorageKey = "cartItems";
 
     public Guid SessionId { get; private set; }
     public List<CartItem> Items { get; private set; } = new();
@@ -19,7 +21,7 @@ public class CartState
 
     public async Task InitializeAsync()
     {
-        // Thử lấy SessionId từ localStorage qua JS Interop (nếu không dùng thư viện Blazored.LocalStorage)
+        // Thử lấy SessionId từ localStorage qua JS Interop
         try
         {
             var storedSessionId = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "sessionId");
@@ -32,11 +34,42 @@ public class CartState
                 SessionId = Guid.NewGuid();
                 await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "sessionId", SessionId.ToString());
             }
+
+            // Khôi phục danh sách giỏ hàng từ localStorage khi F5 reload trang
+            var storedCartJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", CartStorageKey);
+            if (!string.IsNullOrEmpty(storedCartJson))
+            {
+                var restoredItems = JsonSerializer.Deserialize<List<CartItem>>(storedCartJson);
+                if (restoredItems != null)
+                {
+                    Items = restoredItems;
+                }
+            }
         }
         catch
         {
             if (SessionId == Guid.Empty)
                 SessionId = Guid.NewGuid();
+        }
+    }
+
+    private async Task SaveCartAsync()
+    {
+        try
+        {
+            if (Items == null || !Items.Any())
+            {
+                await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", CartStorageKey);
+            }
+            else
+            {
+                var json = JsonSerializer.Serialize(Items);
+                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", CartStorageKey, json);
+            }
+        }
+        catch
+        {
+            // Bỏ qua lỗi lưu localStorage nếu bị chặn bộ nhớ
         }
     }
 
@@ -68,18 +101,35 @@ public class CartState
                 SelectedToppings = toppings.ToList()
             });
         }
+        _ = SaveCartAsync();
         NotifyStateChanged();
+    }
+
+    public void UpdateQuantity(CartItem item, int newQuantity)
+    {
+        if (newQuantity <= 0)
+        {
+            RemoveItem(item);
+        }
+        else
+        {
+            item.Quantity = newQuantity;
+            _ = SaveCartAsync();
+            NotifyStateChanged();
+        }
     }
 
     public void RemoveItem(CartItem item)
     {
         Items.Remove(item);
+        _ = SaveCartAsync();
         NotifyStateChanged();
     }
 
     public void ClearCart()
     {
         Items.Clear();
+        _ = SaveCartAsync();
         NotifyStateChanged();
     }
 

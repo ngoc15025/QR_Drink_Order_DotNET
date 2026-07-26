@@ -476,6 +476,11 @@ public class OrderService : IOrderService
         try
         {
             var cutoffTime = TimeHelper.GetVietnamTime().AddMinutes(-15);
+            bool hasExpired = await _context.Orders.AnyAsync(o => o.OrderStatus == (byte)OrderStatus.PendingPayment 
+                                                               && o.OrderDate.HasValue 
+                                                               && o.OrderDate.Value < cutoffTime);
+            if (!hasExpired) return;
+
             var expiredOrders = await _context.Orders
                 .Include(o => o.Payment)
                 .Include(o => o.Session)

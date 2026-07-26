@@ -237,6 +237,16 @@
                             }
                         </div>
 
+                        @if (order.OrderStatus == 0 && (order.Payment == null || order.Payment.PaymentStatus != 1))
+                        {
+                            <a href="/payment/@order.OrderId" class="btn btn-warning text-dark w-100 btn-sm fw-bold mb-2 d-flex align-items-center justify-content-center shadow-sm" style="border-radius: 8px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-qr-code-scan me-2" viewBox="0 0 16 16">
+                                    <path d="M0 .5A.5.5 0 0 1 .5 0h3a.5.5 0 0 1 0 1H1v2.5a.5.5 0 0 1-1 0v-3Zm12 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V1h-2.5a.5.5 0 0 1-.5-.5ZM0 12a.5.5 0 0 1 .5-.5H1V9a.5.5 0 0 1 1 0v2.5h2.5a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5Zm15.5-.5a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1 0-1H15V12a.5.5 0 0 1 .5-.5ZM2 4h4v4H2V4Zm5 0h2v1H7V4Zm3 0h2v1h-2V4ZM7 6h1v2H7V6Zm2 0h1v1H9V6Zm2 0h1v2h-1V6ZM7 9h2v1H7V9Zm3 0h1v1h-1V9ZM2 10h4v4H2v-4Zm7 1h1v1H9v-1Zm2 0h1v2h-1v-2Zm-2 2h1v1H9v-1Z"/>
+                                </svg>
+                                Thanh toán ngay
+                            </a>
+                        }
+
                         <a href="/track-order/@order.OrderId" class="btn btn-outline-primary w-100 btn-sm fw-bold" style="border-radius: 8px;">@Loc["ViewDetailsTrack"]</a>
                     </div>
                 </div>

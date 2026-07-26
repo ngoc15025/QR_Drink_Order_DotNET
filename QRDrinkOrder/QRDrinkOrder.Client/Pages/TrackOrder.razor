@@ -37,7 +37,22 @@
     }
     else
     {
-        <!-- Tracking Timeline -->
+        @if (order.OrderStatus == 0 && (order.Payment == null || order.Payment.PaymentStatus != 1))
+        {
+            <div class="alert alert-warning d-flex align-items-center justify-content-between p-3 mb-4 shadow-sm" style="border-radius: 12px; border: 2px solid #f59e0b; background-color: #fffbeb;">
+                <div class="d-flex align-items-center">
+                    <span class="fs-4 me-2">⚠️</span>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">Đơn hàng chưa được thanh toán</h6>
+                        <div class="small text-secondary">Vui lòng hoàn tất thanh toán qua VietQR để bếp tiến hành pha chế.</div>
+                    </div>
+                </div>
+                <a href="/payment/@order.OrderId" class="btn btn-warning fw-bold text-dark btn-sm rounded-pill px-3 ms-2 flex-shrink-0 shadow-sm">
+                    Thanh toán ngay
+                </a>
+            </div>
+        }
+
         @if (order.OrderStatus == 2)
         {
             <div class="alert alert-success d-flex align-items-center p-3 mb-4 shadow-sm animate__animated animate__bounceIn" style="border-radius: 12px; border: 2px solid #22c55e; background-color: #f0fdf4;">

@@ -135,14 +135,23 @@
         !NavigationManager.Uri.Contains("/pos", StringComparison.OrdinalIgnoreCase);
 
     private string StoreName = "NGOC UWU COFFEE";
-    private string StoreAddress = "Đ/c: 123 Đường Sách, TP. Hồ Chí Minh";
-    private string StorePhone = "SĐT: 0123.456.789";
+    private string StoreAddress = "Đ/c: 180 Cao Lỗ, P4, Q8, TP. Hồ Chí Minh";
+    private string StorePhone = "SĐT: 0986868686";
     private string StoreWifi = "";
 
     protected override async Task OnInitializedAsync()
     {
         CartState.OnChange += StateHasChanged;
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        try
+        {
+            await CartState.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Lỗi khi khởi tạo giỏ hàng từ localStorage");
+        }
 
         try
         {
