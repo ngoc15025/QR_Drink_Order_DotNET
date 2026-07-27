@@ -246,6 +246,13 @@ public class OrderService : IOrderService
                 });
             }
 
+            // Kiểm tra hạn mức tối thiểu cho Chuyển khoản ngân hàng (SePay / VietQR)
+            decimal finalTotal = totalAmount - discountAmount;
+            if (request.PaymentMethod == (byte)PaymentMethod.SePay && finalTotal < 2000)
+            {
+                throw new Exception("Số tiền thanh toán qua Chuyển khoản tối thiểu phải từ 2.000đ trở lên. Vui lòng chọn phương thức Tiền mặt hoặc giảm bớt ưu đãi.");
+            }
+
             // 5. Tạo đơn hàng mới
             var order = new Order
             {
@@ -828,18 +835,25 @@ public class OrderService : IOrderService
         if (hasUsed)
             throw new Exception(ErrorMessages.CouponAlreadyUsed);
 
-        // Tính toán số tiền giảm
+        // Tính toán số tiền giảm (có xử lý quy đổi dữ liệu mã nhầm lẫn)
+        byte effType = coupon.DiscountType;
+        decimal effValue = coupon.DiscountValue;
+        if (effType == 1 && effValue > 100) effType = 0; // % nhưng > 100 -> Tiền VNĐ
+        else if (effType == 0 && effValue <= 100) effType = 1; // Tiền nhưng <= 100 -> %
+
         decimal discountAmount = 0;
-        if (coupon.DiscountType == (byte)DiscountType.Fixed)
+        if (effType == (byte)DiscountType.Fixed)
         {
-            discountAmount = coupon.DiscountValue;
+            discountAmount = effValue;
         }
-        else if (coupon.DiscountType == (byte)DiscountType.Percentage)
+        else if (effType == (byte)DiscountType.Percentage)
         {
-            discountAmount = totalAmount * (coupon.DiscountValue / 100m);
-            if (coupon.MaxDiscountAmount.HasValue)
+            discountAmount = totalAmount * (effValue / 100m);
+            if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
             {
-                discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
+                decimal maxCap = coupon.MaxDiscountAmount.Value;
+                if (maxCap <= 100) maxCap = maxCap * 1000m;
+                discountAmount = Math.Min(discountAmount, maxCap);
             }
         }
 

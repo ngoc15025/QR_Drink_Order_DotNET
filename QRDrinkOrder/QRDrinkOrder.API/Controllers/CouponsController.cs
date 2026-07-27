@@ -16,6 +16,28 @@ public class CouponsController : ControllerBase
         _couponService = couponService;
     }
 
+    [HttpGet("available")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAvailableCoupons()
+    {
+        try
+        {
+            var coupons = await _couponService.GetAllCouponsAsync(includeInactive: false);
+            var now = QRDrinkOrder.Shared.Helpers.TimeHelper.GetVietnamTime();
+            var validCoupons = coupons
+                .Where(c => c.IsActive 
+                         && c.StartDate <= now 
+                         && c.EndDate >= now 
+                         && (!c.UsageLimit.HasValue || c.UsedCount < c.UsageLimit.Value))
+                .ToList();
+            return Ok(validCoupons);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
     [HttpGet]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetAllCoupons([FromQuery] bool includeInactive = false)

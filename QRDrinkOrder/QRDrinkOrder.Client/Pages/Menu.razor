@@ -253,7 +253,7 @@ else
                                         <div class="fw-bold text-truncate" style="font-size: 0.85rem; color: var(--tch-text-main);">@item.DrinkName</div>
                                         <div class="text-orange fw-bold" style="font-size: 0.8rem;">@item.BasePrice.ToString("N0")đ</div>
                                     </div>
-                                    <button type="button" class="btn-pairing-add" @onclick:stopPropagation="true" @onclick="() => OpenPairingModal(item)">@Loc["AddBtn"] &gt;</button>
+                                    <button type="button" class="btn-pairing-add" @onclick:stopPropagation="true" @onclick="() => OpenPairingModal(item)">@Loc["AddBtn"]</button>
                                 </div>
                             }
                         </div>
@@ -320,7 +320,7 @@ else
                     <button type="button" class="btn btn-sm border-0 fs-5 text-orange rounded-circle" style="color: var(--tch-orange); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" @onclick="IncreaseQuantity">-</button>
                 </div>
                 <button type="button" class="btn btn-primary flex-grow-1 py-3 fw-bold fs-6" style="border-radius: 24px;" @onclick="AddToCart">
-                    @Loc["AddBtn"] - @((GetUnitPrice() * quantity).ToString("N0"))đ
+                    @Loc["AddBtn"] +@((GetUnitPrice() * quantity).ToString("N0"))đ
                 </button>
             </div>
         }

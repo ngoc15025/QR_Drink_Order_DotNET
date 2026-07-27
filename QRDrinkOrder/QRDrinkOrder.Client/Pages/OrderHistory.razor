@@ -274,6 +274,23 @@
     private bool showPinModal = false;
     private CustomerPinModal.PinModalMode pinModalMode = CustomerPinModal.PinModalMode.Verify;
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await CustomerAuth.InitializeAsync();
+            if (CustomerAuth.IsAuthenticated && !string.IsNullOrEmpty(CustomerAuth.CurrentPhone) && string.IsNullOrEmpty(Phone))
+            {
+                phoneNumber = CustomerAuth.CurrentPhone;
+                await SearchOrders();
+            }
+        }
+        catch
+        {
+            // Bỏ qua nếu chưa khởi tạo session
+        }
+    }
+
     protected override async Task OnParametersSetAsync()
     {
         if (!string.IsNullOrEmpty(Phone))

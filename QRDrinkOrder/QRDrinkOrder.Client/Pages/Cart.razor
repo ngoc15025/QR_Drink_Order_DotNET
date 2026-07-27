@@ -12,6 +12,7 @@
 @inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> Loc
+@inject ILogger<Cart> Logger
 
 <PageTitle>@Loc["ConfirmOrderTitle"] - Ngoc UwU Coffee</PageTitle>
 
@@ -209,6 +210,25 @@ else
                         <button class="btn btn-outline-danger px-3" @onclick="RemoveCoupon">@Loc["RemoveBtn"]</button>
                     }
                 </div>
+                @if (availableCoupons.Any() && appliedCoupon == null)
+                {
+                    <div class="mb-3">
+                        <div class="small fw-bold text-secondary mb-1">Áp dụng ngay mã ưu đãi:</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var c in availableCoupons)
+                            {
+                                var eff = c.GetEffectiveDiscount();
+                                <span class="badge bg-light text-dark border border-warning p-2 me-1 mb-1 shadow-sm" 
+                                      style="cursor: pointer; border-radius: 8px; transition: all 0.2s;"
+                                      @onclick="() => SelectCoupon(c.CouponCode)">
+                                    <strong class="text-danger">🏷️ @c.CouponCode</strong> 
+                                    <span class="small text-muted ms-1">(@(eff.EffectiveType == 0 ? $"Giảm {eff.EffectiveValue.ToString("N0")}đ" : $"Giảm {eff.EffectiveValue.ToString("0.##")}%"))</span>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(couponMessage))
                 {
                     <div class="small fw-bold mb-3 text-@(appliedCoupon != null ? "success" : "danger")">@couponMessage</div>
@@ -325,6 +345,7 @@ else
     private string tableNumber = "";
     
     private CouponDto? appliedCoupon = null;
+    private List<CouponDto> availableCoupons = new();
     private decimal discountAmount = 0;
     private string couponMessage = "";
     private bool isApplyingCoupon = false;
@@ -348,6 +369,31 @@ else
         if (authState.User.Identity?.IsAuthenticated == true && authState.User.IsInRole("Employee"))
         {
             isEmployee = true;
+        }
+
+        // Tự động khôi phục SĐT từ Session đăng nhập PIN nếu có
+        try
+        {
+            await CustomerAuth.InitializeAsync();
+            if (CustomerAuth.IsAuthenticated && !string.IsNullOrEmpty(CustomerAuth.CurrentPhone))
+            {
+                phone = CustomerAuth.CurrentPhone;
+                await CheckMembership();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Lỗi khi khôi phục thông tin đăng nhập khách hàng");
+        }
+
+        // Tải danh sách mã giảm giá khả dụng
+        try
+        {
+            availableCoupons = await CouponApi.GetAvailableCouponsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Không thể tải danh sách mã giảm giá khả dụng");
         }
     }
     
@@ -490,15 +536,17 @@ else
             if (result != null)
             {
                 appliedCoupon = result;
-                if (result.DiscountType == 0) // Fixed
+                var eff = result.GetEffectiveDiscount();
+                if (eff.EffectiveType == 0) // Fixed
                 {
-                    discountAmount = result.DiscountValue;
+                    discountAmount = eff.EffectiveValue;
                 }
                 else // Percentage
                 {
-                    var calculated = CartState.GetTotalAmount() * (result.DiscountValue / 100m);
-                    if (result.MaxDiscountAmount.HasValue && calculated > result.MaxDiscountAmount.Value)
-                        calculated = result.MaxDiscountAmount.Value;
+                    var calculated = CartState.GetTotalAmount() * (eff.EffectiveValue / 100m);
+                    var maxCap = result.GetEffectiveMaxDiscount();
+                    if (maxCap.HasValue && calculated > maxCap.Value)
+                        calculated = maxCap.Value;
                     discountAmount = calculated;
                 }
                 couponMessage = $"Áp dụng thành công! Giảm {discountAmount.ToString("N0")}đ";
@@ -522,6 +570,12 @@ else
         }
     }
 
+    private async Task SelectCoupon(string code)
+    {
+        couponCode = code;
+        await ApplyCoupon();
+    }
+
     private void RemoveCoupon()
     {
         appliedCoupon = null;
@@ -541,6 +595,12 @@ else
         if (orderType == OrderType.DineIn && string.IsNullOrWhiteSpace(tableNumber))
         {
             errorMessage = "Vui lòng nhập số bàn của bạn.";
+            return;
+        }
+
+        if (paymentMethod == (byte)PaymentMethod.SePay && GetFinalAmount() < 2000)
+        {
+            errorMessage = "Số tiền thanh toán qua Chuyển khoản tối thiểu phải từ 2.000đ trở lên. Vui lòng chọn phương thức Tiền mặt hoặc giảm bớt ưu đãi.";
             return;
         }
 

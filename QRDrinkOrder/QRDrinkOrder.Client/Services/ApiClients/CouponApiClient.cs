@@ -13,6 +13,18 @@ public class CouponApiClient
         _httpClient = httpClient;
     }
 
+    public async Task<List<CouponDto>> GetAvailableCouponsAsync()
+    {
+        try
+        {
+            return await _httpClient.GetFromJsonAsync<List<CouponDto>>("api/coupons/available") ?? new List<CouponDto>();
+        }
+        catch
+        {
+            return new List<CouponDto>();
+        }
+    }
+
     public async Task<List<CouponDto>> GetAllCouponsAsync(bool includeInactive = false)
     {
         return await _httpClient.GetFromJsonAsync<List<CouponDto>>($"api/coupons?includeInactive={includeInactive.ToString().ToLower()}") ?? new List<CouponDto>();
