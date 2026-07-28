@@ -3,41 +3,64 @@
 @inject QRDrinkOrder.Client.Services.ApiClients.AuthApiClient AuthApi
 @inject AuthenticationStateProvider AuthStateProvider
 @using System.Security.Claims
+@using QRDrinkOrder.Shared.DTOs.Requests
+@using QRDrinkOrder.Shared.DTOs.Responses
 
 @layout QRDrinkOrder.Client.Layout.AdminLayout
 
-<PageTitle>Quản lý Tài khoản - Ngoc UwU Coffee</PageTitle>
+<PageTitle>Quản lý Nhân sự & Tài khoản - Ngoc UwU Coffee</PageTitle>
 
 <div>
     <div class="admin-topbar">
         <div class="admin-topbar-left">
-            <h1 class="admin-page-title">
-                @if (isAdmin)
-                {
-                    <span>Quản lý Tài khoản Quản lý</span>
-                }
-                else
-                {
-                    <span>Quản lý Tài khoản Nhân viên</span>
-                }
-            </h1>
-            <p class="admin-page-subtitle">Quản lý và cấp quyền truy cập hệ thống</p>
+            <h1 class="admin-page-title">Quản lý Nhân sự & Tài khoản</h1>
+            <p class="admin-page-subtitle">Thiết lập nhân sự, phân quyền và cấp lại mật khẩu</p>
         </div>
         <div class="admin-topbar-right">
-            <button class="btn-admin-action btn-action-primary" @onclick="() => showCreateModal = true">
+            <button class="btn-admin-action btn-action-primary" @onclick="OpenCreateModal">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
                 </svg>
-                Tạo tài khoản
+                Tạo tài khoản mới
             </button>
         </div>
+    </div>
+
+    <!-- Tabs chuẩn 100% đồng bộ với Quản lý thực đơn -->
+    <div class="mb-4">
+        <ul class="nav nav-pills premium-tabs">
+            <li class="nav-item">
+                <button class="nav-link @(selectedTab == "all" ? "active" : "")" @onclick='() => SetTab("all")'>Tất cả (@allAccounts.Count)</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(selectedTab == "employee" ? "active" : "")" @onclick='() => SetTab("employee")'>Nhân viên (@allAccounts.Count(a => a.RoleId == 3))</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(selectedTab == "manager" ? "active" : "")" @onclick='() => SetTab("manager")'>Quản lý (@allAccounts.Count(a => a.RoleId == 2))</button>
+            </li>
+            @if (isAdmin)
+            {
+                <li class="nav-item">
+                    <button class="nav-link @(selectedTab == "admin" ? "active" : "")" @onclick='() => SetTab("admin")'>Admin (@allAccounts.Count(a => a.RoleId == 1))</button>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <!-- Thanh tìm kiếm & thống kê -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="input-group input-group-sm" style="max-width: 380px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" placeholder="Tìm theo Họ tên, Email, Số điện thoại..." value="@searchQuery" @oninput="OnSearchInput" />
+        </div>
+        <div class="small text-secondary">Hiển thị <strong>@filteredAccounts.Count</strong> tài khoản</div>
     </div>
 
     @if (isLoading)
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <div class="mt-2 text-secondary">Đang tải danh sách...</div>
+            <div class="mt-2 text-secondary">Đang tải danh sách tài khoản...</div>
         </div>
     }
     else
@@ -45,54 +68,92 @@
         <div class="admin-table-card">
             <table class="admin-table">
                 <thead>
+                    <tr>
+                        <th>Họ và tên</th>
+                        <th>Email đăng nhập</th>
+                        <th>Số điện thoại</th>
+                        <th>Vai trò</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (filteredAccounts.Any())
+                    {
+                        @foreach (var acc in filteredAccounts)
+                        {
                             <tr>
-                                <th>Họ và tên</th>
-                                <th>Email</th>
-                                <th>Số điện thoại</th>
-                                <th>Vai trò</th>
-                                <th>Trạng thái</th>
-                                <th class="text-end">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (filteredAccounts.Any())
-                            {
-                                @foreach (var acc in filteredAccounts)
-                                {
-                                    <tr>
-                                        <td class="px-4 py-3 fw-bold">@acc.FullName</td>
-                                        <td class="py-3">@acc.Email</td>
-                                        <td class="py-3">@(string.IsNullOrEmpty(acc.Phone) ? "-" : acc.Phone)</td>
-                                        <td class="py-3">
-                                            <span class="admin-badge badge-secondary">@acc.RoleName</span>
-                                        </td>
-                                        <td class="py-3">
-                                            @if (acc.IsActive)
-                                            {
-                                                <span class="admin-badge badge-success">Hoạt động</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="admin-badge badge-danger">Đã khóa</span>
-                                            }
-                                        </td>
-                                        <td class="text-end">
-                                            <button class="btn-admin-action btn-action-sm @(acc.IsActive ? "btn-action-danger" : "btn-action-success")" 
-                                                    @onclick="() => ToggleStatus(acc.AccountId, !acc.IsActive)">
-                                                @(acc.IsActive ? "Khóa" : "Mở khóa")
+                                <td class="px-4 py-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="account-avatar-badge" style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--tch-orange, #ea8025), #f3a152); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; box-shadow: 0 2px 6px rgba(234, 128, 37, 0.25);">
+                                            @GetAvatarInitials(acc.FullName)
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">@acc.FullName</div>
+                                            <div class="small text-muted">Mã TK: #@acc.AccountId</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 fw-medium">@acc.Email</td>
+                                <td class="py-3 text-secondary">@(string.IsNullOrEmpty(acc.Phone) ? "-" : acc.Phone)</td>
+                                <td class="py-3">
+                                    @{
+                                        var roleBadge = acc.RoleId switch
+                                        {
+                                            1 => "badge-danger",
+                                            2 => "badge-primary",
+                                            _ => "badge-info"
+                                        };
+                                    }
+                                    <span class="admin-badge @roleBadge">@acc.RoleName</span>
+                                </td>
+                                <td class="py-3">
+                                    @if (acc.IsActive)
+                                    {
+                                        <span class="admin-badge badge-success">Hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="admin-badge badge-danger">Đã khóa</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-1">
+                                        @if (CanManageAccount(acc))
+                                        {
+                                            <button class="btn-admin-action btn-action-sm btn-action-secondary" title="Sửa thông tin" @onclick="() => OpenEditModal(acc)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
+                                                Sửa
                                             </button>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-secondary">Không có tài khoản nào.</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                                            <button class="btn-admin-action btn-action-sm btn-action-warning" title="Đặt lại mật khẩu" @onclick="() => OpenResetPassModal(acc)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-key me-1" viewBox="0 0 16 16"><path d="M0 8a4 4 0 0 1 7.465-2H14a.5.5 0 0 1 .354.146l1.5 1.5a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0L13 9.207l-.646.647a.5.5 0 0 1-.708 0L11 9.207l-.646.647a.5.5 0 0 1-.708 0L9 9.207l-.646.647A.5.5 0 0 1 8 10h-.535A4 4 0 0 1 0 8zm4-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+                                                Đổi MK
+                                            </button>
+                                            @if (acc.RoleId != 1)
+                                            {
+                                                <button class="btn-admin-action btn-action-sm @(acc.IsActive ? "btn-action-danger" : "btn-action-success")" 
+                                                        @onclick="() => RequestToggleStatus(acc, !acc.IsActive)">
+                                                    @(acc.IsActive ? "Khóa" : "Mở khóa")
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-secondary border px-2 py-1 small fw-normal"><i class="bi bi-shield-lock me-1"></i>(Chỉ xem)</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-secondary">Không tìm thấy tài khoản phù hợp.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     }
 </div>
@@ -102,12 +163,12 @@
 {
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Tạo tài khoản mới</h5>
+            <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header border-bottom-0 pb-0" style="background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);">
+                    <h5 class="modal-title fw-bold">Tạo tài khoản nhân sự mới</h5>
                     <button type="button" class="btn-close" @onclick="() => showCreateModal = false"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <EditForm Model="@newAccount" OnValidSubmit="HandleCreate">
                         <DataAnnotationsValidator />
                         
@@ -117,23 +178,33 @@
                         }
 
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Họ và tên</label>
-                            <InputText class="form-control" @bind-Value="newAccount.FullName" />
+                            <label class="form-label small fw-bold">Họ và tên *</label>
+                            <InputText class="form-control" @bind-Value="newAccount.FullName" placeholder="Nguyễn Văn A" />
                             <ValidationMessage For="@(() => newAccount.FullName)" class="text-danger small" />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Email đăng nhập</label>
-                            <InputText class="form-control" @bind-Value="newAccount.Email" type="email" />
+                            <label class="form-label small fw-bold">Email đăng nhập *</label>
+                            <InputText class="form-control" @bind-Value="newAccount.Email" type="email" placeholder="nv@ngocuwu.com" />
                             <ValidationMessage For="@(() => newAccount.Email)" class="text-danger small" />
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Số điện thoại</label>
-                            <input type="tel" maxlength="10" inputmode="numeric" class="form-control" value="@newAccount.Phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx" />
+                            <input type="tel" maxlength="10" inputmode="numeric" class="form-control" value="@newAccount.Phone" @oninput="OnPhoneInputCreate" placeholder="09xxxxxxx" />
                             <ValidationMessage For="@(() => newAccount.Phone)" class="text-danger small" />
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Vai trò *</label>
+                            <select class="form-select" @bind="newAccount.RoleId">
+                                <option value="3">Nhân viên (Employee)</option>
+                                @if (isAdmin)
+                                {
+                                    <option value="2">Quản lý (Manager)</option>
+                                }
+                            </select>
+                        </div>
                         <div class="mb-4">
-                            <label class="form-label small fw-bold">Mật khẩu</label>
-                            <InputText class="form-control" @bind-Value="newAccount.Password" type="password" />
+                            <label class="form-label small fw-bold">Mật khẩu ban đầu *</label>
+                            <InputText class="form-control" @bind-Value="newAccount.Password" type="password" placeholder="Mật khẩu tối thiểu 6 ký tự" />
                             <ValidationMessage For="@(() => newAccount.Password)" class="text-danger small" />
                         </div>
                         
@@ -157,17 +228,168 @@
     </div>
 }
 
+<!-- Modal Sửa Tài Khoản -->
+@if (showEditModal && editingAccount != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header border-bottom-0 pb-0" style="background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);">
+                    <h5 class="modal-title fw-bold">Chỉnh sửa tài khoản #@editingAccount.AccountId</h5>
+                    <button type="button" class="btn-close" @onclick="() => showEditModal = false"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="@editModel" OnValidSubmit="RequestEditConfirmation">
+                        <DataAnnotationsValidator />
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger py-2 small">@errorMessage</div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Họ và tên *</label>
+                            <InputText class="form-control" @bind-Value="editModel.FullName" />
+                            <ValidationMessage For="@(() => editModel.FullName)" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Email đăng nhập</label>
+                            <InputText class="form-control" @bind-Value="editModel.Email" type="email" />
+                            <ValidationMessage For="@(() => editModel.Email)" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Số điện thoại</label>
+                            <input type="tel" maxlength="10" inputmode="numeric" class="form-control" value="@editModel.Phone" @oninput="OnPhoneInputEdit" placeholder="09xxxxxxx" />
+                            <ValidationMessage For="@(() => editModel.Phone)" class="text-danger small" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold">Vai trò</label>
+                            <select class="form-select" @bind="editModel.RoleId">
+                                <option value="3">Nhân viên (Employee)</option>
+                                <option value="2">Quản lý (Manager)</option>
+                                @if (isAdmin)
+                                {
+                                    <option value="1">Admin (Quản trị viên)</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light" @onclick="() => showEditModal = false">Hủy</button>
+                            <button type="submit" class="btn btn-primary">
+                                <span>Lưu thay đổi</span>
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Đặt Lại Mật Khẩu -->
+@if (showResetPassModal && resettingAccount != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header border-bottom-0 pb-0" style="background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);">
+                    <h5 class="modal-title fw-bold fs-6">Đổi mật khẩu tài khoản</h5>
+                    <button type="button" class="btn-close" @onclick="() => showResetPassModal = false"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form autocomplete="off" onsubmit="return false;">
+                        <!-- Hidden dummy inputs to prevent browser password managers from auto-filling admin saved credentials -->
+                        <input type="text" style="display:none;" name="prevent_autofill_username" aria-hidden="true" autocomplete="username" />
+                        <input type="password" style="display:none;" name="prevent_autofill_password" aria-hidden="true" autocomplete="new-password" />
+
+                        <div class="small text-muted mb-3">Tài khoản: <strong>@resettingAccount.Email</strong> (@resettingAccount.FullName)</div>
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger py-2 small">@errorMessage</div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Mật khẩu mới *</label>
+                            <input type="password" class="form-control" name="new_reset_pass_field" autocomplete="new-password" @bind="newResetPassword" placeholder="Nhập mật khẩu mới" />
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light btn-sm" @onclick="() => showResetPassModal = false">Hủy</button>
+                            <button type="button" class="btn btn-warning btn-sm fw-bold" @onclick="RequestResetPassConfirmation">
+                                <span>Lưu mật khẩu</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Hỏi Xác Thực / Xác Nhận Thao Tác -->
+@if (showConfirmModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.55);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header border-bottom-0 pb-1 pt-4 px-4 text-center d-block">
+                    <div class="mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; border-radius: 50%; background: #fff3cd; color: #ea8025;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-question-circle" viewBox="0 0 16 16">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                            <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+                        </svg>
+                    </div>
+                    <h5 class="modal-title fw-bold fs-6">@confirmTitle</h5>
+                </div>
+                <div class="modal-body text-center px-4 py-2">
+                    <p class="small text-secondary mb-0">@confirmMessage</p>
+                </div>
+                <div class="modal-footer border-top-0 d-flex justify-content-center gap-2 p-3">
+                    <button type="button" class="btn btn-light btn-sm px-3" @onclick="() => showConfirmModal = false">Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary btn-sm fw-bold px-3" disabled="@isSaving" @onclick="ExecuteConfirmedAction">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span> <span>Đang xử lý...</span>
+                        }
+                        else
+                        {
+                            <span>Đồng ý</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool isAdmin = false;
     private bool isLoading = true;
     private bool showCreateModal = false;
+    private bool showEditModal = false;
+    private bool showResetPassModal = false;
+    private bool showConfirmModal = false;
     private bool isSaving = false;
+
     private string errorMessage = "";
-    
+    private string selectedTab = "all";
+    private string searchQuery = "";
+
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private Func<Task>? pendingAction = null;
+
     private List<AccountDto> allAccounts = new();
     private List<AccountDto> filteredAccounts = new();
     
     private RegisterRequest newAccount = new();
+    private AccountDto? editingAccount;
+    private UpdateAccountRequest editModel = new();
+
+    private AccountDto? resettingAccount;
+    private string newResetPassword = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -176,9 +398,7 @@
         var role = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
         
         isAdmin = (role == "Admin");
-
-        // Thiết lập roleId cần tạo tùy vào cấp quyền
-        newAccount.RoleId = isAdmin ? (byte)2 : (byte)3; // 2 = Manager, 3 = Employee
+        newAccount.RoleId = 3; // Mặc định tạo Nhân viên
 
         await LoadData();
     }
@@ -189,15 +409,7 @@
         try
         {
             allAccounts = await AuthApi.GetAllAccountsAsync();
-            // Lọc danh sách hiển thị
-            if (isAdmin)
-            {
-                filteredAccounts = allAccounts.Where(a => a.RoleId == 2).ToList(); // Chỉ xem Quản lý
-            }
-            else
-            {
-                filteredAccounts = allAccounts.Where(a => a.RoleId == 3).ToList(); // Chỉ xem Nhân viên
-            }
+            ApplyFilter();
         }
         catch (Exception ex)
         {
@@ -209,12 +421,103 @@
         }
     }
 
-    private void OnPhoneInput(ChangeEventArgs e)
+    private void SetTab(string tab)
+    {
+        selectedTab = tab;
+        ApplyFilter();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        var query = allAccounts.AsEnumerable();
+
+        if (selectedTab == "employee")
+            query = query.Where(a => a.RoleId == 3);
+        else if (selectedTab == "manager")
+            query = query.Where(a => a.RoleId == 2);
+        else if (selectedTab == "admin")
+            query = query.Where(a => a.RoleId == 1);
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(a => 
+                a.FullName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                a.Email.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(a.Phone) && a.Phone.Contains(searchQuery))
+            );
+        }
+
+        filteredAccounts = query.ToList();
+    }
+
+    private string GetAvatarInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return "U";
+        var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpper();
+        return (parts[0].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpper();
+    }
+
+    private bool CanManageAccount(AccountDto target)
+    {
+        if (isAdmin) return true;
+        // Quản lý chỉ được phép quản lý tài khoản Nhân viên (RoleId == 3)
+        return target.RoleId == 3;
+    }
+
+    private void OpenCreateModal()
+    {
+        newAccount = new RegisterRequest { RoleId = 3 };
+        errorMessage = "";
+        showCreateModal = true;
+    }
+
+    private void OpenEditModal(AccountDto acc)
+    {
+        if (!CanManageAccount(acc)) return;
+
+        editingAccount = acc;
+        editModel = new UpdateAccountRequest
+        {
+            FullName = acc.FullName,
+            Email = acc.Email,
+            Phone = acc.Phone,
+            RoleId = acc.RoleId
+        };
+        errorMessage = "";
+        showEditModal = true;
+    }
+
+    private void OpenResetPassModal(AccountDto acc)
+    {
+        if (!CanManageAccount(acc)) return;
+
+        resettingAccount = acc;
+        newResetPassword = "";
+        errorMessage = "";
+        showResetPassModal = true;
+    }
+
+    private void OnPhoneInputCreate(ChangeEventArgs e)
     {
         var val = e.Value?.ToString() ?? "";
         var digits = new string(val.Where(char.IsDigit).ToArray());
         if (digits.Length > 10) digits = digits.Substring(0, 10);
         newAccount.Phone = digits;
+    }
+
+    private void OnPhoneInputEdit(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        var digits = new string(val.Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits.Substring(0, 10);
+        editModel.Phone = digits;
     }
 
     private async Task HandleCreate()
@@ -227,7 +530,6 @@
             if (success)
             {
                 showCreateModal = false;
-                newAccount = new RegisterRequest { RoleId = isAdmin ? (byte)2 : (byte)3 };
                 await LoadData();
             }
             else
@@ -245,24 +547,131 @@
         }
     }
 
-    private async Task ToggleStatus(int accountId, bool newStatus)
+    private void RequestEditConfirmation()
     {
+        if (editingAccount == null) return;
+
+        confirmTitle = "Xác nhận cập nhật";
+        confirmMessage = $"Bạn có chắc chắn muốn lưu thông tin thay đổi cho tài khoản {editingAccount.FullName} ({editingAccount.Email})?";
+        pendingAction = ExecuteEditAsync;
+        showConfirmModal = true;
+    }
+
+    private async Task ExecuteEditAsync()
+    {
+        if (editingAccount == null) return;
+        isSaving = true;
+        errorMessage = "";
+        try
+        {
+            var success = await AuthApi.UpdateAccountAsync(editingAccount.AccountId, editModel);
+            if (success)
+            {
+                showConfirmModal = false;
+                showEditModal = false;
+                await LoadData();
+            }
+            else
+            {
+                errorMessage = "Không thể cập nhật tài khoản.";
+                showConfirmModal = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Lỗi: " + ex.Message;
+            showConfirmModal = false;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void RequestResetPassConfirmation()
+    {
+        if (resettingAccount == null) return;
+
+        if (string.IsNullOrWhiteSpace(newResetPassword) || newResetPassword.Length < 6)
+        {
+            errorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+            return;
+        }
+
+        confirmTitle = "Xác nhận đổi mật khẩu";
+        confirmMessage = $"Bạn có chắc chắn muốn đặt lại mật khẩu mới cho tài khoản {resettingAccount.Email} ({resettingAccount.FullName})?";
+        pendingAction = ExecuteResetPasswordAsync;
+        showConfirmModal = true;
+    }
+
+    private async Task ExecuteResetPasswordAsync()
+    {
+        if (resettingAccount == null) return;
+        isSaving = true;
+        errorMessage = "";
+        try
+        {
+            var success = await AuthApi.ResetPasswordAsync(resettingAccount.AccountId, newResetPassword);
+            if (success)
+            {
+                showConfirmModal = false;
+                showResetPassModal = false;
+            }
+            else
+            {
+                errorMessage = "Không thể đặt lại mật khẩu.";
+                showConfirmModal = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Lỗi: " + ex.Message;
+            showConfirmModal = false;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void RequestToggleStatus(AccountDto acc, bool newStatus)
+    {
+        if (!CanManageAccount(acc) || acc.RoleId == 1) return;
+
+        confirmTitle = newStatus ? "Xác nhận mở khóa" : "Xác nhận khóa tài khoản";
+        confirmMessage = $"Bạn có chắc chắn muốn {(newStatus ? "mở khóa" : "khóa")} tài khoản {acc.FullName} ({acc.Email})?";
+        pendingAction = () => ExecuteToggleStatusAsync(acc.AccountId, newStatus);
+        showConfirmModal = true;
+    }
+
+    private async Task ExecuteToggleStatusAsync(int accountId, bool newStatus)
+    {
+        isSaving = true;
         try
         {
             var success = await AuthApi.ToggleAccountStatusAsync(accountId, newStatus);
             if (success)
             {
-                var acc = filteredAccounts.FirstOrDefault(a => a.AccountId == accountId);
-                if (acc != null)
-                {
-                    acc.IsActive = newStatus;
-                }
+                showConfirmModal = false;
+                await LoadData();
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+            showConfirmModal = false;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ExecuteConfirmedAction()
+    {
+        if (pendingAction != null)
+        {
+            await pendingAction();
         }
     }
 }
-

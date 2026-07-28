@@ -85,16 +85,17 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin,Manager,Employee")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusRequest request)
     {
-        var roleIdClaim = User.FindFirst("RoleId")?.Value;
-        var userIdClaim = User.FindFirst("UserId")?.Value;
-        int? employeeId = null;
-        // Chỉ ghi nhận EmployeeId nếu role là Employee (RoleId = "3")
-        if (!string.IsNullOrEmpty(roleIdClaim) && roleIdClaim == "3" && !string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int empId))
+        var accountIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("AccountId")?.Value
+                          ?? User.FindFirst("UserId")?.Value;
+
+        int? currentUserId = null;
+        if (!string.IsNullOrEmpty(accountIdClaim) && int.TryParse(accountIdClaim, out int uid))
         {
-            employeeId = empId;
+            currentUserId = uid;
         }
 
-        var success = await _orderService.UpdateOrderStatusAsync(id, request.OrderStatus, employeeId, request.CancelReason);
+        var success = await _orderService.UpdateOrderStatusAsync(id, request.OrderStatus, currentUserId, request.CancelReason);
         if (success)
             return Ok(new { Message = "Cập nhật trạng thái đơn hàng thành công." });
 

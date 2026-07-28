@@ -40,4 +40,17 @@ public class AuthApiClient
         var response = await _httpClient.PutAsJsonAsync($"api/accounts/{id}/status", request);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<bool> UpdateAccountAsync(int id, UpdateAccountRequest request)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"api/accounts/{id}", request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> ResetPasswordAsync(int id, string newPassword)
+    {
+        var request = new AdminResetPasswordRequest { NewPassword = newPassword };
+        var response = await _httpClient.PutAsJsonAsync($"api/accounts/{id}/reset-password", request);
+        return response.IsSuccessStatusCode;
+    }
 }

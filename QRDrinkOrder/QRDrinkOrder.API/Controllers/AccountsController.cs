@@ -36,17 +36,69 @@ public class AccountsController : ControllerBase
         }
     }
 
+    private byte GetCallerRoleId()
+    {
+        var roleIdClaim = User.FindFirst("RoleId")?.Value;
+        if (!string.IsNullOrEmpty(roleIdClaim) && byte.TryParse(roleIdClaim, out byte rId))
+        {
+            return rId;
+        }
+
+        if (User.IsInRole("Admin")) return AppRoles.AdminId;
+        if (User.IsInRole("Manager")) return AppRoles.ManagerId;
+        return AppRoles.EmployeeId;
+    }
+
     [HttpPost("register")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
         {
-            var success = await _authService.RegisterAsync(request);
+            var callerRoleId = GetCallerRoleId();
+            var success = await _authService.RegisterAsync(request, callerRoleId);
             if (success)
                 return Ok(new { Message = "Đăng ký tài khoản thành công." });
 
             return BadRequest(new { Message = "Không thể tạo tài khoản." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> UpdateAccount(int id, [FromBody] UpdateAccountRequest request)
+    {
+        try
+        {
+            var callerRoleId = GetCallerRoleId();
+            var success = await _authService.UpdateAccountAsync(id, request, callerRoleId);
+            if (success)
+                return Ok(new { Message = "Cập nhật thông tin tài khoản thành công." });
+
+            return NotFound(new { Message = "Không tìm thấy tài khoản." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}/reset-password")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> ResetPassword(int id, [FromBody] AdminResetPasswordRequest request)
+    {
+        try
+        {
+            var callerRoleId = GetCallerRoleId();
+            var success = await _authService.ResetPasswordAsync(id, request.NewPassword, callerRoleId);
+            if (success)
+                return Ok(new { Message = "Đặt lại mật khẩu thành công." });
+
+            return NotFound(new { Message = "Không tìm thấy tài khoản." });
         }
         catch (Exception ex)
         {
@@ -115,7 +167,8 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var success = await _authService.ToggleAccountStatusAsync(id, request.IsActive);
+            var callerRoleId = GetCallerRoleId();
+            var success = await _authService.ToggleAccountStatusAsync(id, request.IsActive, callerRoleId);
             if (success)
                 return Ok(new { Message = "Cập nhật trạng thái tài khoản thành công." });
 

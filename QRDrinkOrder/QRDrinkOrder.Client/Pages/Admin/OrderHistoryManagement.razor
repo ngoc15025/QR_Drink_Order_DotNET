@@ -5,23 +5,65 @@
 @inject OrderApiClient OrderApi
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Manager")]
 @layout QRDrinkOrder.Client.Layout.AdminLayout
 
-<PageTitle>Lịch sử Đơn hàng - Ngoc UwU Coffee</PageTitle>
+<PageTitle>Lịch sử Đơn hàng & Nhân viên xử lý - Ngoc UwU Coffee</PageTitle>
 
 <div>
     <div class="admin-topbar">
         <div class="admin-topbar-left">
             <h1 class="admin-page-title">Tra cứu Hóa đơn / Lịch sử</h1>
-            <p class="admin-page-subtitle">Xem toàn bộ lịch sử đặt hàng và thanh toán</p>
+            <p class="admin-page-subtitle">Xem toàn bộ lịch sử đơn hàng, nhân viên xử lý và phân trang dữ liệu</p>
         </div>
         <div class="admin-topbar-right">
-            <div class="d-flex gap-2">
+            <div class="d-flex align-items-center gap-2">
                 <input type="date" class="form-control form-control-sm" @bind="startDate" />
-                <span class="align-self-center text-secondary">-</span>
+                <span class="text-secondary">-</span>
                 <input type="date" class="form-control form-control-sm" @bind="endDate" />
-                <button class="btn-admin-action btn-action-primary" @onclick="LoadDataAsync">Lọc</button>
+                <button class="btn-admin-action btn-action-primary" @onclick="LoadDataAsync">Lọc ngày</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs trạng thái đơn -->
+    <div class="mb-3">
+        <ul class="admin-segmented-tabs">
+            <li class="tab-item">
+                <button class="tab-button @(statusTab == -1 ? "active" : "")" @onclick="() => SetStatusTab(-1)">Tất cả (@allOrders.Count)</button>
+            </li>
+            <li class="tab-item">
+                <button class="tab-button @(statusTab == 0 ? "active" : "")" @onclick="() => SetStatusTab(0)">Chờ thanh toán (@allOrders.Count(o => o.OrderStatus == 0))</button>
+            </li>
+            <li class="tab-item">
+                <button class="tab-button @(statusTab == 1 ? "active" : "")" @onclick="() => SetStatusTab(1)">Đang chuẩn bị (@allOrders.Count(o => o.OrderStatus == 1))</button>
+            </li>
+            <li class="tab-item">
+                <button class="tab-button @(statusTab == 2 ? "active" : "")" @onclick="() => SetStatusTab(2)">Hoàn thành (@allOrders.Count(o => o.OrderStatus == 2))</button>
+            </li>
+            <li class="tab-item">
+                <button class="tab-button @(statusTab == 3 ? "active" : "")" @onclick="() => SetStatusTab(3)">Đã hủy (@allOrders.Count(o => o.OrderStatus == 3))</button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Thanh tìm kiếm & Phân trang header -->
+    <div class="card border-0 shadow-sm mb-4 p-3 rounded-3" style="background-color: #ffffff;">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-7">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Tìm theo Tên nhân viên xử lý, Số ĐT khách, Bàn số, Mã đơn..." value="@searchQuery" @oninput="OnSearchInput" />
+                </div>
+            </div>
+            <div class="col-md-5 d-flex justify-content-md-end align-items-center gap-2">
+                <span class="small text-muted">Hiển thị:</span>
+                <select class="form-select form-select-sm w-auto" value="@pageSize" @onchange="OnPageSizeChanged">
+                    <option value="10">10 đơn/trang</option>
+                    <option value="20">20 đơn/trang</option>
+                    <option value="50">50 đơn/trang</option>
+                    <option value="100">100 đơn/trang</option>
+                </select>
+                <span class="small text-muted fw-bold ms-2">Tổng @filteredOrders.Count đơn</span>
             </div>
         </div>
     </div>
@@ -30,72 +72,111 @@
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <div class="mt-2 text-secondary">Đang tải dữ liệu...</div>
+            <div class="mt-2 text-secondary">Đang tải dữ liệu đơn hàng...</div>
         </div>
     }
-    else if (!orders.Any())
+    else if (!filteredOrders.Any())
     {
-        <div class="alert alert-info text-center">Chưa có đơn hàng nào trong khoảng thời gian này.</div>
+        <div class="alert alert-info text-center">Không tìm thấy đơn hàng phù hợp với điều kiện tìm kiếm.</div>
     }
     else
     {
         <div class="admin-table-card">
             <table class="admin-table">
                 <thead>
-                            <tr>
-                                <th>Ngày giờ</th>
-                                <th>Khách hàng</th>
-                                <th>Tổng tiền</th>
-                                <th>Thanh toán</th>
-                                <th>Trạng thái</th>
-                                <th class="text-end">Chi tiết</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var order in orders)
-                            {
-                                <tr>
-                                    <td class="py-3 text-secondary small">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td class="py-3">
-                                        <div class="fw-bold">Bàn @order.TableNumber</div>
-                                        <div class="small text-secondary">@(string.IsNullOrEmpty(order.CustomerPhone) ? "Khách lẻ" : order.CustomerPhone)</div>
-                                    </td>
-                                    <td class="py-3 fw-bold text-danger">@order.FinalAmount.ToString("N0")đ</td>
-                                    <td class="py-3">
-                                        @if (order.Payment != null)
-                                        {
-                                            <span class="admin-badge @(order.Payment.PaymentStatus == 1 ? "badge-success" : (order.Payment.PaymentStatus == 3 ? "badge-danger" : "badge-warning"))">
-                                                @order.Payment.PaymentMethodName @(order.Payment.PaymentStatus == 3 ? "(Đã hoàn tiền)" : "")
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="admin-badge badge-secondary">Chưa thanh toán</span>
-                                        }
-                                    </td>
-                                    <td class="py-3">
-                                        @{
-                                            var badgeClass = order.OrderStatus switch
-                                            {
-                                                0 => "badge-warning",
-                                                1 => "badge-info",
-                                                2 => "badge-success",
-                                                3 => "badge-danger",
-                                                _ => "badge-secondary"
-                                            };
-                                        }
-                                        <span class="admin-badge @badgeClass">@order.OrderStatusName</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn-admin-action btn-action-secondary btn-action-sm" @onclick="() => OpenDetailModal(order)">
-                                            Xem
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                    <tr>
+                        <th>Mã đơn / Ngày</th>
+                        <th>Khách hàng</th>
+                        <th>Nhân viên xử lý</th>
+                        <th>Tổng tiền</th>
+                        <th>Thanh toán</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in paginatedOrders)
+                    {
+                        <tr>
+                            <td class="py-3">
+                                <div class="fw-bold text-dark">#@order.OrderId</div>
+                                <div class="small text-secondary">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td class="py-3">
+                                <div class="fw-bold">Bàn @order.TableNumber</div>
+                                <div class="small text-secondary">@(string.IsNullOrEmpty(order.CustomerPhone) ? "Khách lẻ" : order.CustomerPhone)</div>
+                            </td>
+                            <td class="py-3">
+                                @if (!string.IsNullOrEmpty(order.EmployeeName))
+                                {
+                                    <div class="fw-bold text-primary">@order.EmployeeName</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Tự động / Hệ thống</span>
+                                }
+                            </td>
+                            <td class="py-3 fw-bold text-danger">@order.FinalAmount.ToString("N0")đ</td>
+                            <td class="py-3">
+                                @if (order.Payment != null)
+                                {
+                                    <span class="admin-badge @(order.Payment.PaymentStatus == 1 ? "badge-success" : (order.Payment.PaymentStatus == 3 ? "badge-danger" : "badge-warning"))">
+                                        @order.Payment.PaymentMethodName @(order.Payment.PaymentStatus == 3 ? "(Đã hoàn)" : "")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge badge-secondary">Chưa thanh toán</span>
+                                }
+                            </td>
+                            <td class="py-3">
+                                @{
+                                    var badgeClass = order.OrderStatus switch
+                                    {
+                                        0 => "badge-warning",
+                                        1 => "badge-info",
+                                        2 => "badge-success",
+                                        3 => "badge-danger",
+                                        _ => "badge-secondary"
+                                    };
+                                }
+                                <span class="admin-badge @badgeClass">@order.OrderStatusName</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn-admin-action btn-action-secondary btn-action-sm" @onclick="() => OpenDetailModal(order)">
+                                    Xem
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
+
+        <!-- Pagination Controls Footer -->
+        @if (totalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+                <div class="small text-muted">
+                    Trang <strong>@currentPage</strong> / <strong>@totalPages</strong> (Hiển thị @(((currentPage - 1) * pageSize) + 1) - @Math.Min(currentPage * pageSize, filteredOrders.Count) / @filteredOrders.Count)
+                </div>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage <= 1)" @onclick="() => GoToPage(currentPage - 1)">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </button>
+                    @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                    {
+                        var pageNum = i;
+                        <button class="btn btn-sm @(currentPage == pageNum ? "btn-primary" : "btn-outline-secondary")" @onclick="() => GoToPage(pageNum)">
+                            @pageNum
+                        </button>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage >= totalPages)" @onclick="() => GoToPage(currentPage + 1)">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -111,12 +192,16 @@
                 </div>
                 <div class="modal-body pt-0">
                     <div class="row mt-3 mb-4">
-                        <div class="col-sm-6">
+                        <div class="col-sm-4">
                             <div class="text-secondary small mb-1">Thời gian đặt</div>
                             <div class="fw-bold">@selectedOrder.OrderDate.ToString("dd/MM/yyyy HH:mm:ss")</div>
                         </div>
-                        <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
-                            <div class="text-secondary small mb-1">Trạng thái</div>
+                        <div class="col-sm-4">
+                            <div class="text-secondary small mb-1">Nhân viên xử lý</div>
+                            <div class="fw-bold text-primary">@(string.IsNullOrEmpty(selectedOrder.EmployeeName) ? "Tự động / Hệ thống" : selectedOrder.EmployeeName)</div>
+                        </div>
+                        <div class="col-sm-4 text-sm-end mt-3 mt-sm-0">
+                            <div class="text-secondary small mb-1">Trạng thái đơn</div>
                             <div class="fw-bold text-success">@selectedOrder.OrderStatusName</div>
                         </div>
                     </div>
@@ -133,6 +218,14 @@
                                             <div class="fw-bold">@item.DrinkName</div>
                                             <div class="small text-secondary">
                                                 Ngọt: @item.SweetnessLevel% | Đá: @item.IceLevel%
+                                                @if (!string.IsNullOrEmpty(item.SizeName))
+                                                {
+                                                    <span> | Size: @item.SizeName</span>
+                                                }
+                                                @if (item.ToppingNames.Any())
+                                                {
+                                                    <span> | Topping: @string.Join(", ", item.ToppingNames)</span>
+                                                }
                                                 @if (!string.IsNullOrEmpty(item.ItemNote))
                                                 {
                                                     <span> | Ghi chú: @item.ItemNote</span>
@@ -185,7 +278,16 @@
     private bool isLoading = true;
     private DateTime? startDate = DateTime.Today.AddDays(-7);
     private DateTime? endDate = DateTime.Today;
-    private List<OrderDto> orders = new();
+    private string searchQuery = "";
+    private int statusTab = -1;
+    
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+
+    private List<OrderDto> allOrders = new();
+    private List<OrderDto> filteredOrders = new();
+    private List<OrderDto> paginatedOrders = new();
     private OrderDto? selectedOrder;
 
     protected override async Task OnInitializedAsync()
@@ -198,7 +300,8 @@
         isLoading = true;
         try
         {
-            orders = await OrderApi.GetAllOrdersAsync(startDate, endDate);
+            allOrders = await OrderApi.GetAllOrdersAsync(startDate, endDate);
+            ApplyFilter();
         }
         catch (Exception ex)
         {
@@ -208,6 +311,70 @@
         {
             isLoading = false;
         }
+    }
+
+    private void SetStatusTab(int status)
+    {
+        statusTab = status;
+        currentPage = 1;
+        ApplyFilter();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        ApplyFilter();
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newSize))
+        {
+            pageSize = newSize;
+            currentPage = 1;
+            ApplyFilter();
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        var query = allOrders.AsEnumerable();
+
+        if (statusTab >= 0)
+        {
+            query = query.Where(o => o.OrderStatus == statusTab);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(o => 
+                o.OrderId.ToString().Contains(searchQuery) ||
+                (!string.IsNullOrEmpty(o.TableNumber) && o.TableNumber.Contains(searchQuery)) ||
+                (!string.IsNullOrEmpty(o.CustomerPhone) && o.CustomerPhone.Contains(searchQuery)) ||
+                (!string.IsNullOrEmpty(o.EmployeeName) && o.EmployeeName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+            );
+        }
+
+        filteredOrders = query.ToList();
+        totalPages = (int)Math.Ceiling((double)filteredOrders.Count / pageSize);
+        if (totalPages < 1) totalPages = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        paginatedOrders = filteredOrders
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        paginatedOrders = filteredOrders
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
     }
 
     private void OpenDetailModal(OrderDto order)
@@ -237,4 +404,3 @@
         }
     }
 }
-

@@ -67,8 +67,13 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<bool> RegisterAsync(RegisterRequest request)
+    public async Task<bool> RegisterAsync(RegisterRequest request, byte callerRoleId)
     {
+        if (callerRoleId != AppRoles.AdminId && request.RoleId != AppRoles.EmployeeId)
+        {
+            throw new BusinessException("Quản lý chỉ có quyền tạo tài khoản cho Nhân viên.");
+        }
+
         var existingAccount = await _context.Accounts.AnyAsync(a => a.Email == request.Email);
         if (existingAccount)
             throw new BusinessException("Email này đã được sử dụng.");
@@ -137,13 +142,103 @@ public class AuthService : IAuthService
         return true;
     }
 
-    public async Task<bool> ToggleAccountStatusAsync(int accountId, bool isActive)
+    public async Task<bool> ToggleAccountStatusAsync(int accountId, bool isActive, byte callerRoleId)
     {
         var account = await _context.Accounts.FindAsync(accountId);
         if (account == null || account.IsDeleted == true)
             return false;
 
+        if (account.RoleId == AppRoles.AdminId && !isActive)
+        {
+            throw new BusinessException("Không thể khóa tài khoản Admin quản trị hệ thống.");
+        }
+
+        if (callerRoleId != AppRoles.AdminId && (account.RoleId == AppRoles.AdminId || account.RoleId == AppRoles.ManagerId))
+        {
+            throw new BusinessException("Quản lý không có quyền thay đổi trạng thái tài khoản Quản lý hoặc Admin.");
+        }
+
         account.IsActive = isActive;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateAccountAsync(int accountId, UpdateAccountRequest request, byte callerRoleId)
+    {
+        var account = await _context.Accounts
+            .Include(a => a.Employee)
+            .Include(a => a.Manager)
+            .FirstOrDefaultAsync(a => a.AccountId == accountId && a.IsDeleted == false);
+
+        if (account == null)
+            return false;
+
+        if (callerRoleId != AppRoles.AdminId)
+        {
+            if (account.RoleId == AppRoles.AdminId || account.RoleId == AppRoles.ManagerId)
+            {
+                throw new BusinessException("Quản lý không có quyền chỉnh sửa tài khoản Quản lý hoặc Admin.");
+            }
+            if (request.RoleId == AppRoles.AdminId || request.RoleId == AppRoles.ManagerId)
+            {
+                throw new BusinessException("Quản lý không có quyền phân quyền cấp Quản lý hoặc Admin.");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(request.Email))
+        {
+            account.Email = request.Email;
+        }
+        if (request.RoleId > 0)
+        {
+            account.RoleId = request.RoleId;
+        }
+
+        if (account.Employee != null)
+        {
+            account.Employee.FullName = request.FullName;
+            account.Employee.Phone = request.Phone;
+        }
+        else if (account.Manager != null)
+        {
+            account.Manager.FullName = request.FullName;
+            account.Manager.Phone = request.Phone;
+        }
+        else if (account.RoleId == AppRoles.EmployeeId)
+        {
+            _context.Employees.Add(new Employee
+            {
+                AccountId = account.AccountId,
+                FullName = request.FullName,
+                Phone = request.Phone
+            });
+        }
+        else if (account.RoleId == AppRoles.ManagerId || account.RoleId == AppRoles.AdminId)
+        {
+            _context.Managers.Add(new Manager
+            {
+                AccountId = account.AccountId,
+                FullName = request.FullName,
+                Phone = request.Phone
+            });
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ResetPasswordAsync(int accountId, string newPassword, byte callerRoleId)
+    {
+        var account = await _context.Accounts.FindAsync(accountId);
+        if (account == null || account.IsDeleted == true)
+            return false;
+
+        if (callerRoleId != AppRoles.AdminId && (account.RoleId == AppRoles.AdminId || account.RoleId == AppRoles.ManagerId))
+        {
+            throw new BusinessException("Quản lý không có quyền đặt lại mật khẩu cho tài khoản Quản lý hoặc Admin.");
+        }
+
+        account.PasswordHash = _passwordHasher.HashPassword(account.Email, newPassword);
         await _context.SaveChangesAsync();
         return true;
     }
@@ -165,7 +260,7 @@ public class AuthService : IAuthService
                 AccountId = a.AccountId,
                 Email = a.Email,
                 RoleId = a.RoleId,
-                RoleName = a.Role.RoleName,
+                RoleName = a.Role?.RoleName ?? "",
                 IsActive = a.IsActive == true,
                 CreatedAt = a.CreatedAt ?? TimeHelper.GetVietnamTime(),
                 FullName = a.RoleId == AppRoles.EmployeeId ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
@@ -191,7 +286,7 @@ public class AuthService : IAuthService
             AccountId = a.AccountId,
             Email = a.Email,
             RoleId = a.RoleId,
-            RoleName = a.Role.RoleName,
+            RoleName = a.Role?.RoleName ?? "",
             IsActive = a.IsActive == true,
             CreatedAt = a.CreatedAt ?? TimeHelper.GetVietnamTime(),
             FullName = a.RoleId == AppRoles.EmployeeId ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
@@ -242,4 +337,3 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
-

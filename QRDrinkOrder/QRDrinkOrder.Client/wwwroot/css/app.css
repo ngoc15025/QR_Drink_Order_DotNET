@@ -2425,20 +2425,30 @@ a:hover {
     margin: 0;
 }
 
-.dash-date-filter {
-    display: flex;
-    gap: 6px;
-    background: #f7f5f0;
-    padding: 4px;
-    border-radius: 10px;
+/* ========================================================= */
+/* PREMIUM SEGMENTED TABS SYSTEM (Matching Ngoc UwU Admin)   */
+/* ========================================================= */
+.dash-date-filter,
+.premium-tabs,
+.admin-segmented-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f6f5f1;
+    padding: 5px;
+    border-radius: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    list-style: none;
+    margin-bottom: 0;
 }
 
-.dash-date-btn {
-    border: none;
+.dash-date-btn,
+.premium-tabs .nav-link,
+.admin-segmented-tabs .tab-button,
+.admin-segmented-tabs .nav-link {
+    border: none !important;
     background: transparent;
-    padding: 6px 14px;
-    border-radius: 7px;
-    font-size: 0.8rem;
     font-weight: 600;
     color: #888;
     cursor: pointer;

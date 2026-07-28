@@ -23,6 +23,20 @@
         </div>
     </div>
 
+    <div class="mb-4">
+        <ul class="admin-segmented-tabs">
+            <li class="tab-item">
+                <button class="tab-button @(couponFilter == "all" ? "active" : "")" @onclick='() => couponFilter = "all"'>Tất cả (@allCoupons.Count)</button>
+            </li>
+            <li class="tab-item">
+                <button class="tab-button @(couponFilter == "active" ? "active" : "")" @onclick='() => couponFilter = "active"'>Đang kích hoạt (@allCoupons.Count(c => c.IsActive))</button>
+            </li>
+            <li class="tab-item">
+                <button class="tab-button @(couponFilter == "inactive" ? "active" : "")" @onclick='() => couponFilter = "inactive"'>Đã ẩn / Tắt (@allCoupons.Count(c => !c.IsActive))</button>
+            </li>
+        </ul>
+    </div>
+
     @if (isLoading)
     {
         <div class="text-center py-5">
@@ -46,17 +60,17 @@
                         <th class="text-end">Thao tác</th>
                     </tr>
                 </thead>
-                        <tbody>
-                            @if (!coupons.Any())
-                            {
-                                <tr>
-                                    <td colspan="8" class="text-center py-4 text-secondary">Chưa có mã giảm giá nào.</td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var c in coupons)
-                                {
+                <tbody>
+                    @if (!displayedCoupons.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-secondary">Chưa có mã giảm giá nào.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var c in displayedCoupons)
+                        {
                                     <tr>
                                         <td class="px-4 py-3 fw-bold text-primary">@c.CouponCode</td>
                                         <td class="py-3">
@@ -194,7 +208,18 @@
 @code {
     private bool isLoading = true;
     private bool isSaving = false;
-    private List<CouponDto> coupons = new();
+    private List<CouponDto> allCoupons = new();
+    private string couponFilter = "all";
+
+    private IEnumerable<CouponDto> displayedCoupons
+    {
+        get
+        {
+            if (couponFilter == "active") return allCoupons.Where(c => c.IsActive);
+            if (couponFilter == "inactive") return allCoupons.Where(c => !c.IsActive);
+            return allCoupons;
+        }
+    }
     
     private bool showModal = false;
     private SaveCouponRequest model = new();
@@ -210,7 +235,7 @@
         isLoading = true;
         try
         {
-            coupons = await CouponApi.GetAllCouponsAsync(includeInactive: true);
+            allCoupons = await CouponApi.GetAllCouponsAsync(includeInactive: true);
         }
         finally
         {

@@ -46,3 +46,24 @@ public class AccountStatusRequest
 {
     public bool IsActive { get; set; }
 }
+
+public class UpdateAccountRequest
+{
+    [Required(ErrorMessage = "Họ tên là bắt buộc.")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
+    public string? Phone { get; set; }
+
+    [EmailAddress(ErrorMessage = "Định dạng Email không hợp lệ.")]
+    public string? Email { get; set; }
+
+    public byte RoleId { get; set; }
+}
+
+public class AdminResetPasswordRequest
+{
+    [Required(ErrorMessage = "Mật khẩu mới là bắt buộc.")]
+    [MinLength(6, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự.")]
+    public string NewPassword { get; set; } = string.Empty;
+}

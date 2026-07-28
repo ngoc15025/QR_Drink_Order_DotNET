@@ -533,9 +533,31 @@ public class OrderService : IOrderService
                 return false;
 
             order.OrderStatus = status;
+
             if (employeeId.HasValue)
             {
-                order.EmployeeId = employeeId;
+                var emp = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == employeeId.Value || e.AccountId == employeeId.Value);
+                if (emp != null)
+                {
+                    order.EmployeeId = emp.EmployeeId;
+                }
+                else
+                {
+                    var acc = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountId == employeeId.Value);
+                    if (acc != null)
+                    {
+                        var mgr = await _context.Managers.FirstOrDefaultAsync(m => m.AccountId == acc.AccountId);
+                        var newEmp = new Employee
+                        {
+                            AccountId = acc.AccountId,
+                            FullName = mgr?.FullName ?? acc.Email,
+                            Phone = mgr?.Phone
+                        };
+                        _context.Employees.Add(newEmp);
+                        await _context.SaveChangesAsync();
+                        order.EmployeeId = newEmp.EmployeeId;
+                    }
+                }
             }
 
             // Nếu trạng thái là Đã hủy hoặc Hoàn thành, cập nhật trạng thái thanh toán tương ứng
