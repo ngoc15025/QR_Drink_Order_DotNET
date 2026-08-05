@@ -351,6 +351,7 @@ window.printInvoice = function(invoiceHtml) {
     var printWindow = window.open('', '_blank', 'width=450,height=600');
     printWindow.document.write('<html><head><title>Hóa đơn thanh toán</title>');
     printWindow.document.write('<style>');
+    printWindow.document.write('@page { margin: 0; }');
     printWindow.document.write('body { font-family: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif; padding: 20px; color: #333; margin: 0; }');
     printWindow.document.write('.invoice-box { max-width: 100%; margin: auto; padding: 10px; font-size: 14px; line-height: 24px; }');
     printWindow.document.write('.text-center { text-align: center; }');
