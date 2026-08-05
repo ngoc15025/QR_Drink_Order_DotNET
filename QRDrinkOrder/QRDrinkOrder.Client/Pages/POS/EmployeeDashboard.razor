@@ -828,18 +828,11 @@
         }
         sb.Append("</tbody></table>");
         sb.Append("<div class=\"divider\"></div>");
-        sb.Append("<div style=\"display: flex; justify-content: space-between;\">");
-        sb.Append("<span>Tổng cộng:</span>");
-        sb.Append($"<span>{order.TotalAmount:N0}đ</span>");
-        sb.Append("</div>");
-        sb.Append("<div style=\"display: flex; justify-content: space-between;\">");
-        sb.Append("<span>Giảm giá:</span>");
-        sb.Append($"<span>{order.DiscountAmount:N0}đ</span>");
-        sb.Append("</div>");
-        sb.Append("<div style=\"display: flex; justify-content: space-between; font-weight: bold;\">");
-        sb.Append("<span>Thành tiền:</span>");
-        sb.Append($"<span>{order.FinalAmount:N0}đ</span>");
-        sb.Append("</div>");
+        sb.Append("<table style=\"width: 100%; border-collapse: collapse;\">");
+        sb.Append($"<tr><td style=\"text-align: right; padding: 4px 0;\">Tổng cộng:</td><td style=\"width: 100px; text-align: right; padding: 4px 0;\">{order.TotalAmount:N0}đ</td></tr>");
+        sb.Append($"<tr><td style=\"text-align: right; padding: 4px 0;\">Giảm giá:</td><td style=\"width: 100px; text-align: right; padding: 4px 0;\">{order.DiscountAmount:N0}đ</td></tr>");
+        sb.Append($"<tr><td style=\"text-align: right; padding: 4px 0; font-weight: bold; font-size: 16px;\">Thành tiền:</td><td style=\"width: 100px; text-align: right; padding: 4px 0; font-weight: bold; font-size: 16px;\">{order.FinalAmount:N0}đ</td></tr>");
+        sb.Append("</table>");
         sb.Append("<div class=\"divider\"></div>");
         sb.Append("<div class=\"text-center\" style=\"margin-top: 15px; font-style: italic;\">");
         sb.Append("Cảm ơn Quý khách. Hẹn gặp lại!");
