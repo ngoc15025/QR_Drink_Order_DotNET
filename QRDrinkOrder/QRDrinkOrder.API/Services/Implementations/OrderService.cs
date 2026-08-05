@@ -48,8 +48,9 @@ public class OrderService : IOrderService
                 };
                 _context.CustomerSessions.Add(session);
             }
-            else if (!string.IsNullOrEmpty(request.Phone) && string.IsNullOrEmpty(session.Phone))
+            else if (!string.IsNullOrEmpty(request.Phone))
             {
+                // Luôn cập nhật session.Phone theo đơn hàng hiện tại. 
                 session.Phone = request.Phone;
             }
 
@@ -583,12 +584,29 @@ public class OrderService : IOrderService
             }
 
             // Tích điểm khi đơn hàng hoàn thành
+            // Nguồn SĐT: ưu tiên dùng lại đúng số điện thoại đã truyền lúc tạo đơn.
+            // session.Phone luôn được cập nhật theo request.Phone ở bước tạo đơn nên đây là SĐT khách thực sự.
+            // Bỏ qua nếu SĐT là SĐT nội bộ (Nhân viên/Quản lý) VÀ đơn do nhân viên tạo trên POS.
             if (status == (byte)OrderStatus.Completed && order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
             {
-                var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == order.Session.Phone);
+                var phone = order.Session.Phone;
+
+                // Kiểm tra SĐT nội bộ chỉ khi đơn được tạo BỞI nhân viên trên POS (EmployeeId.HasValue)
+                if (order.EmployeeId.HasValue)
+                {
+                    bool isStaffPhone = await _context.Employees.AnyAsync(e => e.Phone == phone && e.Phone != null)
+                                     || await _context.Managers.AnyAsync(m => m.Phone == phone && m.Phone != null);
+                    if (isStaffPhone)
+                    {
+                        _logger.LogInformation("Đơn hàng #{OrderId} (POS) dùng SĐT nội bộ ({Phone}). Bỏ qua tích điểm chống lạm dụng.", orderId, phone);
+                        goto SkipPointsAward;
+                    }
+                }
+
+                var membership = await _context.Memberships.FirstOrDefaultAsync(m => m.Phone == phone);
                 if (membership == null)
                 {
-                    membership = new Membership { Phone = order.Session.Phone, Points = 0 };
+                    membership = new Membership { Phone = phone, Points = 0 };
                     _context.Memberships.Add(membership);
                 }
 
@@ -606,6 +624,8 @@ public class OrderService : IOrderService
                         Reason = $"Tích điểm từ đơn hàng #{order.OrderId}"
                     });
                 }
+
+                SkipPointsAward:;
             }
 
             await _context.SaveChangesAsync();

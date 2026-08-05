@@ -3,6 +3,7 @@
 @inject QRDrinkOrder.Client.Services.ApiClients.ReviewApiClient ReviewApi
 @inject QRDrinkOrder.Client.Services.PushNotificationService PushService
 @inject IJSRuntime JSRuntime
+@inject Microsoft.Extensions.Localization.IStringLocalizer<QRDrinkOrder.Client.SharedResource> Loc
 @using QRDrinkOrder.Shared.DTOs.Responses
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using Microsoft.AspNetCore.SignalR.Client
@@ -45,6 +46,16 @@
                     <div>
                         <h6 class="fw-bold mb-1 text-dark">Đơn hàng chưa được thanh toán</h6>
                         <div class="small text-secondary">Vui lòng hoàn tất thanh toán chuyển khoản để bếp tiến hành pha chế.</div>
+                        @if (remainingSeconds > 0)
+                        {
+                            <div class="mt-1 fw-bold @(remainingSeconds <= 60 ? "text-danger" : "text-warning")" style="font-size:0.85rem;">
+                                ⏱ @Loc["OrderExpiresIn"]: @($"{remainingSeconds / 60:D2}:{remainingSeconds % 60:D2}")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-1 small text-danger fw-bold">@Loc["OrderExpired"]</div>
+                        }
                     </div>
                 </div>
                 <a href="/payment/@order.OrderId" class="btn btn-warning fw-bold text-dark btn-sm rounded-pill px-3 ms-2 flex-shrink-0 shadow-sm">
@@ -102,6 +113,58 @@
                 </div>
             }
         </div>
+
+        @* Nút Hủy đơn — Chỉ hiển thị khi chưa pha chế *@
+        @if (order.OrderStatus == 0)
+        {
+            <div class="mb-4">
+                @if (!string.IsNullOrEmpty(cancelError))
+                {
+                    <div class="alert alert-danger py-2 small mb-2" style="border-radius:8px;">@cancelError</div>
+                }
+                <button class="btn btn-outline-danger w-100 fw-bold" style="border-radius:12px;" @onclick="() => showCancelModal = true" disabled="@isCancelling">
+                    @if (isCancelling)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                        @Loc["CancellingText"]
+                    }
+                    else
+                    {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle me-1" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+                        @Loc["CancelOrderBtn"]
+                    }
+                </button>
+            </div>
+        }
+
+        @* Modal xác nhận hủy đơn *@
+        @if (showCancelModal)
+        {
+            <div class="modal fade show d-flex align-items-center justify-content-center" tabindex="-1" style="background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100%; height:100%; z-index:1055;">
+                <div class="modal-dialog m-3 w-100" style="max-width:420px;">
+                    <div class="modal-content" style="border-radius:16px; overflow:hidden;">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title fw-bold text-danger">@Loc["CancelOrderModalTitle"]</h5>
+                            <button type="button" class="btn-close" @onclick="() => showCancelModal = false"></button>
+                        </div>
+                        <div class="modal-body pt-2">
+                            <p class="mb-3">@((MarkupString)string.Format(Loc["CancelOrderConfirmMsg"].Value, OrderId))</p>
+                            @if (order.Payment?.PaymentStatus == 1)
+                            {
+                                <div class="alert alert-warning py-2 small" style="border-radius:8px;">@Loc["CancelOrderQrRefundWarning"]</div>
+                            }
+                        </div>
+                        <div class="modal-footer border-0 pt-0 gap-2">
+                            <button class="btn btn-outline-secondary flex-fill fw-bold" style="border-radius:10px;" @onclick="() => showCancelModal = false">@Loc["CancelOrderBack"]</button>
+                            <button class="btn btn-danger flex-fill fw-bold" style="border-radius:10px;" @onclick="ConfirmCancelOrder" disabled="@isCancelling">
+                                @if (isCancelling) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @Loc["CancelOrderConfirmBtn"]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="tch-card p-3 mb-4">
             <h6 class="fw-bold mb-3 border-bottom pb-2">Thông tin nhận hàng</h6>
@@ -322,6 +385,64 @@
         {
             Logger.LogError(ex, "Lỗi kết nối SignalR");
         }
+
+        // Khởi động countdown nếu đơn đang chờ thanh toán
+        if (order != null && order.OrderStatus == 0)
+        {
+            StartCountdown();
+        }
+    }
+
+    private void StartCountdown()
+    {
+        if (order == null) return;
+        var remaining = order.OrderDate.AddMinutes(15) - DateTime.Now;
+        remainingSeconds = remaining.TotalSeconds > 0 ? (int)remaining.TotalSeconds : 0;
+        _countdownTimer?.Dispose();
+        _countdownTimer = new System.Threading.Timer(async _ =>
+        {
+            if (remainingSeconds > 0)
+            {
+                remainingSeconds--;
+                await InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                _countdownTimer?.Dispose();
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, 0, 1000);
+    }
+
+    private async Task ConfirmCancelOrder()
+    {
+        if (order == null) return;
+        isCancelling = true;
+        cancelError = "";
+        showCancelModal = false;
+        try
+        {
+            var success = await OrderApi.CancelOrderAsync(order.OrderId, order.SessionId);
+            if (!success)
+            {
+                cancelError = "Không thể hủy đơn. Đơn có thể đã được pha chế.";
+            }
+            else
+            {
+                _countdownTimer?.Dispose();
+                remainingSeconds = 0;
+                // UI tự cập nhật "Đã hủy" qua SignalR ReceiveStatusUpdate (đã có sẵn)
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Lỗi hủy đơn {OrderId}", OrderId);
+            cancelError = ex.Message;
+        }
+        finally
+        {
+            isCancelling = false;
+        }
     }
 
     private async Task LoadOrder()
@@ -353,6 +474,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        _countdownTimer?.Dispose();
         if (hubConnection is not null)
         {
             await hubConnection.DisposeAsync();
@@ -365,6 +487,15 @@
     private bool isSubmittingReview = false;
     private bool reviewSuccess = false;
     private string reviewError = "";
+
+    // Cancel order state
+    private bool isCancelling = false;
+    private string cancelError = "";
+    private bool showCancelModal = false;
+
+    // Countdown timer state
+    private int remainingSeconds = 0;
+    private System.Threading.Timer? _countdownTimer;
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {

@@ -234,4 +234,31 @@
   <data name="ConfirmActionBtn" xml:space="preserve">
     <value>Xác nhận</value>
   </data>
+  <data name="CancelOrderBtn" xml:space="preserve">
+    <value>Hủy đơn hàng</value>
+  </data>
+  <data name="CancelOrderModalTitle" xml:space="preserve">
+    <value>Xác nhận hủy đơn</value>
+  </data>
+  <data name="CancelOrderConfirmMsg" xml:space="preserve">
+    <value>Bạn có chắc muốn hủy đơn hàng #<b>{0}</b> này không? Hành động này không thể hoàn tác.</value>
+  </data>
+  <data name="CancelOrderQrRefundWarning" xml:space="preserve">
+    <value>⚠️ Đơn hàng đã được thanh toán qua QR. Vui lòng đến quầy để nhận hoàn tiền mặt từ nhân viên.</value>
+  </data>
+  <data name="CancelOrderBack" xml:space="preserve">
+    <value>Không, giữ lại</value>
+  </data>
+  <data name="CancelOrderConfirmBtn" xml:space="preserve">
+    <value>Xác nhận hủy</value>
+  </data>
+  <data name="OrderExpiresIn" xml:space="preserve">
+    <value>Đơn tự hủy sau</value>
+  </data>
+  <data name="OrderExpired" xml:space="preserve">
+    <value>Đơn hàng đã hết hạn, đang xử lý hủy...</value>
+  </data>
+  <data name="CancellingText" xml:space="preserve">
+    <value>Đang hủy đơn...</value>
+  </data>
 </root>

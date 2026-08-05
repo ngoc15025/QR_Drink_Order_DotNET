@@ -234,4 +234,31 @@
   <data name="ConfirmActionBtn" xml:space="preserve">
     <value>Confirm</value>
   </data>
+  <data name="CancelOrderBtn" xml:space="preserve">
+    <value>Cancel Order</value>
+  </data>
+  <data name="CancelOrderModalTitle" xml:space="preserve">
+    <value>Confirm Cancellation</value>
+  </data>
+  <data name="CancelOrderConfirmMsg" xml:space="preserve">
+    <value>Are you sure you want to cancel order #<b>{0}</b>? This action cannot be undone.</value>
+  </data>
+  <data name="CancelOrderQrRefundWarning" xml:space="preserve">
+    <value>⚠️ This order was paid via QR. Please visit the counter to receive a cash refund from staff.</value>
+  </data>
+  <data name="CancelOrderBack" xml:space="preserve">
+    <value>No, keep it</value>
+  </data>
+  <data name="CancelOrderConfirmBtn" xml:space="preserve">
+    <value>Yes, Cancel Order</value>
+  </data>
+  <data name="OrderExpiresIn" xml:space="preserve">
+    <value>Order expires in</value>
+  </data>
+  <data name="OrderExpired" xml:space="preserve">
+    <value>Order has expired, processing cancellation...</value>
+  </data>
+  <data name="CancellingText" xml:space="preserve">
+    <value>Cancelling order...</value>
+  </data>
 </root>

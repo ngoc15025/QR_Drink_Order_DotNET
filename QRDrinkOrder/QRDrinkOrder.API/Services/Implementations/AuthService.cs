@@ -318,11 +318,21 @@ public class AuthService : IAuthService
         {
             claims.Add(new Claim("UserId", account.Employee.EmployeeId.ToString()));
             claims.Add(new Claim("FullName", account.Employee.FullName));
+            if (!string.IsNullOrEmpty(account.Employee.Phone))
+            {
+                claims.Add(new Claim(ClaimTypes.MobilePhone, account.Employee.Phone));
+                claims.Add(new Claim("Phone", account.Employee.Phone));
+            }
         }
         else if (account.Manager != null)
         {
             claims.Add(new Claim("UserId", account.Manager.ManagerId.ToString()));
             claims.Add(new Claim("FullName", account.Manager.FullName));
+            if (!string.IsNullOrEmpty(account.Manager.Phone))
+            {
+                claims.Add(new Claim(ClaimTypes.MobilePhone, account.Manager.Phone));
+                claims.Add(new Claim("Phone", account.Manager.Phone));
+            }
         }
 
         var expiryDays = double.Parse(jwtSettings["ExpiryDays"] ?? "7");

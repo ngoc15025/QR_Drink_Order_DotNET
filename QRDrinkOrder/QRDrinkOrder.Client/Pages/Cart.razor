@@ -6,6 +6,8 @@
 @inject QRDrinkOrder.Client.Services.ApiClients.MembershipApiClient MembershipApi
 @inject QRDrinkOrder.Client.Services.PushNotificationService PushService
 @inject QRDrinkOrder.Client.Services.CustomerAuthService CustomerAuth
+@inject QRDrinkOrder.Client.Services.ApiClients.AuthApiClient AuthApi
+@using System.Security.Claims
 @using QRDrinkOrder.Shared.DTOs.Requests
 @using QRDrinkOrder.Shared.Enums
 @using QRDrinkOrder.Client.Services
@@ -16,7 +18,7 @@
 
 <PageTitle>@Loc["ConfirmOrderTitle"] - Ngoc UwU Coffee</PageTitle>
 
-<div class="mb-3 d-flex align-items-center bg-white p-3 border-bottom sticky-top" style="margin: -1rem -1rem 1rem -1rem; z-index: 10;">
+<div class="mb-3 d-flex align-items-center bg-white p-3 border-bottom sticky-top" style="margin: 0 0 1rem 0; z-index: 10;">
     <a href="/" class="text-decoration-none text-dark me-3">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -27,15 +29,18 @@
 
 @if (!CartState.Items.Any())
 {
-    <div class="text-center py-5 bg-white rounded" style="border: 1px solid #f0f0f0;">
-        <img src="/images/placeholder.png" alt="Empty Cart" style="width: 150px; opacity: 0.8;" class="mb-3" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
-        <h6 class="fw-bold">@Loc["EmptyCartTitle"]</h6>
-        <p class="text-muted small">@Loc["EmptyCartSub"]</p>
-        <a href="/" class="btn btn-primary mt-3 px-4">@Loc["ContinueShoppingBtn"]</a>
+    <div class="px-3">
+        <div class="text-center py-5 bg-white rounded" style="border: 1px solid #f0f0f0;">
+            <img src="/images/placeholder.png" alt="Empty Cart" style="width: 150px; opacity: 0.8;" class="mb-3" onerror="this.onerror=null; this.src='/images/placeholder.png';" />
+            <h6 class="fw-bold">@Loc["EmptyCartTitle"]</h6>
+            <p class="text-muted small">@Loc["EmptyCartSub"]</p>
+            <a href="/" class="btn btn-primary mt-3 px-4">@Loc["ContinueShoppingBtn"]</a>
+        </div>
     </div>
 }
 else
 {
+    <div class="px-3 pb-5">
     <div class="row">
         <div class="col-md-7 mb-4">
             <!-- Khối thông tin nhận hàng -->
@@ -57,7 +62,7 @@ else
 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-secondary">@Loc["PhoneLabel"] <span class="text-danger">*</span></label>
-                    <input type="tel" maxlength="10" inputmode="numeric" class="form-control bg-light border-0" value="@phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" />
+                    <input type="tel" maxlength="10" inputmode="numeric" class="form-control bg-light border-0" value="@phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" disabled="@isEmployee" />
                 </div>
                 
                 @if (membership != null)
@@ -116,7 +121,7 @@ else
                                 <small class="text-muted">Giảm 50% cho đơn hàng này</small>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="useEmployeeBenefitSwitch" @bind="useEmployeeBenefit" disabled="@(appliedCoupon != null)">
+                                <input class="form-check-input" type="checkbox" id="useEmployeeBenefitSwitch" checked="@useEmployeeBenefit" @onchange="ToggleEmployeeBenefit" disabled="@(appliedCoupon != null)">
                                 <label class="form-check-label small fw-bold" for="useEmployeeBenefitSwitch">Sử dụng</label>
                             </div>
                         </div>
@@ -319,6 +324,7 @@ else
             </div>
         </div>
     </div>
+    </div>
 }
 
 <CustomerPinModal @bind-IsOpen="showPinModal"
@@ -358,6 +364,7 @@ else
     
     private bool isEmployee = false;
     private bool useEmployeeBenefit = false;
+    private string staffPhone = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -366,24 +373,33 @@ else
         tableNumber = OrderState.TableNumber ?? "";
         
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true && authState.User.IsInRole("Employee"))
+        if (authState.User.Identity?.IsAuthenticated == true && (authState.User.IsInRole("Employee") || authState.User.IsInRole("Manager")))
         {
             isEmployee = true;
-        }
-
-        // Tự động khôi phục SĐT từ Session đăng nhập PIN nếu có
-        try
-        {
-            await CustomerAuth.InitializeAsync();
-            if (CustomerAuth.IsAuthenticated && !string.IsNullOrEmpty(CustomerAuth.CurrentPhone))
+            staffPhone = authState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.MobilePhone || c.Type == "Phone")?.Value ?? "";
+            if (!string.IsNullOrEmpty(staffPhone))
             {
-                phone = CustomerAuth.CurrentPhone;
+                phone = staffPhone;
                 await CheckMembership();
             }
         }
-        catch (Exception ex)
+
+        // Tự động khôi phục SĐT từ Session đăng nhập PIN nếu có (chỉ đối với khách hàng thông thường)
+        if (!isEmployee)
         {
-            Logger.LogWarning(ex, "Lỗi khi khôi phục thông tin đăng nhập khách hàng");
+            try
+            {
+                await CustomerAuth.InitializeAsync();
+                if (CustomerAuth.IsAuthenticated && !string.IsNullOrEmpty(CustomerAuth.CurrentPhone))
+                {
+                    phone = CustomerAuth.CurrentPhone;
+                    await CheckMembership();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Lỗi khi khôi phục thông tin đăng nhập khách hàng");
+            }
         }
 
         // Tải danh sách mã giảm giá khả dụng
@@ -394,6 +410,16 @@ else
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Không thể tải danh sách mã giảm giá khả dụng");
+        }
+    }
+
+    private async Task ToggleEmployeeBenefit(ChangeEventArgs e)
+    {
+        useEmployeeBenefit = (bool)(e.Value ?? false);
+        if (useEmployeeBenefit && !string.IsNullOrEmpty(staffPhone))
+        {
+            phone = staffPhone;
+            await CheckMembership();
         }
     }
     

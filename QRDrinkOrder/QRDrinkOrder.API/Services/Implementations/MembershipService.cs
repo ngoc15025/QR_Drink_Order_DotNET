@@ -312,6 +312,12 @@ public class MembershipService : IMembershipService
         if (string.IsNullOrEmpty(phone))
             return 0;
 
+        // Nếu số điện thoại thuộc về Nhân viên / Quản lý cửa hàng, không tính số ly tích lũy để tránh trục lợi
+        bool isStaffPhone = await _context.Employees.AnyAsync(e => e.Phone == phone && e.Phone != null)
+                         || await _context.Managers.AnyAsync(m => m.Phone == phone && m.Phone != null);
+        if (isStaffPhone)
+            return 0;
+
         var now = TimeHelper.GetVietnamTime();
         var monthlyCups = await _context.OrderItems
             .Where(oi => oi.Order.Session != null 
