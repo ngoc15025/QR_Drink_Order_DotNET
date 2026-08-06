@@ -46,7 +46,8 @@ public class AccountsController : ControllerBase
 
         if (User.IsInRole("Admin")) return AppRoles.AdminId;
         if (User.IsInRole("Manager")) return AppRoles.ManagerId;
-        return AppRoles.EmployeeId;
+        if (User.IsInRole("Bartender")) return AppRoles.BartenderId;
+        return AppRoles.WaiterId;
     }
 
     [HttpPost("register")]

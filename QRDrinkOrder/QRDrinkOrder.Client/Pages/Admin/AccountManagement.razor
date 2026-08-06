@@ -33,7 +33,7 @@
                 <button class="nav-link @(selectedTab == "all" ? "active" : "")" @onclick='() => SetTab("all")'>Tất cả (@allAccounts.Count)</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link @(selectedTab == "employee" ? "active" : "")" @onclick='() => SetTab("employee")'>Nhân viên (@allAccounts.Count(a => a.RoleId == 3))</button>
+                <button class="nav-link @(selectedTab == "employee" ? "active" : "")" @onclick='() => SetTab("employee")'>Nhân viên (@allAccounts.Count(a => a.RoleId == 3 || a.RoleId == 4))</button>
             </li>
             <li class="nav-item">
                 <button class="nav-link @(selectedTab == "manager" ? "active" : "")" @onclick='() => SetTab("manager")'>Quản lý (@allAccounts.Count(a => a.RoleId == 2))</button>
@@ -195,7 +195,8 @@
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Vai trò *</label>
                             <select class="form-select" @bind="newAccount.RoleId">
-                                <option value="3">Nhân viên (Employee)</option>
+                                <option value="3">Pha chế (Bartender)</option>
+                                <option value="4">Phục vụ (Waiter)</option>
                                 @if (isAdmin)
                                 {
                                     <option value="2">Quản lý (Manager)</option>
@@ -265,7 +266,8 @@
                         <div class="mb-4">
                             <label class="form-label small fw-bold">Vai trò</label>
                             <select class="form-select" @bind="editModel.RoleId">
-                                <option value="3">Nhân viên (Employee)</option>
+                                <option value="3">Pha chế (Bartender)</option>
+                                <option value="4">Phục vụ (Waiter)</option>
                                 <option value="2">Quản lý (Manager)</option>
                                 @if (isAdmin)
                                 {
@@ -438,7 +440,7 @@
         var query = allAccounts.AsEnumerable();
 
         if (selectedTab == "employee")
-            query = query.Where(a => a.RoleId == 3);
+            query = query.Where(a => a.RoleId == 3 || a.RoleId == 4);
         else if (selectedTab == "manager")
             query = query.Where(a => a.RoleId == 2);
         else if (selectedTab == "admin")

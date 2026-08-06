@@ -20,7 +20,12 @@ namespace QRDrinkOrder.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAuditLogs([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetAuditLogs(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? search = null)
         {
             var query = _context.AuditLogs
                 .Include(l => l.Account)
@@ -30,6 +35,19 @@ namespace QRDrinkOrder.API.Controllers
                 .Include(l => l.Account)
                     .ThenInclude(a => a!.Manager)
                 .AsQueryable();
+
+            if (startDate.HasValue)
+                query = query.Where(l => l.CreatedAt >= startDate.Value);
+            if (endDate.HasValue)
+                query = query.Where(l => l.CreatedAt <= endDate.Value);
+            if (!string.IsNullOrWhiteSpace(search))
+                query = query.Where(l =>
+                    (l.Account != null && l.Account.Email != null && l.Account.Email.Contains(search)) ||
+                    (l.Account != null && l.Account.Employee != null && l.Account.Employee.FullName != null && l.Account.Employee.FullName.Contains(search)) ||
+                    (l.Account != null && l.Account.Manager != null && l.Account.Manager.FullName != null && l.Account.Manager.FullName.Contains(search)) ||
+                    (l.Action != null && l.Action.Contains(search)) ||
+                    (l.TableName != null && l.TableName.Contains(search)) ||
+                    (l.Description != null && l.Description.Contains(search)));
 
             var totalCount = await query.CountAsync();
 
@@ -42,7 +60,7 @@ namespace QRDrinkOrder.API.Controllers
                     LogId = l.LogId,
                     AccountId = l.AccountId,
                     Email = l.Account != null ? l.Account.Email : null,
-                    FullName = l.Account != null ? (l.Account.RoleId == AppRoles.EmployeeId ? (l.Account.Employee != null ? l.Account.Employee.FullName : "Nhân viên") : (l.Account.Manager != null ? l.Account.Manager.FullName : "Quản lý")) : null,
+                    FullName = l.Account != null ? ((l.Account.RoleId == AppRoles.BartenderId || l.Account.RoleId == AppRoles.WaiterId) ? (l.Account.Employee != null ? l.Account.Employee.FullName : "Nhân viên") : (l.Account.Manager != null ? l.Account.Manager.FullName : "Quản lý")) : null,
                     Action = l.Action,
                     TableName = l.TableName,
                     Description = l.Description,

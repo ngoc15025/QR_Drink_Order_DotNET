@@ -16,10 +16,30 @@
         <p class="admin-page-subtitle">@DateTime.Now.ToString("dddd, dd/MM/yyyy")</p>
     </div>
     <!-- Date Range Filter -->
-    <div class="dash-date-filter">
-        <button class="dash-date-btn @(dateRange == 0 ? "active" : "")" @onclick="() => ChangeDateRange(0)">Hôm nay</button>
-        <button class="dash-date-btn @(dateRange == 7 ? "active" : "")" @onclick="() => ChangeDateRange(7)">7 ngày</button>
-        <button class="dash-date-btn @(dateRange == 30 ? "active" : "")" @onclick="() => ChangeDateRange(30)">30 ngày</button>
+    <div class="d-flex flex-column align-items-end gap-2">
+        <div class="dash-date-filter">
+            <button class="dash-date-btn @(dateRange == 0 ? "active" : "")" @onclick="() => ChangeDateRange(0)">Hôm nay</button>
+            <button class="dash-date-btn @(dateRange == 7 ? "active" : "")" @onclick="() => ChangeDateRange(7)">7 ngày</button>
+            <button class="dash-date-btn @(dateRange == 30 ? "active" : "")" @onclick="() => ChangeDateRange(30)">30 ngày</button>
+            <button class="dash-date-btn @(dateRange == -1 ? "active" : "")" @onclick="() => ChangeDateRange(-1)">Ngày cụ thể</button>
+            <button class="dash-date-btn @(dateRange == -2 ? "active" : "")" @onclick="() => ChangeDateRange(-2)">Khoảng ngày</button>
+        </div>
+        @if (dateRange == -1)
+        {
+            <div class="dash-custom-date-row">
+                <input type="date" class="dash-date-input" @bind="singleDate" />
+                <button class="dash-apply-btn" @onclick="ApplyCustomDate">Xem</button>
+            </div>
+        }
+        @if (dateRange == -2)
+        {
+            <div class="dash-custom-date-row">
+                <input type="date" class="dash-date-input" @bind="customStartDate" />
+                <span class="dash-date-sep">—</span>
+                <input type="date" class="dash-date-input" @bind="customEndDate" />
+                <button class="dash-apply-btn" @onclick="ApplyCustomDate">Lọc</button>
+            </div>
+        }
     </div>
 </div>
 
@@ -305,6 +325,11 @@ else
     private bool isLoading = true;
     private int dateRange = 7; // default: 7 ngày
 
+    // Custom date mode
+    private DateTime singleDate = DateTime.Today;
+    private DateTime customStartDate = DateTime.Today.AddDays(-6);
+    private DateTime customEndDate = DateTime.Today;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -316,9 +341,27 @@ else
         dashboardData = null;
         StateHasChanged();
 
-        var end = DateTime.Today;
-        var start = dateRange == 0 ? DateTime.Today : DateTime.Today.AddDays(-dateRange + 1);
-        dashboardData = await ReportApi.GetDashboardDataAsync(start, end.AddDays(1).AddTicks(-1));
+        DateTime start, end;
+        if (dateRange == -1)
+        {
+            // Ngày cụ thể
+            start = singleDate.Date;
+            end = singleDate.Date.AddDays(1).AddTicks(-1);
+        }
+        else if (dateRange == -2)
+        {
+            // Khoảng ngày tuỳ chọn
+            start = customStartDate.Date;
+            end = customEndDate.Date.AddDays(1).AddTicks(-1);
+        }
+        else
+        {
+            end = DateTime.Today;
+            start = dateRange == 0 ? DateTime.Today : DateTime.Today.AddDays(-dateRange + 1);
+            end = end.AddDays(1).AddTicks(-1);
+        }
+
+        dashboardData = await ReportApi.GetDashboardDataAsync(start, end);
 
         isLoading = false;
         StateHasChanged();
@@ -331,6 +374,17 @@ else
     private async Task ChangeDateRange(int days)
     {
         dateRange = days;
+        // Khi chọn mode custom, không tự tải - chờ người dùng nhấn nút
+        if (days == -1 || days == -2)
+        {
+            StateHasChanged();
+            return;
+        }
+        await LoadData();
+    }
+
+    private async Task ApplyCustomDate()
+    {
         await LoadData();
     }
 

@@ -12,9 +12,16 @@ namespace QRDrinkOrder.Client.Services.ApiClients
             _httpClient = httpClient;
         }
 
-        public async Task<PagedAuditLogResponse?> GetAuditLogsAsync(int page = 1, int pageSize = 20)
+        public async Task<PagedAuditLogResponse?> GetAuditLogsAsync(int page = 1, int pageSize = 20, DateTime? startDate = null, DateTime? endDate = null, string? search = null)
         {
-            return await _httpClient.GetFromJsonAsync<PagedAuditLogResponse>($"api/auditlogs?page={page}&pageSize={pageSize}");
+            var url = $"api/auditlogs?page={page}&pageSize={pageSize}";
+            if (startDate.HasValue)
+                url += $"&startDate={startDate.Value:yyyy-MM-dd}";
+            if (endDate.HasValue)
+                url += $"&endDate={endDate.Value:yyyy-MM-ddT23:59:59}";
+            if (!string.IsNullOrWhiteSpace(search))
+                url += $"&search={Uri.EscapeDataString(search)}";
+            return await _httpClient.GetFromJsonAsync<PagedAuditLogResponse>(url);
         }
     }
 }

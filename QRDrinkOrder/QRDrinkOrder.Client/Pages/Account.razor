@@ -195,7 +195,7 @@
         var user = authState.User;
 
         // So sánh với giá trị thực trong JWT claim (Employee / Admin / Manager)
-        if (user.IsInRole("Employee"))
+        if (user.IsInRole("Bartender") || user.IsInRole("Waiter"))
         {
             NavigationManager.NavigateTo("/pos");
         }
@@ -213,7 +213,8 @@
     {
         if (user.IsInRole("Admin"))    return "Admin";
         if (user.IsInRole("Manager"))  return "Quản lý";
-        if (user.IsInRole("Employee")) return "Nhân viên";
+        if (user.IsInRole("Bartender")) return "Pha chế";
+        if (user.IsInRole("Waiter")) return "Phục vụ";
 
         var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
         return roleClaim?.Value ?? "Nhân viên";

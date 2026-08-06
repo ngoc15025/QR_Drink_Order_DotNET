@@ -16,11 +16,11 @@
             <p class="admin-page-subtitle">Xem toàn bộ lịch sử đơn hàng, nhân viên xử lý và phân trang dữ liệu</p>
         </div>
         <div class="admin-topbar-right">
-            <div class="d-flex align-items-center gap-2">
-                <input type="date" class="form-control form-control-sm" @bind="startDate" />
-                <span class="text-secondary">-</span>
-                <input type="date" class="form-control form-control-sm" @bind="endDate" />
-                <button class="btn-admin-action btn-action-primary" @onclick="LoadDataAsync">Lọc ngày</button>
+            <div class="dash-custom-date-row">
+                <input type="date" class="dash-date-input" @bind="startDate" />
+                <span class="dash-date-sep">—</span>
+                <input type="date" class="dash-date-input" @bind="endDate" />
+                <button class="dash-apply-btn" @onclick="LoadDataAsync">Lọc ngày</button>
             </div>
         </div>
     </div>
@@ -46,29 +46,34 @@
         </ul>
     </div>
 
-    <!-- Thanh tìm kiếm & Phân trang header -->
-    <div class="card border-0 shadow-sm mb-4 p-3 rounded-3" style="background-color: #ffffff;">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-7">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Tìm theo Tên nhân viên xử lý, Số ĐT khách, Bàn số, Mã đơn..." value="@searchQuery" @oninput="OnSearchInput" />
-                </div>
-            </div>
-            <div class="col-md-5 d-flex justify-content-md-end align-items-center gap-2">
-                <span class="small text-muted">Hiển thị:</span>
-                <select class="form-select form-select-sm w-auto" value="@pageSize" @onchange="OnPageSizeChanged">
-                    <option value="10">10 đơn/trang</option>
-                    <option value="20">20 đơn/trang</option>
-                    <option value="50">50 đơn/trang</option>
-                    <option value="100">100 đơn/trang</option>
-                </select>
-                <span class="small text-muted fw-bold ms-2">Tổng @filteredOrders.Count đơn</span>
-            </div>
+    <div class="admin-filter-bar">
+        <div class="admin-filter-bar-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="admin-filter-input" placeholder="Tìm theo Tên nhân viên xử lý, Số ĐT khách, Bàn số, Mã đơn..." value="@searchQuery" @oninput="OnSearchInput" />
+        </div>
+        <div class="admin-filter-bar-right">
+            <span class="admin-filter-label">Hiển thị:</span>
+            <select class="admin-filter-select" value="@pageSize" @onchange="OnPageSizeChanged">
+                <option value="10">10 đơn/trang</option>
+                <option value="20">20 đơn/trang</option>
+                <option value="50">50 đơn/trang</option>
+                <option value="100">100 đơn/trang</option>
+            </select>
+            <span class="admin-filter-count">Tổng <strong>@filteredOrders.Count</strong> đơn</span>
         </div>
     </div>
 
-    @if (isLoading)
+    @if (!hasLoaded)
+    {
+        <div class="card border-0 shadow-sm mb-4 p-3 rounded-3" style="text-align: center; padding: 4rem 2rem !important; background: #fff;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #ccc; margin-bottom: 1rem;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <p class="text-secondary">Chọn khoảng ngày và nhấn <strong>Lọc ngày</strong> để tải lịch sử đơn hàng.</p>
+        </div>
+    }
+    else if (isLoading)
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
@@ -153,26 +158,22 @@
             </table>
         </div>
 
-        <!-- Pagination Controls Footer -->
+        <!-- Premium Pagination -->
         @if (totalPages > 1)
         {
-            <div class="d-flex justify-content-between align-items-center mt-3 px-2">
-                <div class="small text-muted">
-                    Trang <strong>@currentPage</strong> / <strong>@totalPages</strong> (Hiển thị @(((currentPage - 1) * pageSize) + 1) - @Math.Min(currentPage * pageSize, filteredOrders.Count) / @filteredOrders.Count)
-                </div>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage <= 1)" @onclick="() => GoToPage(currentPage - 1)">
-                        <i class="bi bi-chevron-left"></i> Trước
+            <div class="admin-paginator">
+                <span class="admin-paginator-info">Trang <strong>@currentPage</strong> / <strong>@totalPages</strong></span>
+                <div class="admin-paginator-controls">
+                    <button class="admin-page-btn" disabled="@(currentPage <= 1)" @onclick="() => GoToPage(currentPage - 1)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
                     </button>
                     @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
                     {
                         var pageNum = i;
-                        <button class="btn btn-sm @(currentPage == pageNum ? "btn-primary" : "btn-outline-secondary")" @onclick="() => GoToPage(pageNum)">
-                            @pageNum
-                        </button>
+                        <button class="admin-page-btn @(currentPage == pageNum ? "active" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
                     }
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage >= totalPages)" @onclick="() => GoToPage(currentPage + 1)">
-                        Sau <i class="bi bi-chevron-right"></i>
+                    <button class="admin-page-btn" disabled="@(currentPage >= totalPages)" @onclick="() => GoToPage(currentPage + 1)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                 </div>
             </div>
@@ -275,7 +276,8 @@
 }
 
 @code {
-    private bool isLoading = true;
+    private bool hasLoaded = false;
+    private bool isLoading = false;
     private DateTime? startDate = DateTime.Today.AddDays(-7);
     private DateTime? endDate = DateTime.Today;
     private string searchQuery = "";
@@ -290,13 +292,15 @@
     private List<OrderDto> paginatedOrders = new();
     private OrderDto? selectedOrder;
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
-        await LoadDataAsync();
+        // Lazy load: chờ người dùng nhấn nút Lọc ngày
+        return Task.CompletedTask;
     }
 
     private async Task LoadDataAsync()
     {
+        hasLoaded = true;
         isLoading = true;
         try
         {

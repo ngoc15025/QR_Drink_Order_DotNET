@@ -1,5 +1,5 @@
 @page "/pos"
-@attribute [Authorize(Roles = "Employee")]
+@attribute [Authorize(Roles = "Bartender,Waiter")]
 @inject NavigationManager NavigationManager
 @inject QRDrinkOrder.Client.Services.ApiClients.OrderApiClient OrderApi
 @inject QRDrinkOrder.Client.Services.ApiClients.SystemConfigApiClient ConfigApi
@@ -10,6 +10,8 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @inject ILogger<EmployeeDashboard> Logger
 @inject QRDrinkOrder.Client.Services.LocalStorageService LocalStorage
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
 @implements IAsyncDisposable
 
 <PageTitle>POS - Ngoc UwU Coffee</PageTitle>
@@ -54,13 +56,16 @@
                     <span>@CompletedOrders.Count Hoàn thành</span>
                 </span>
             </div>
-            <button class="pos-menu-toggle-btn" @onclick="OpenMenuStatusModal" title="Quản lý tình trạng món (Còn hàng / Hết hàng)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-                    <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
-                </svg>
-                Trạng thái món
-            </button>
+            @if (!isWaiter)
+            {
+                <button class="pos-menu-toggle-btn" @onclick="OpenMenuStatusModal" title="Quản lý tình trạng món (Còn hàng / Hết hàng)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                        <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+                    </svg>
+                    Trạng thái món
+                </button>
+            }
             <button class="pos-exit-btn" @onclick="GoBack">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -163,20 +168,23 @@
                             <div class="kanban-card-footer">
                                 <div class="order-total">@order.FinalAmount.ToString("N0")đ</div>
                                 <div class="card-actions">
-                                    @if (order.Payment != null && order.Payment.PaymentMethod == 0 && order.Payment.PaymentStatus == 0)
+                                    @if (isWaiter)
                                     {
-                                        <button class="btn-kanban btn-accept" @onclick="() => ConfirmCashPayment(order.OrderId)">
+                                        @if (order.Payment != null && order.Payment.PaymentMethod == 0 && order.Payment.PaymentStatus == 0)
+                                        {
+                                            <button class="btn-kanban btn-accept" @onclick="() => ConfirmCashPayment(order.OrderId)">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                                    <polyline points="20 6 9 17 4 12"/>
+                                                </svg>
+                                                Thu tiền
+                                            </button>
+                                        }
+                                        <button class="btn-kanban btn-cancel" @onclick="() => CancelOrder(order.OrderId)" title="Hủy đơn">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                                <polyline points="20 6 9 17 4 12"/>
+                                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                                             </svg>
-                                            Thu tiền
                                         </button>
                                     }
-                                    <button class="btn-kanban btn-cancel" @onclick="() => CancelOrder(order.OrderId)" title="Hủy đơn">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -264,17 +272,20 @@
                             <div class="kanban-card-footer">
                                 <div class="order-total">@order.FinalAmount.ToString("N0")đ</div>
                                 <div class="card-actions">
-                                    <button class="btn-kanban btn-accept" @onclick="() => UpdateOrderStatus(order.OrderId, 1)">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                        Pha chế
-                                    </button>
-                                    <button class="btn-kanban btn-cancel" @onclick="() => CancelOrder(order.OrderId)" title="Hủy đơn">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                                        </svg>
-                                    </button>
+                                    @if (!isWaiter)
+                                    {
+                                        <button class="btn-kanban btn-accept" @onclick="() => UpdateOrderStatus(order.OrderId, 1)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            Pha chế
+                                        </button>
+                                        <button class="btn-kanban btn-cancel" @onclick="() => CancelOrder(order.OrderId)" title="Hủy đơn">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                            </svg>
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -356,12 +367,15 @@
                             <div class="kanban-divider"></div>
                             <div class="kanban-card-footer">
                                 <div class="order-total order-total-preparing">@order.FinalAmount.ToString("N0")đ</div>
-                                <button class="btn-kanban btn-complete" @onclick="() => UpdateOrderStatus(order.OrderId, 2)">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                        <polyline points="20 6 9 17 4 12"/>
-                                    </svg>
-                                    Hoàn thành
-                                </button>
+                                @if (!isWaiter)
+                                {
+                                    <button class="btn-kanban btn-complete" @onclick="() => UpdateOrderStatus(order.OrderId, 2)">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                        Hoàn thành
+                                    </button>
+                                }
                             </div>
                         </div>
                     }
@@ -584,6 +598,7 @@
 </div>
 
 @code {
+    private bool isWaiter = false;
     private bool isLoading = true;
     private List<OrderDto> activeOrders = new();
     private HubConnection? hubConnection;
@@ -652,6 +667,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isWaiter = authState.User.IsInRole("Waiter");
+
         await LoadOrders();
         await LoadConfig();
         await SetupSignalR();

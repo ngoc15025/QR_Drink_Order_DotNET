@@ -2458,6 +2458,7 @@ a:hover {
 .dash-date-btn.active {
     background: #fff;
     color: #EA8025;
+    border-radius: 14px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -4183,4 +4184,209 @@ a:hover {
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* ========================================================= */
+/* PREMIUM DATE FILTER — CUSTOM DATE ROW                     */
+/* ========================================================= */
+.dash-custom-date-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s;
+}
+
+.dash-custom-date-row:focus-within {
+    box-shadow: 0 3px 12px rgba(234, 128, 37, 0.14);
+    border-color: rgba(234, 128, 37, 0.35);
+}
+
+.dash-date-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #333;
+    padding: 0;
+    cursor: pointer;
+    min-width: 110px;
+}
+
+.dash-date-input::-webkit-calendar-picker-indicator {
+    opacity: 0.4;
+    cursor: pointer;
+}
+
+.dash-date-sep {
+    color: #bbb;
+    font-size: 0.9rem;
+    font-weight: 300;
+    user-select: none;
+}
+
+.dash-apply-btn {
+    border: none;
+    background: #EA8025;
+    color: #fff;
+    border-radius: 8px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.dash-apply-btn:hover {
+    background: #d47020;
+    transform: translateY(-1px);
+}
+
+.dash-apply-btn:active {
+    transform: translateY(0);
+}
+
+/* ========================================================= */
+/* PREMIUM PAGINATOR                                         */
+/* ========================================================= */
+.admin-paginator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 4px 4px;
+    margin-top: 8px;
+}
+
+.admin-paginator-info {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.admin-paginator-info strong {
+    color: #555;
+}
+
+.admin-paginator-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f6f5f1;
+    padding: 4px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+
+.admin-page-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s;
+}
+
+.admin-page-btn:hover:not(.active):not(:disabled) {
+    background: rgba(255,255,255,0.9);
+    color: #444;
+}
+
+.admin-page-btn.active {
+    background: #fff;
+    color: #EA8025;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+}
+
+.admin-page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ========================================================= */
+/* ADMIN FILTER BAR (Search + Page Size)                     */
+/* ========================================================= */
+.admin-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 14px;
+    padding: 10px 16px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.admin-filter-bar-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    color: #bbb;
+}
+
+.admin-filter-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: #333;
+    width: 100%;
+}
+
+.admin-filter-input::placeholder {
+    color: #bbb;
+    font-weight: 400;
+}
+
+.admin-filter-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.admin-filter-label {
+    font-size: 0.78rem;
+    color: #aaa;
+    white-space: nowrap;
+}
+
+.admin-filter-select {
+    border: 1px solid #ebebeb;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    color: #555;
+    background: #fafafa;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.18s;
+}
+
+.admin-filter-select:focus {
+    border-color: rgba(234, 128, 37, 0.4);
+}
+
+.admin-filter-count {
+    font-size: 0.78rem;
+    color: #888;
+    white-space: nowrap;
+}
+
+.admin-filter-count strong {
+    color: #444;
 }

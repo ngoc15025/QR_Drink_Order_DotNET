@@ -373,7 +373,7 @@ else
         tableNumber = OrderState.TableNumber ?? "";
         
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true && (authState.User.IsInRole("Employee") || authState.User.IsInRole("Manager")))
+        if (authState.User.Identity?.IsAuthenticated == true && (authState.User.IsInRole("Bartender") || authState.User.IsInRole("Waiter") || authState.User.IsInRole("Manager")))
         {
             isEmployee = true;
             staffPhone = authState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.MobilePhone || c.Type == "Phone")?.Value ?? "";

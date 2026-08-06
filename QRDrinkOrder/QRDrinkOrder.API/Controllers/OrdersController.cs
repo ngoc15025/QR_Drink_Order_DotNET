@@ -53,7 +53,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("active")]
-    [Authorize(Roles = "Admin,Manager,Employee")]
+    [Authorize(Roles = "Admin,Manager,Bartender,Waiter")]
     public async Task<IActionResult> GetActiveOrders()
     {
         var list = await _orderService.GetActiveOrdersAsync();
@@ -82,7 +82,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    [Authorize(Roles = "Admin,Manager,Employee")]
+    [Authorize(Roles = "Admin,Manager,Bartender,Waiter")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusRequest request)
     {
         var accountIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
