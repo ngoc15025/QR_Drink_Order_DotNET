@@ -194,33 +194,62 @@ public class AuthService : IAuthService
             account.RoleId = request.RoleId;
         }
 
-        if (account.Employee != null)
+        bool isNewRoleEmployee = account.RoleId == AppRoles.BartenderId || account.RoleId == AppRoles.WaiterId;
+        bool isNewRoleManager = account.RoleId == AppRoles.ManagerId || account.RoleId == AppRoles.AdminId;
+
+        if (isNewRoleEmployee)
         {
-            account.Employee.FullName = request.FullName;
-            account.Employee.Phone = request.Phone;
-        }
-        else if (account.Manager != null)
-        {
-            account.Manager.FullName = request.FullName;
-            account.Manager.Phone = request.Phone;
-        }
-        else if (account.RoleId == AppRoles.BartenderId || account.RoleId == AppRoles.WaiterId)
-        {
-            _context.Employees.Add(new Employee
+            if (account.Manager != null)
             {
-                AccountId = account.AccountId,
-                FullName = request.FullName,
-                Phone = request.Phone
-            });
-        }
-        else if (account.RoleId == AppRoles.ManagerId || account.RoleId == AppRoles.AdminId)
-        {
-            _context.Managers.Add(new Manager
+                _context.Managers.Remove(account.Manager);
+                _context.Employees.Add(new Employee
+                {
+                    AccountId = account.AccountId,
+                    FullName = request.FullName,
+                    Phone = request.Phone
+                });
+            }
+            else if (account.Employee != null)
             {
-                AccountId = account.AccountId,
-                FullName = request.FullName,
-                Phone = request.Phone
-            });
+                account.Employee.FullName = request.FullName;
+                account.Employee.Phone = request.Phone;
+            }
+            else 
+            {
+                _context.Employees.Add(new Employee
+                {
+                    AccountId = account.AccountId,
+                    FullName = request.FullName,
+                    Phone = request.Phone
+                });
+            }
+        }
+        else if (isNewRoleManager)
+        {
+            if (account.Employee != null)
+            {
+                _context.Employees.Remove(account.Employee);
+                _context.Managers.Add(new Manager
+                {
+                    AccountId = account.AccountId,
+                    FullName = request.FullName,
+                    Phone = request.Phone
+                });
+            }
+            else if (account.Manager != null)
+            {
+                account.Manager.FullName = request.FullName;
+                account.Manager.Phone = request.Phone;
+            }
+            else
+            {
+                _context.Managers.Add(new Manager
+                {
+                    AccountId = account.AccountId,
+                    FullName = request.FullName,
+                    Phone = request.Phone
+                });
+            }
         }
 
         await _context.SaveChangesAsync();
