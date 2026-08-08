@@ -469,8 +469,8 @@
     private bool CanManageAccount(AccountDto target)
     {
         if (isAdmin) return true;
-        // Quản lý chỉ được phép quản lý tài khoản Nhân viên (RoleId == 3)
-        return target.RoleId == 3;
+        // Quản lý chỉ được phép quản lý tài khoản Nhân viên (RoleId == 3 hoặc 4)
+        return target.RoleId == 3 || target.RoleId == 4;
     }
 
     private void OpenCreateModal()
