@@ -1,3 +1,12 @@
+window.posScrollToSection = function(sectionId) {
+    const board = document.querySelector('.kanban-board');
+    const section = document.getElementById(sectionId);
+    if (board && section) {
+        const sectionTop = section.offsetTop - board.offsetTop;
+        board.scrollTo({ top: sectionTop, behavior: 'smooth' });
+    }
+};
+
 window.gsapHelpers = {
     staggerLoad: function(selector) {
         if (typeof gsap === 'undefined') return;

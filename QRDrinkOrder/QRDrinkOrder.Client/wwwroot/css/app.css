@@ -2072,6 +2072,333 @@ a:hover {
 }
 
 /* ========================================================= */
+/* POS MOBILE — Role Badge & Bottom Tab Nav                  */
+/* ========================================================= */
+
+.pos-role-badge {
+    display: none;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.pos-role-badge.role-bartender {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.pos-role-badge.role-waiter {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.pos-mobile-tabs {
+    display: none;
+}
+
+/* Accordion Wrapper default (desktop) */
+.kanban-cards-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.kanban-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.accordion-chevron {
+    display: none;
+}
+
+/* ====================== BREAKPOINT MOBILE ====================== */
+@media (max-width: 768px) {
+    /* Wrapper fills viewport exactly */
+    .pos-wrapper {
+        min-height: 100dvh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    /* Compact header */
+    .pos-header {
+        padding: 10px 14px;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+
+    .pos-header-left {
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pos-logo-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .pos-title {
+        font-size: 0.92rem;
+    }
+
+    .pos-subtitle {
+        display: none;
+    }
+
+    /* Show role badge on mobile */
+    .pos-role-badge {
+        display: flex;
+    }
+
+    /* Hide desktop stats pill and menu toggle button on mobile */
+    .pos-stats-pill {
+        display: none;
+    }
+
+    .pos-menu-toggle-btn {
+        display: none;
+    }
+
+    /* Kanban board: vertical stack */
+    .kanban-board {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 12px 24px;
+        gap: 12px;
+        overflow-y: auto;
+        height: calc(100dvh - 56px);
+        width: 100%;
+        align-items: stretch;
+    }
+
+    /* Accordion styles */
+    .kanban-column {
+        display: flex;
+        flex-direction: column;
+        background: transparent;
+        padding: 0;
+        gap: 0;
+        border-radius: 12px;
+        scroll-margin-top: 8px;
+        width: 100%;
+        align-items: stretch;
+    }
+    
+    .kanban-col-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        background: #fff;
+        border-radius: 12px;
+        padding: 12px 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .col-pending .kanban-col-header { background: #fffbeb; border: 1px solid #fef3c7; }
+    .col-paid .kanban-col-header { background: #faf5ff; border: 1px solid #f3e8ff; }
+    .col-preparing .kanban-col-header { background: #eff6ff; border: 1px solid #dbeafe; }
+    .col-completed .kanban-col-header { background: #f0fdf4; border: 1px solid #dcfce7; }
+    
+    .accordion-chevron {
+        display: block;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #64748b;
+    }
+    
+    .kanban-column.is-expanded .accordion-chevron {
+        transform: rotate(180deg);
+    }
+    
+    .kanban-cards-wrapper {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        flex: none; /* Override desktop flex: 1 */
+    }
+    
+    .kanban-column.is-expanded .kanban-cards-wrapper {
+        grid-template-rows: 1fr;
+    }
+
+    .kanban-cards {
+        overflow: hidden; /* inside grid row */
+        padding-top: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: none;
+    }
+
+    .kanban-column.is-expanded .kanban-cards {
+        padding-top: 12px;
+    }
+
+    /* Touch-friendly cards */
+    .kanban-card {
+        padding: 16px;
+        border-radius: 14px;
+        margin-bottom: 0;
+    }
+
+    /* Order info: larger text */
+    .order-id {
+        font-size: 0.95rem;
+    }
+
+    .pos-item-name {
+        font-size: 0.9rem;
+    }
+
+    /* Card footer: stack total + actions vertically */
+    .kanban-card-footer {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+        width: 100% !important;
+    }
+
+    .order-total,
+    .order-total-preparing,
+    .completed-amount {
+        font-size: 1.05rem;
+    }
+
+    /* Card actions: full-width, stacked */
+    .card-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    /* All action buttons: min 44px tall, full width */
+    .btn-kanban {
+        width: 100% !important;
+        min-height: 44px;
+        font-size: 0.88rem;
+        justify-content: center;
+        border-radius: 10px;
+        padding: 10px 16px;
+    }
+
+    .btn-cancel {
+        min-height: 38px;
+        background: #fff2f2;
+        color: #c0392b;
+        border: 1px solid #fcc;
+    }
+
+    /* Exit button: icon only on mobile */
+    .pos-exit-btn span:not(svg) {
+        display: none;
+    }
+
+    /* ---- Mobile Bottom Tab Bar ---- */
+    .pos-mobile-tabs {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: #ffffff;
+        border-top: 1px solid #f0f0f0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.07);
+        z-index: 200;
+        padding: 0 4px;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .pos-mobile-tab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 0.67rem;
+        font-weight: 600;
+        padding: 8px 4px;
+        transition: color 0.2s ease;
+        position: relative;
+        border-radius: 10px;
+    }
+
+    .pos-mobile-tab.active {
+        color: #ea8025;
+    }
+
+    .pos-mobile-tab.active::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 28px;
+        height: 28px;
+        background: #fff7ed;
+        border-radius: 10px;
+        z-index: -1;
+    }
+
+    /* Tab icon wrapper (for positioning badge) */
+    .pos-tab-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+    }
+
+    /* Count badge on tab icon */
+    .pos-tab-badge {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        border-radius: 8px;
+        font-size: 0.6rem;
+        font-weight: 700;
+        line-height: 16px;
+        text-align: center;
+        background: #f59e0b;
+        color: #fff;
+    }
+
+    .pos-tab-badge.badge-purple {
+        background: #a855f7;
+    }
+
+    .pos-tab-badge.badge-blue {
+        background: #3b82f6;
+    }
+
+    .pos-tab-badge.badge-green {
+        background: #22c55e;
+    }
+}
+
+/* ========================================================= */
 /* ADMIN DASHBOARD - SIDEBAR LAYOUT                          */
 /* ========================================================= */
 
