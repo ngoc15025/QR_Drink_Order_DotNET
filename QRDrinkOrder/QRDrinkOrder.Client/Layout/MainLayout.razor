@@ -29,7 +29,10 @@
             
             <!-- Right: Cart or User Info -->
             <div class="tch-header-icon" style="flex: 1; display: flex; justify-content: flex-end; align-items: center;">
-                <LanguageSwitcher />
+                @if (IsCustomerPage)
+                {
+                    <LanguageSwitcher />
+                }
                 @if (ShouldHideCart)
                 {
                     @if (!NavigationManager.Uri.Contains("/account", StringComparison.OrdinalIgnoreCase))

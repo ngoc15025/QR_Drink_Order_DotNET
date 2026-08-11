@@ -48,10 +48,10 @@
 
 /* ========================================================= */
 /* CUSTOMER PAGE MOBILE CONTAINER (.customer-theme on .page) */
-/* Header + body + bottom-nav all inside 500px white box     */
+/* Header + body + bottom-nav all inside 444px white box     */
 /* ========================================================= */
 .customer-theme {
-    max-width: 500px;
+    max-width: 444px;
     margin: 0 auto;
     background: #FFFFFF;
     min-height: 100vh;
@@ -60,7 +60,7 @@
     overflow-x: hidden;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 444px) {
     .customer-theme {
         max-width: 100%;
         box-shadow: none;
@@ -447,7 +447,7 @@ a:hover {
     left: 50%;
     transform: translateX(-50%) translateY(100%);
     width: 100%;
-    max-width: 500px;
+    max-width: 444px;
     background: var(--tch-white);
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.1);
@@ -538,7 +538,7 @@ a:hover {
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
-    max-width: 500px;
+    max-width: 444px;
     background-color: var(--tch-white);
     border-top: 1px solid var(--tch-border-color);
     display: flex;
@@ -2109,17 +2109,20 @@ a:hover {
     flex: 1;
     min-height: 0;
 }
+
 .kanban-header-right {
     display: flex;
     align-items: center;
     gap: 8px;
 }
+
 .accordion-chevron {
     display: none;
 }
 
 /* ====================== BREAKPOINT MOBILE ====================== */
 @media (max-width: 768px) {
+
     /* Wrapper fills viewport exactly */
     .pos-wrapper {
         min-height: 100dvh;
@@ -2193,7 +2196,7 @@ a:hover {
         width: 100%;
         align-items: stretch;
     }
-    
+
     .kanban-col-header {
         display: flex;
         align-items: center;
@@ -2202,39 +2205,56 @@ a:hover {
         background: #fff;
         border-radius: 12px;
         padding: 12px 16px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    
-    .col-pending .kanban-col-header { background: #fffbeb; border: 1px solid #fef3c7; }
-    .col-paid .kanban-col-header { background: #faf5ff; border: 1px solid #f3e8ff; }
-    .col-preparing .kanban-col-header { background: #eff6ff; border: 1px solid #dbeafe; }
-    .col-completed .kanban-col-header { background: #f0fdf4; border: 1px solid #dcfce7; }
-    
+
+    .col-pending .kanban-col-header {
+        background: #fffbeb;
+        border: 1px solid #fef3c7;
+    }
+
+    .col-paid .kanban-col-header {
+        background: #faf5ff;
+        border: 1px solid #f3e8ff;
+    }
+
+    .col-preparing .kanban-col-header {
+        background: #eff6ff;
+        border: 1px solid #dbeafe;
+    }
+
+    .col-completed .kanban-col-header {
+        background: #f0fdf4;
+        border: 1px solid #dcfce7;
+    }
+
     .accordion-chevron {
         display: block;
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         color: #64748b;
     }
-    
+
     .kanban-column.is-expanded .accordion-chevron {
         transform: rotate(180deg);
     }
-    
+
     .kanban-cards-wrapper {
         display: grid;
         grid-template-rows: 0fr;
         transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        flex: none; /* Override desktop flex: 1 */
+        flex: none;
+        /* Override desktop flex: 1 */
     }
-    
+
     .kanban-column.is-expanded .kanban-cards-wrapper {
         grid-template-rows: 1fr;
     }
 
     .kanban-cards {
-        overflow: hidden; /* inside grid row */
+        overflow: hidden;
+        /* inside grid row */
         padding-top: 0;
         display: flex;
         flex-direction: column;
@@ -4387,6 +4407,7 @@ a:hover {
     border-radius: 24px;
     margin-bottom: 24px;
 }
+
 /* Suggested Pairings (TCH Style) */
 .pairing-section {
     background-color: #f8f9fa;
@@ -4406,7 +4427,7 @@ a:hover {
     flex-shrink: 0;
     width: 220px;
     border: 1px solid #eaeaea;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -4472,14 +4493,32 @@ a:hover {
 
 /* Modal Stacking Animations & Banner */
 @keyframes stackPush {
-    0% { transform: translateX(35px); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
+    0% {
+        transform: translateX(35px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 @keyframes stackPop {
-    0% { transform: translateX(-35px); opacity: 0; }
-    30% { transform: translateX(5px); opacity: 1; }
-    100% { transform: translateX(0); opacity: 1; }
+    0% {
+        transform: translateX(-35px);
+        opacity: 0;
+    }
+
+    30% {
+        transform: translateX(5px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 .anim-stack-push {
@@ -4508,6 +4547,7 @@ a:hover {
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -4524,7 +4564,7 @@ a:hover {
     border: 1px solid #ebebeb;
     border-radius: 12px;
     padding: 6px 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     transition: box-shadow 0.2s;
 }
 
@@ -4606,7 +4646,7 @@ a:hover {
     background: #f6f5f1;
     padding: 4px;
     border-radius: 14px;
-    border: 1px solid rgba(0,0,0,0.04);
+    border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .admin-page-btn {
@@ -4626,14 +4666,14 @@ a:hover {
 }
 
 .admin-page-btn:hover:not(.active):not(:disabled) {
-    background: rgba(255,255,255,0.9);
+    background: rgba(255, 255, 255, 0.9);
     color: #444;
 }
 
 .admin-page-btn.active {
     background: #fff;
     color: #EA8025;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
 }
 
 .admin-page-btn:disabled {
@@ -4654,7 +4694,7 @@ a:hover {
     border-radius: 14px;
     padding: 10px 16px;
     margin-bottom: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .admin-filter-bar-search {
