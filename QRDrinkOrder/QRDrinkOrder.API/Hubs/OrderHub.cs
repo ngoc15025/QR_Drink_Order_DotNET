@@ -6,7 +6,7 @@ namespace QRDrinkOrder.API.Hubs;
 public class OrderHub : Hub
 {
     // Tham gia nhóm cho Nhân viên (để nhận đơn mới)
-    [Authorize(Roles = "Bartender,Waiter")]
+    [Authorize(Roles = "Barista,Waiter")]
     public async Task JoinStaffGroup()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "Staff");

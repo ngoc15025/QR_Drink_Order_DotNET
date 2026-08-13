@@ -171,7 +171,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPut("drinks/{id}/toggle-status")]
-    [Authorize(Roles = "Admin,Manager,Bartender,Waiter")]
+    [Authorize(Roles = "Admin,Manager,Barista,Waiter")]
     public async Task<IActionResult> ToggleDrinkStatus(int id)
     {
         try

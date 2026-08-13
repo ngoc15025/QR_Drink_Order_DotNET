@@ -80,7 +80,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpPost("{orderId}/confirm-cash")]
-    [Authorize(Roles = "Admin,Manager,Bartender,Waiter")]
+    [Authorize(Roles = "Admin,Manager,Barista,Waiter")]
     public async Task<IActionResult> ConfirmCashPayment(int orderId)
     {
         try

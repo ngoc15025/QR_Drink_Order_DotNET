@@ -4,12 +4,12 @@ public static class AppRoles
 {
     public const byte AdminId = 1;
     public const byte ManagerId = 2;
-    public const byte BartenderId = 3;
+    public const byte BaristaId = 3;
     public const byte WaiterId = 4;
 
     public const string Admin = "Admin";
     public const string Manager = "Manager";
-    public const string Bartender = "Bartender";
+    public const string Barista = "Barista";
     public const string Waiter = "Waiter"; 
 
     public static string GetRoleName(byte roleId)
@@ -18,7 +18,7 @@ public static class AppRoles
         {
             AdminId => Admin,
             ManagerId => Manager,
-            BartenderId => Bartender,
+            BaristaId => Barista,
             WaiterId => Waiter,
             _ => "Guest"
         };

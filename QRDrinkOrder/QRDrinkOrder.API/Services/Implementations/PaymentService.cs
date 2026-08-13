@@ -139,7 +139,6 @@ public class PaymentService : IPaymentService
         order.Payment.PaidAt = TimeHelper.GetVietnamTime();
         order.Payment.TransactionId = $"CASH_CONFIRMED_BY_EMP_{employeeId}";
 
-        order.EmployeeId = employeeId;
 
         await _context.SaveChangesAsync();
 

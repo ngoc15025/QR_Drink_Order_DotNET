@@ -1,5 +1,5 @@
 @page "/pos"
-@attribute [Authorize(Roles = "Bartender,Waiter")]
+@attribute [Authorize(Roles = "Barista,Waiter")]
 @inject NavigationManager NavigationManager
 @inject QRDrinkOrder.Client.Services.ApiClients.OrderApiClient OrderApi
 @inject QRDrinkOrder.Client.Services.ApiClients.SystemConfigApiClient ConfigApi
@@ -33,7 +33,7 @@
                 <h1 class="pos-title">Màn hình POS</h1>
                 <p class="pos-subtitle">Ngoc UwU Coffee · Quản lý đơn đặt</p>
             </div>
-            <span class="pos-role-badge @(isWaiter ? "role-waiter" : "role-bartender")">
+            <span class="pos-role-badge @(isWaiter ? "role-waiter" : "role-Barista")">
                 @(isWaiter ? "Phục vụ" : "Pha chế")
             </span>
         </div>

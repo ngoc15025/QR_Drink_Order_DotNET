@@ -62,7 +62,11 @@ else
 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-secondary">@Loc["PhoneLabel"] <span class="text-danger">*</span></label>
-                    <input type="tel" maxlength="10" inputmode="numeric" class="form-control bg-light border-0" value="@phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" disabled="@isEmployee" />
+                    <input type="tel" maxlength="10" inputmode="numeric" class="form-control bg-light border-0 @(!string.IsNullOrEmpty(pinDismissedMessage) ? "border border-danger" : "")" value="@phone" @oninput="OnPhoneInput" placeholder="09xxxxxxx (nhập đủ 10 số để xác thực PIN)" disabled="@isEmployee" />
+                    @if (!string.IsNullOrEmpty(pinDismissedMessage))
+                    {
+                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>@pinDismissedMessage</div>
+                    }
                 </div>
                 
                 @if (membership != null)
@@ -327,7 +331,8 @@ else
     </div>
 }
 
-<CustomerPinModal @bind-IsOpen="showPinModal"
+<CustomerPinModal IsOpen="showPinModal"
+                  IsOpenChanged="HandlePinModalClosed"
                   PhoneNumber="@phone"
                   Mode="@pinModalMode"
                   OnPinVerified="HandlePinVerified" />
@@ -339,10 +344,12 @@ else
     private byte paymentMethod = (byte)PaymentMethod.SePay;
     
     private bool showPinModal = false;
+    private bool pinVerificationPending = false; // true = đang chờ user xác thực PIN
     private CustomerPinModal.PinModalMode pinModalMode = CustomerPinModal.PinModalMode.Verify;
     private bool pendingOrderSubmit = false;
     private bool pendingPointsToggle = false;
     private string verifiedAuthToken = "";
+    private string pinDismissedMessage = "";
     
     private bool isSubmitting = false;
     private string errorMessage = "";
@@ -373,7 +380,7 @@ else
         tableNumber = OrderState.TableNumber ?? "";
         
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true && (authState.User.IsInRole("Bartender") || authState.User.IsInRole("Waiter") || authState.User.IsInRole("Manager")))
+        if (authState.User.Identity?.IsAuthenticated == true && (authState.User.IsInRole("Barista") || authState.User.IsInRole("Waiter") || authState.User.IsInRole("Manager")))
         {
             isEmployee = true;
             staffPhone = authState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.MobilePhone || c.Type == "Phone")?.Value ?? "";
@@ -443,6 +450,12 @@ else
         var digits = new string(val.Where(char.IsDigit).ToArray());
         if (digits.Length > 10) digits = digits.Substring(0, 10);
         phone = digits;
+        // Khi user nhập lại SĐT, xóa thông báo lỗi dismiss PIN cũ
+        if (!string.IsNullOrEmpty(pinDismissedMessage))
+        {
+            pinDismissedMessage = "";
+            lastCheckedPhone = ""; // Force re-check PIN khi nhập SĐT mới
+        }
         await CheckMembership();
     }
 
@@ -473,11 +486,21 @@ else
                         pointsToUse = membership.Points;
                     }
                 }
+                else if (isEmployee)
+                {
+                    // Nhân viên không cần xác thực PIN - load membership trực tiếp
+                    membership = result;
+                    if (membership != null && pointsToUse > membership.Points)
+                    {
+                        pointsToUse = membership.Points;
+                    }
+                }
                 else
                 {
                     // Yêu cầu xác thực/thiết lập PIN ngay sau khi nhập đủ số điện thoại vào ô!
                     pendingMembership = result ?? new MembershipDto { Phone = cleanPhone, Points = 0, IsPinSet = false };
                     pinModalMode = (result != null && result.IsPinSet) ? CustomerPinModal.PinModalMode.Verify : CustomerPinModal.PinModalMode.SetupStep1;
+                    pinVerificationPending = true; // Đánh dấu đang chờ xác thực
                     showPinModal = true;
                 }
                 StateHasChanged();
@@ -510,23 +533,34 @@ else
         {
             if (membership == null) return;
             var cleanPhone = phone.Trim();
-            var savedToken = await CustomerAuth.GetAuthTokenAsync();
-            var isSavedTokenValid = !string.IsNullOrEmpty(savedToken) && CustomerAuth.CurrentPhone == cleanPhone;
 
-            if (!string.IsNullOrEmpty(verifiedAuthToken) || isSavedTokenValid)
+            // Nhân viên không cần xác thực PIN
+            if (isEmployee)
             {
-                if (string.IsNullOrEmpty(verifiedAuthToken) && isSavedTokenValid)
-                    verifiedAuthToken = savedToken;
-
                 usePoints = true;
                 pointsToUse = membership.Points;
             }
             else
             {
-                pendingPointsToggle = true;
-                pendingMembership = membership;
-                pinModalMode = membership.IsPinSet ? CustomerPinModal.PinModalMode.Verify : CustomerPinModal.PinModalMode.SetupStep1;
-                showPinModal = true;
+                var savedToken = await CustomerAuth.GetAuthTokenAsync();
+                var isSavedTokenValid = !string.IsNullOrEmpty(savedToken) && CustomerAuth.CurrentPhone == cleanPhone;
+
+                if (!string.IsNullOrEmpty(verifiedAuthToken) || isSavedTokenValid)
+                {
+                    if (string.IsNullOrEmpty(verifiedAuthToken) && isSavedTokenValid)
+                        verifiedAuthToken = savedToken;
+
+                    usePoints = true;
+                    pointsToUse = membership.Points;
+                }
+                else
+                {
+                    pendingPointsToggle = true;
+                    pendingMembership = membership;
+                    pinVerificationPending = true;
+                    pinModalMode = membership.IsPinSet ? CustomerPinModal.PinModalMode.Verify : CustomerPinModal.PinModalMode.SetupStep1;
+                    showPinModal = true;
+                }
             }
         }
         else
@@ -630,7 +664,7 @@ else
             return;
         }
 
-        if (usePoints && pointsToUse > 0)
+        if (usePoints && pointsToUse > 0 && !isEmployee)
         {
             if (string.IsNullOrEmpty(verifiedAuthToken))
             {
@@ -642,6 +676,7 @@ else
                 else
                 {
                     pendingOrderSubmit = true;
+                    pinVerificationPending = true;
                     if (membership != null && membership.IsPinSet)
                         pinModalMode = CustomerPinModal.PinModalMode.Verify;
                     else
@@ -716,48 +751,61 @@ else
         }
     }
 
+    // Được gọi khi PIN xác thực THÀNH CÔNG
     private async Task HandlePinVerified(string token)
     {
+        pinVerificationPending = false; // Đánh dấu đã xác thực xong
         showPinModal = false;
-        if (!string.IsNullOrEmpty(token))
-        {
-            verifiedAuthToken = token;
-            if (pendingMembership != null)
-            {
-                membership = pendingMembership;
-                membership.IsPinSet = true;
-            }
-            else if (membership == null)
-            {
-                membership = await MembershipApi.GetMembershipByPhoneAsync(phone.Trim());
-            }
+        pinDismissedMessage = "";
+        verifiedAuthToken = token;
 
-            if (pendingPointsToggle && membership != null)
-            {
-                pendingPointsToggle = false;
-                usePoints = true;
-                pointsToUse = membership.Points;
-            }
-            if (pendingOrderSubmit)
-            {
-                pendingOrderSubmit = false;
-                await SubmitOrder();
-            }
-        }
-        else
+        if (pendingMembership != null)
         {
+            membership = pendingMembership;
+            membership.IsPinSet = true;
+        }
+        else if (membership == null)
+        {
+            membership = await MembershipApi.GetMembershipByPhoneAsync(phone.Trim());
+        }
+
+        if (pendingPointsToggle && membership != null)
+        {
+            pendingPointsToggle = false;
+            usePoints = true;
+            pointsToUse = membership.Points;
+        }
+        if (pendingOrderSubmit)
+        {
+            pendingOrderSubmit = false;
+            await SubmitOrder();
+        }
+        StateHasChanged();
+    }
+
+    // Được gọi mỗi khi IsOpen thay đổi (kể cả khi user bấm X / click backdrop)
+    private void HandlePinModalClosed(bool isOpen)
+    {
+        showPinModal = isOpen;
+
+        // Nếu modal vừa ĐÓNG (isOpen = false) mà user CHƯA xác thực (pinVerificationPending = true)
+        // → người dùng đã bấm X / click ra ngoài mà KHÔNG nhập PIN
+        if (!isOpen && pinVerificationPending)
+        {
+            pinVerificationPending = false;
             pendingPointsToggle = false;
             pendingOrderSubmit = false;
             usePoints = false;
             pointsToUse = 0;
-            if (CustomerAuth.CurrentPhone != phone.Trim())
-            {
-                membership = null;
-                verifiedAuthToken = null;
-                lastCheckedPhone = "";
-            }
+            membership = null;
+            pendingMembership = null;
+            verifiedAuthToken = null;
+            // Reset SĐT để bắt buộc nhập lại và trigger xác thực lại
+            phone = "";
+            lastCheckedPhone = "";
+            pinDismissedMessage = "Nhập lại số điện thoại để xác thực";
+            StateHasChanged();
         }
-        StateHasChanged();
     }
 
     private async Task ClearPinSession()

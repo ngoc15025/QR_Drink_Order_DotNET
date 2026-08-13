@@ -50,7 +50,7 @@ public class AuthService : IAuthService
         var token = GenerateJwtToken(account);
 
         int? userId = null;
-        if (account.RoleId == AppRoles.BartenderId || account.RoleId == AppRoles.WaiterId)
+        if (account.RoleId == AppRoles.BaristaId || account.RoleId == AppRoles.WaiterId)
             userId = account.Employee?.EmployeeId;
         else if (account.RoleId == AppRoles.ManagerId || account.RoleId == AppRoles.AdminId)
             userId = account.Manager?.ManagerId;
@@ -59,7 +59,7 @@ public class AuthService : IAuthService
         {
             Token = token,
             Email = account.Email,
-            FullName = (account.RoleId == AppRoles.BartenderId || account.RoleId == AppRoles.WaiterId) ? account.Employee?.FullName ?? "Nhân viên" : account.Manager?.FullName ?? "Quản lý",
+            FullName = (account.RoleId == AppRoles.BaristaId || account.RoleId == AppRoles.WaiterId) ? account.Employee?.FullName ?? "Nhân viên" : account.Manager?.FullName ?? "Quản lý",
             RoleName = account.Role.RoleName,
             RoleId = account.RoleId,
             AccountId = account.AccountId,
@@ -69,7 +69,7 @@ public class AuthService : IAuthService
 
     public async Task<bool> RegisterAsync(RegisterRequest request, byte callerRoleId)
     {
-        if (callerRoleId != AppRoles.AdminId && request.RoleId != AppRoles.BartenderId && request.RoleId != AppRoles.WaiterId)
+        if (callerRoleId != AppRoles.AdminId && request.RoleId != AppRoles.BaristaId && request.RoleId != AppRoles.WaiterId)
         {
             throw new BusinessException("Quản lý chỉ có quyền tạo tài khoản cho Nhân viên (Pha chế / Phục vụ).");
         }
@@ -94,7 +94,7 @@ public class AuthService : IAuthService
             _context.Accounts.Add(newAccount);
             await _context.SaveChangesAsync();
 
-            if (request.RoleId == AppRoles.BartenderId || request.RoleId == AppRoles.WaiterId)
+            if (request.RoleId == AppRoles.BaristaId || request.RoleId == AppRoles.WaiterId)
             {
                 var employee = new Employee
                 {
@@ -194,7 +194,7 @@ public class AuthService : IAuthService
             account.RoleId = request.RoleId;
         }
 
-        bool isNewRoleEmployee = account.RoleId == AppRoles.BartenderId || account.RoleId == AppRoles.WaiterId;
+        bool isNewRoleEmployee = account.RoleId == AppRoles.BaristaId || account.RoleId == AppRoles.WaiterId;
         bool isNewRoleManager = account.RoleId == AppRoles.ManagerId || account.RoleId == AppRoles.AdminId;
 
         if (isNewRoleEmployee)
@@ -272,8 +272,8 @@ public class AuthService : IAuthService
                 RoleName = a.Role?.RoleName ?? "",
                 IsActive = a.IsActive == true,
                 CreatedAt = a.CreatedAt ?? TimeHelper.GetVietnamTime(),
-                FullName = (a.RoleId == AppRoles.BartenderId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
-                Phone = (a.RoleId == AppRoles.BartenderId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.Phone : a.Manager?.Phone
+                FullName = (a.RoleId == AppRoles.BaristaId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
+                Phone = (a.RoleId == AppRoles.BaristaId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.Phone : a.Manager?.Phone
             });
         }
         return list;
@@ -298,8 +298,8 @@ public class AuthService : IAuthService
             RoleName = a.Role?.RoleName ?? "",
             IsActive = a.IsActive == true,
             CreatedAt = a.CreatedAt ?? TimeHelper.GetVietnamTime(),
-            FullName = (a.RoleId == AppRoles.BartenderId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
-            Phone = (a.RoleId == AppRoles.BartenderId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.Phone : a.Manager?.Phone
+            FullName = (a.RoleId == AppRoles.BaristaId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.FullName ?? "N/A" : a.Manager?.FullName ?? "N/A",
+            Phone = (a.RoleId == AppRoles.BaristaId || a.RoleId == AppRoles.WaiterId) ? a.Employee?.Phone : a.Manager?.Phone
         };
     }
 
@@ -323,7 +323,7 @@ public class AuthService : IAuthService
             new Claim("RoleId", account.RoleId.ToString())
         };
 
-        if ((account.RoleId == AppRoles.BartenderId || account.RoleId == AppRoles.WaiterId) && account.Employee != null)
+        if ((account.RoleId == AppRoles.BaristaId || account.RoleId == AppRoles.WaiterId) && account.Employee != null)
         {
             claims.Add(new Claim("UserId", account.Employee.EmployeeId.ToString()));
             claims.Add(new Claim("FullName", account.Employee.FullName));

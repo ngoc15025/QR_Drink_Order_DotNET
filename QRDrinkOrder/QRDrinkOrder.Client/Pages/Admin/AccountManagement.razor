@@ -8,12 +8,12 @@
 
 @layout QRDrinkOrder.Client.Layout.AdminLayout
 
-<PageTitle>Quản lý Nhân sự & Tài khoản - Ngoc UwU Coffee</PageTitle>
+<PageTitle>Quản lý Nhân sự và Tài khoản - Ngoc UwU Coffee</PageTitle>
 
 <div>
     <div class="admin-topbar">
         <div class="admin-topbar-left">
-            <h1 class="admin-page-title">Quản lý Nhân sự & Tài khoản</h1>
+            <h1 class="admin-page-title">Quản lý Nhân sự và Tài khoản</h1>
             <p class="admin-page-subtitle">Thiết lập nhân sự, phân quyền và cấp lại mật khẩu</p>
         </div>
         <div class="admin-topbar-right">
@@ -26,7 +26,6 @@
         </div>
     </div>
 
-    <!-- Tabs chuẩn 100% đồng bộ với Quản lý thực đơn -->
     <div class="mb-4">
         <ul class="nav nav-pills premium-tabs">
             <li class="nav-item">
@@ -195,7 +194,7 @@
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Vai trò *</label>
                             <select class="form-select" @bind="newAccount.RoleId">
-                                <option value="3">Pha chế (Bartender)</option>
+                                <option value="3">Pha chế (Barista)</option>
                                 <option value="4">Phục vụ (Waiter)</option>
                                 @if (isAdmin)
                                 {
@@ -266,7 +265,7 @@
                         <div class="mb-4">
                             <label class="form-label small fw-bold">Vai trò</label>
                             <select class="form-select" @bind="editModel.RoleId">
-                                <option value="3">Pha chế (Bartender)</option>
+                                <option value="3">Pha chế (Barista)</option>
                                 <option value="4">Phục vụ (Waiter)</option>
                                 <option value="2">Quản lý (Manager)</option>
                                 @if (isAdmin)

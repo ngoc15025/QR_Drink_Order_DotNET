@@ -29,14 +29,25 @@ public class OrdersController : ControllerBase
             sessionId = Guid.NewGuid();
         }
 
-        // Nếu người gọi đã đăng nhập là nhân viên đặt món hộ
-        if (User.Identity?.IsAuthenticated == true && request.EmployeeId == null)
+        // Kiểm soát bảo mật: Chỉ cho phép dùng EmployeeId từ token đã xác thực,
+        // ngăn chặn việc truyền EmployeeId giả mạo từ body của Client.
+        if (User.Identity?.IsAuthenticated == true)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
             if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int empId))
             {
                 request.EmployeeId = empId;
             }
+            else
+            {
+                request.EmployeeId = null;
+                request.UseEmployeeBenefit = false;
+            }
+        }
+        else
+        {
+            request.EmployeeId = null;
+            request.UseEmployeeBenefit = false;
         }
 
         if (string.IsNullOrEmpty(request.CustomerAuthToken))
@@ -53,7 +64,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("active")]
-    [Authorize(Roles = "Admin,Manager,Bartender,Waiter")]
+    [Authorize(Roles = "Admin,Manager,Barista,Waiter")]
     public async Task<IActionResult> GetActiveOrders()
     {
         var list = await _orderService.GetActiveOrdersAsync();
@@ -82,7 +93,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    [Authorize(Roles = "Admin,Manager,Bartender,Waiter")]
+    [Authorize(Roles = "Admin,Manager,Barista,Waiter")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusRequest request)
     {
         var accountIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value

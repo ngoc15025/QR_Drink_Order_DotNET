@@ -535,45 +535,45 @@ public class OrderService : IOrderService
 
             order.OrderStatus = status;
 
-            if (employeeId.HasValue)
-            {
-                var emp = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == employeeId.Value || e.AccountId == employeeId.Value);
-                if (emp != null)
-                {
-                    order.EmployeeId = emp.EmployeeId;
-                }
-                else
-                {
-                    var acc = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountId == employeeId.Value);
-                    if (acc != null)
-                    {
-                        var mgr = await _context.Managers.FirstOrDefaultAsync(m => m.AccountId == acc.AccountId);
-                        var newEmp = new Employee
-                        {
-                            AccountId = acc.AccountId,
-                            FullName = mgr?.FullName ?? acc.Email,
-                            Phone = mgr?.Phone
-                        };
-                        _context.Employees.Add(newEmp);
-                        await _context.SaveChangesAsync();
-                        order.EmployeeId = newEmp.EmployeeId;
-                    }
-                }
-            }
-
             // Nếu trạng thái là Đã hủy hoặc Hoàn thành, cập nhật trạng thái thanh toán tương ứng
             if (status == (byte)OrderStatus.Cancelled)
             {
                 if (order.Payment != null)
                 {
-                    order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
+                    if (order.Payment.PaymentStatus == (byte)PaymentStatus.Success)
+                    {
+                        order.Payment.PaymentStatus = (byte)PaymentStatus.Refunded;
+                    }
+                    else
+                    {
+                        order.Payment.PaymentStatus = (byte)PaymentStatus.Failed;
+                    }
                 }
 
                 await RefundOrderRewardsAndBenefitsAsync(order);
 
+                string staffName = "nhân viên";
+                if (employeeId.HasValue)
+                {
+                    var emp = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == employeeId.Value || e.AccountId == employeeId.Value);
+                    if (emp != null)
+                    {
+                        staffName = emp.FullName ?? staffName;
+                    }
+                    else
+                    {
+                        var acc = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountId == employeeId.Value);
+                        if (acc != null)
+                        {
+                            var mgr = await _context.Managers.FirstOrDefaultAsync(m => m.AccountId == acc.AccountId);
+                            staffName = mgr?.FullName ?? acc.Email ?? staffName;
+                        }
+                    }
+                }
+
                 string reasonText = !string.IsNullOrWhiteSpace(cancelReason)
-                    ? $" [Đã hủy bởi nhân viên: {cancelReason}]"
-                    : " [Đã hủy bởi nhân viên]";
+                    ? $" [Đã hủy bởi {staffName}: {cancelReason}]"
+                    : $" [Đã hủy bởi {staffName}]";
                 order.Note = (order.Note ?? "") + reasonText;
             }
             else if (status == (byte)OrderStatus.Completed && order.Payment != null && order.Payment.PaymentMethod == (byte)PaymentMethod.Cash)

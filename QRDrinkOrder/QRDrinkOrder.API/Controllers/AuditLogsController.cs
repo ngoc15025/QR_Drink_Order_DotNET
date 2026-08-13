@@ -60,7 +60,7 @@ namespace QRDrinkOrder.API.Controllers
                     LogId = l.LogId,
                     AccountId = l.AccountId,
                     Email = l.Account != null ? l.Account.Email : null,
-                    FullName = l.Account != null ? ((l.Account.RoleId == AppRoles.BartenderId || l.Account.RoleId == AppRoles.WaiterId) ? (l.Account.Employee != null ? l.Account.Employee.FullName : "Nhân viên") : (l.Account.Manager != null ? l.Account.Manager.FullName : "Quản lý")) : null,
+                    FullName = l.Account != null ? ((l.Account.RoleId == AppRoles.BaristaId || l.Account.RoleId == AppRoles.WaiterId) ? (l.Account.Employee != null ? l.Account.Employee.FullName : "Nhân viên") : (l.Account.Manager != null ? l.Account.Manager.FullName : "Quản lý")) : null,
                     Action = l.Action,
                     TableName = l.TableName,
                     Description = l.Description,
