@@ -3,6 +3,7 @@ using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
+using QRDrinkOrder.Shared.Constants;
 using QRDrinkOrder.Shared.Exceptions;
 using QRDrinkOrder.Shared.Helpers;
 
@@ -108,20 +109,27 @@ public class CouponService : ICouponService
             .FirstOrDefaultAsync(c => c.CouponCode == request.CouponCode.ToUpper() && c.IsActive == true);
 
         if (coupon == null)
-            throw new Exception("Mã giảm giá không tồn tại hoặc đã bị khóa.");
+            throw new BusinessException("Mã giảm giá không tồn tại hoặc đã bị khóa.");
 
         var now = TimeHelper.GetVietnamTime();
         if (coupon.StartDate > now)
-            throw new Exception("Mã giảm giá chưa đến thời gian áp dụng.");
+            throw new BusinessException("Mã giảm giá chưa đến thời gian áp dụng.");
 
         if (coupon.EndDate < now)
-            throw new Exception("Mã giảm giá đã hết hạn.");
+            throw new BusinessException("Mã giảm giá đã hết hạn.");
 
         if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-            throw new Exception("Mã giảm giá đã hết lượt sử dụng.");
+            throw new BusinessException("Mã giảm giá đã hết lượt sử dụng.");
 
         if (request.OrderAmount < coupon.MinOrderValue)
-            throw new Exception($"Đơn hàng chưa đạt giá trị tối thiểu {coupon.MinOrderValue:N0}đ để áp dụng mã.");
+            throw new BusinessException($"Đơn hàng chưa đạt giá trị tối thiểu {coupon.MinOrderValue:N0}đ để áp dụng mã.");
+
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            var hasUsed = await _context.CouponUsages.AnyAsync(cu => cu.CouponId == coupon.CouponId && cu.Phone == request.Phone.Trim());
+            if (hasUsed)
+                throw new BusinessException(ErrorMessages.CouponAlreadyUsed);
+        }
 
         return MapToDto(coupon);
     }

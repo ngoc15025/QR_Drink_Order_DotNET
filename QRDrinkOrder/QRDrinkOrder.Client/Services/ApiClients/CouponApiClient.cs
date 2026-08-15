@@ -55,6 +55,18 @@ public class CouponApiClient
         {
             return await response.Content.ReadFromJsonAsync<CouponDto>();
         }
-        return null;
+
+        var errorContent = await response.Content.ReadAsStringAsync();
+        try
+        {
+            var errorJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(errorContent);
+            if (errorJson.TryGetProperty("message", out var msg) || errorJson.TryGetProperty("Message", out msg))
+            {
+                throw new Exception(msg.GetString());
+            }
+        }
+        catch (System.Text.Json.JsonException) { }
+
+        throw new Exception(errorContent);
     }
 }

@@ -512,6 +512,7 @@ else
                 usePoints = false;
                 pointsToUse = 0;
                 lastCheckedPhone = "";
+                RecalculateCouponDiscount();
                 StateHasChanged();
             }
         }
@@ -523,6 +524,7 @@ else
             usePoints = false;
             pointsToUse = 0;
             lastCheckedPhone = "";
+            RecalculateCouponDiscount();
             StateHasChanged();
         }
     }
@@ -568,6 +570,7 @@ else
             usePoints = false;
             pointsToUse = 0;
         }
+        RecalculateCouponDiscount();
         StateHasChanged();
     }
     
@@ -603,7 +606,9 @@ else
                 }
                 else // Percentage
                 {
-                    var calculated = CartState.GetTotalAmount() * (eff.EffectiveValue / 100m);
+                    decimal pointDiscount = usePoints ? pointsToUse * 1000 : 0;
+                    decimal discountBase = CartState.GetTotalAmount() - pointDiscount;
+                    var calculated = discountBase * (eff.EffectiveValue / 100m);
                     var maxCap = result.GetEffectiveMaxDiscount();
                     if (maxCap.HasValue && calculated > maxCap.Value)
                         calculated = maxCap.Value;
@@ -618,9 +623,9 @@ else
                 discountAmount = 0;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            couponMessage = "Mã không hợp lệ hoặc đã hết hạn.";
+            couponMessage = string.IsNullOrWhiteSpace(ex.Message) ? "Mã không hợp lệ hoặc đã hết hạn." : ex.Message;
             appliedCoupon = null;
             discountAmount = 0;
         }
@@ -774,6 +779,7 @@ else
             pendingPointsToggle = false;
             usePoints = true;
             pointsToUse = membership.Points;
+            RecalculateCouponDiscount();
         }
         if (pendingOrderSubmit)
         {
@@ -804,6 +810,7 @@ else
             phone = "";
             lastCheckedPhone = "";
             pinDismissedMessage = "Nhập lại số điện thoại để xác thực";
+            RecalculateCouponDiscount();
             StateHasChanged();
         }
     }
@@ -818,7 +825,31 @@ else
         usePoints = false;
         pointsToUse = 0;
         phone = "";
+        RecalculateCouponDiscount();
         StateHasChanged();
+    }
+
+    private void RecalculateCouponDiscount()
+    {
+        if (appliedCoupon != null)
+        {
+            var eff = appliedCoupon.GetEffectiveDiscount();
+            if (eff.EffectiveType == 0) // Fixed
+            {
+                discountAmount = eff.EffectiveValue;
+            }
+            else // Percentage
+            {
+                decimal pointDiscount = usePoints ? pointsToUse * 1000 : 0;
+                decimal discountBase = CartState.GetTotalAmount() - pointDiscount;
+                var calculated = discountBase * (eff.EffectiveValue / 100m);
+                var maxCap = appliedCoupon.GetEffectiveMaxDiscount();
+                if (maxCap.HasValue && calculated > maxCap.Value)
+                    calculated = maxCap.Value;
+                discountAmount = calculated;
+            }
+            couponMessage = $"Áp dụng thành công! Giảm {discountAmount.ToString("N0")}đ";
+        }
     }
 }
 

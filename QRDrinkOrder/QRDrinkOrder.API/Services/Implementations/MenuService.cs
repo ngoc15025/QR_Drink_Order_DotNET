@@ -5,6 +5,7 @@ using QRDrinkOrder.API.Models;
 using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
+using QRDrinkOrder.Shared.Exceptions;
 using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -182,7 +183,7 @@ public class MenuService : IMenuService
         // Xóa các món liên kết hoặc chuyển danh mục khác, ở đây ta ẩn hoặc báo lỗi nếu có nước
         var hasDrinks = await _context.Drinks.AnyAsync(d => d.CategoryId == id);
         if (hasDrinks)
-            throw new Exception("Không thể xóa danh mục đang có sản phẩm.");
+            throw new BusinessException("Không thể xóa danh mục đang có sản phẩm.");
 
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();

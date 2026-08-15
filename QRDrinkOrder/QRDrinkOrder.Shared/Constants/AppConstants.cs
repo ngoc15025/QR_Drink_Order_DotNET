@@ -38,7 +38,7 @@ public static class ErrorMessages
     public const string SessionExpired = "Phiên làm việc đã hết hạn.";
     public const string InvalidCoupon = "Mã giảm giá không hợp lệ hoặc đã hết hạn.";
     public const string CouponLimitReached = "Mã giảm giá đã đạt giới hạn sử dụng.";
-    public const string CouponAlreadyUsed = "Số điện thoại này đã sử dụng mã giảm giá này rồi.";
+    public const string CouponAlreadyUsed = "Một số điện thoại chỉ được áp dụng mã một lần.";
     public const string MinOrderNotMet = "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã giảm giá.";
     public const string OrderCannotCancel = "Đơn hàng chỉ có thể hủy khi đang ở trạng thái Chờ thanh toán.";
     public const string OrderNotFound = "Không tìm thấy thông tin đơn hàng.";

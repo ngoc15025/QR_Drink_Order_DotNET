@@ -4,6 +4,7 @@ using QRDrinkOrder.API.Services.Interfaces;
 using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using System.Text.RegularExpressions;
+using QRDrinkOrder.Shared.Exceptions;
 using QRDrinkOrder.Shared.Helpers;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -24,16 +25,16 @@ public class ReviewService : IReviewService
         // 1. Kiểm tra đơn hàng tồn tại
         var order = await _context.Orders.FindAsync(request.OrderId);
         if (order == null)
-            throw new Exception("Không tìm thấy đơn hàng cần đánh giá.");
+            throw new BusinessException("Không tìm thấy đơn hàng cần đánh giá.");
 
         // 2. Ràng buộc bảo mật: Đúng Session ID đặt đơn mới được đánh giá
         if (order.SessionId != sessionId)
-            throw new Exception("Bạn không có quyền đánh giá đơn hàng này.");
+            throw new BusinessException("Bạn không có quyền đánh giá đơn hàng này.");
 
         // 3. Kiểm tra đã đánh giá chưa (Giới hạn đánh giá 1 lần duy nhất)
         var existingReview = await _context.Reviews.AnyAsync(r => r.OrderId == request.OrderId);
         if (existingReview)
-            throw new Exception("Đơn hàng này đã được đánh giá trước đó.");
+            throw new BusinessException("Đơn hàng này đã được đánh giá trước đó.");
 
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
