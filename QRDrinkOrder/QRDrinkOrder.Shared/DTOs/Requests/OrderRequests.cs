@@ -1,3 +1,4 @@
+using QRDrinkOrder.Shared.Attributes;
 using System.ComponentModel.DataAnnotations;
 
 namespace QRDrinkOrder.Shared.DTOs.Requests;
@@ -6,7 +7,7 @@ public class CreateOrderRequest
 {
     public string? Phone { get; set; }
 
-    [Required(ErrorMessage = "Số bàn là bắt buộc.")]
+    [RequiredString(ErrorMessage = "Số bàn là bắt buộc.")]
     public string TableNumber { get; set; } = string.Empty;
 
     public string? CouponCode { get; set; }
@@ -19,10 +20,10 @@ public class CreateOrderRequest
 
     public string? Note { get; set; }
 
-    [Required(ErrorMessage = "Phương thức thanh toán là bắt buộc.")]
+    [RequiredString(ErrorMessage = "Phương thức thanh toán là bắt buộc.")]
     public byte PaymentMethod { get; set; } // 0: Tiền mặt, 1: SePay VietQR
 
-    [Required(ErrorMessage = "Giỏ hàng không được trống.")]
+    [RequiredString(ErrorMessage = "Giỏ hàng không được trống.")]
     [MinLength(1, ErrorMessage = "Giỏ hàng phải có ít nhất một món.")]
     public List<OrderItemRequest> Items { get; set; } = new();
 
@@ -33,10 +34,10 @@ public class CreateOrderRequest
 
 public class OrderItemRequest
 {
-    [Required]
+    [RequiredString]
     public int DrinkId { get; set; }
 
-    [Required]
+    [RequiredString]
     [Range(1, 100, ErrorMessage = "Số lượng phải từ 1 đến 100.")]
     public int Quantity { get; set; }
 
@@ -50,13 +51,13 @@ public class OrderItemRequest
 
     public string? ItemNote { get; set; }     // Ghi chú món
 
-    [Required]
+    [RequiredString]
     public decimal UnitPrice { get; set; }
 }
 
 public class UpdateOrderStatusRequest
 {
-    [Required]
+    [RequiredString]
     public byte OrderStatus { get; set; } // 0: Chờ, 1: Đang chuẩn bị, 2: Hoàn thành, 3: Hủy
 
     public string? CancelReason { get; set; }
@@ -66,3 +67,4 @@ public class ConfirmPaymentRequest
 {
     public string? TransactionId { get; set; }
 }
+

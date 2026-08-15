@@ -353,11 +353,11 @@
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.Where(o => 
-                o.OrderId.ToString().Contains(searchQuery) ||
                 (!string.IsNullOrEmpty(o.TableNumber) && o.TableNumber.Contains(searchQuery)) ||
                 (!string.IsNullOrEmpty(o.CustomerPhone) && o.CustomerPhone.Contains(searchQuery)) ||
                 (!string.IsNullOrEmpty(o.EmployeeName) && o.EmployeeName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-            );
+          );
+          
         }
 
         filteredOrders = query.ToList();

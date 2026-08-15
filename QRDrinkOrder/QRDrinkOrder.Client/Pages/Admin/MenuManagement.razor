@@ -66,6 +66,19 @@
         </ul>
     </div>
 
+@*
+    @if (activeTab == "drinks" && !isLoading)
+    {
+        <div class="mb-3 d-flex">
+            <input type="text"
+                   class="form-control admin-input"
+                   placeholder="Tìm kiếm món nước..."
+                   @bind="searchQuery"
+                   @bind:event="oninput"
+                   style="max-width: 300px; border-radius: 8px;" />
+        </div>
+    } 
+*@
     @if (isLoading)
     {
         <div class="text-center py-5">
@@ -466,4 +479,10 @@
             }
         }
     }
+
+    // private string searchQuery = "";
+    // private List<DrinkDto> FilteredDrinks =>
+    //     string.IsNullOrWhiteSpace(searchQuery)
+    //         ? drinks
+    //         : drinks.Where(d => d.DrinkName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
 }

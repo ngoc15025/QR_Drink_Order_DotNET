@@ -1,0 +1,42 @@
+@inherits InputBase<decimal>
+
+<input @attributes="AdditionalAttributes"
+       class="@CssClass"
+       value="@FormattedValue"
+       @oninput="HandleInput"
+       @onblur="HandleBlur" />
+
+@code {
+    private string FormattedValue => CurrentValue == 0 ? "" : CurrentValue.ToString("N0");
+
+    private void HandleInput(ChangeEventArgs e)
+    {
+        var stringValue = e.Value?.ToString()?.Replace(",", "").Replace(".", "");
+        if (decimal.TryParse(stringValue, out var parsedValue))
+        {
+            CurrentValue = parsedValue;
+        }
+        else if (string.IsNullOrEmpty(stringValue))
+        {
+            CurrentValue = 0;
+        }
+    }
+
+    private void HandleBlur(FocusEventArgs e)
+    {
+        StateHasChanged(); // Force update input view
+    }
+    
+    protected override bool TryParseValueFromString(string? value, out decimal result, out string validationErrorMessage)
+    {
+        var cleaned = value?.Replace(",", "").Replace(".", "");
+        if (decimal.TryParse(cleaned, out result))
+        {
+            validationErrorMessage = null!;
+            return true;
+        }
+        
+        validationErrorMessage = "Số tiền không hợp lệ.";
+        return false;
+    }
+}

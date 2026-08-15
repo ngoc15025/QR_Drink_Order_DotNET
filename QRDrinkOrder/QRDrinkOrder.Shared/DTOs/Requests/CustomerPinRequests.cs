@@ -1,42 +1,44 @@
+using QRDrinkOrder.Shared.Attributes;
 using System.ComponentModel.DataAnnotations;
 
 namespace QRDrinkOrder.Shared.DTOs.Requests;
 
 public class CheckCustomerStatusRequest
 {
-    [Required]
+    [RequiredString]
     public string Phone { get; set; } = string.Empty;
 }
 
 public class VerifyPinRequest
 {
-    [Required]
+    [RequiredString]
     public string Phone { get; set; } = string.Empty;
 
-    [Required]
+    [RequiredString]
     [StringLength(6, MinimumLength = 4)]
     public string PinCode { get; set; } = string.Empty;
 }
 
 public class SetupPinRequest
 {
-    [Required]
+    [RequiredString]
     public string Phone { get; set; } = string.Empty;
 
-    [Required]
+    [RequiredString]
     [StringLength(6, MinimumLength = 4)]
     public string PinCode { get; set; } = string.Empty;
 }
 
 public class ResetPinWithFirebaseRequest
 {
-    [Required]
+    [RequiredString]
     public string Phone { get; set; } = string.Empty;
 
-    [Required]
+    [RequiredString]
     public string FirebaseIdToken { get; set; } = string.Empty;
 
-    [Required]
+    [RequiredString]
     [StringLength(6, MinimumLength = 4)]
     public string NewPinCode { get; set; } = string.Empty;
 }
+
