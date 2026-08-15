@@ -38,14 +38,14 @@ public class PaymentsController : ControllerBase
     {
         try
         {
-            // 1. Xác thực Webhook bằng Token
-            var expectedToken = _configuration["SePay:WebhookToken"];
+            // 1. Xác thực Webhook bằng API Key
+            var expectedApiKey = _configuration["SePay:ApiKey"];
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
 
-            if (string.IsNullOrEmpty(expectedToken) || string.IsNullOrEmpty(authHeader) || !authHeader.Contains(expectedToken))
+            if (string.IsNullOrEmpty(expectedApiKey) || string.IsNullOrEmpty(authHeader) || !authHeader.Equals($"Apikey {expectedApiKey}", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogWarning($"[SePay Webhook Warning] Unauthorized request. Header received: {authHeader}");
-                return Unauthorized(new { Status = "unauthorized", Message = "Invalid or missing webhook token." });
+                return Unauthorized(new { Status = "unauthorized", Message = "Invalid or missing webhook API Key." });
             }
 
             // 2. Chống lỗi 500 do thiếu dữ liệu từ SePay
