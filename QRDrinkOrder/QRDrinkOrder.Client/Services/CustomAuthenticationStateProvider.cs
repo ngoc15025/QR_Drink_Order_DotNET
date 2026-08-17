@@ -26,17 +26,35 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
 
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt")));
+        try
+        {
+            var claims = ParseClaimsFromJwt(token);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt")));
+        }
+        catch
+        {
+            // Token không hợp lệ hoặc bị lỗi định dạng trong LocalStorage -> Xóa token và trả về trạng thái Anonymous
+            await _localStorageService.RemoveItemAsync("authToken");
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        }
     }
 
     public void MarkUserAsAuthenticated(string token)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
-        var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
-        NotifyAuthenticationStateChanged(authState);
+        try
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var claims = ParseClaimsFromJwt(token);
+            var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
+            var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
+            NotifyAuthenticationStateChanged(authState);
+        }
+        catch
+        {
+            MarkUserAsLoggedOut();
+        }
     }
 
     public void MarkUserAsLoggedOut()
@@ -50,7 +68,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {
         var claims = new List<Claim>();
-        var payload = jwt.Split('.')[1];
+        if (string.IsNullOrWhiteSpace(jwt))
+        {
+            return claims;
+        }
+
+        var parts = jwt.Split('.');
+        if (parts.Length < 2)
+        {
+            return claims;
+        }
+
+        var payload = parts[1];
         var jsonBytes = ParseBase64WithoutPadding(payload);
         var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
 
@@ -90,6 +119,10 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
     private byte[] ParseBase64WithoutPadding(string base64)
     {
+        // Chuyển đổi chuẩn Base64Url sang Base64 chuẩn
+        base64 = base64.Replace('-', '+').Replace('_', '/');
+
+        // Bổ sung padding dấu '=' nếu thiếu
         switch (base64.Length % 4)
         {
             case 2: base64 += "=="; break;
