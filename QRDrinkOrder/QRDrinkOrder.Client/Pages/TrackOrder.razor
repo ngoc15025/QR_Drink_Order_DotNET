@@ -13,14 +13,14 @@
 @inject ILogger<TrackOrder> Logger
 @implements IAsyncDisposable
 
-<PageTitle>Theo dõi Đơn hàng - Ngoc UwU Coffee</PageTitle>
+<PageTitle>@Loc["TrackOrderPageTitle"]</PageTitle>
 
 <div class="mb-3 px-3 pt-3">
     <a href="/order" class="text-decoration-none" style="color: var(--tch-text-main);">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left me-2" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
         </svg>
-        <span class="fw-bold">Chi tiết Đơn hàng #@OrderId</span>
+        <span class="fw-bold">@string.Format(Loc["OrderDetailHeader"].Value, OrderId)</span>
     </a>
 </div>
 
@@ -29,12 +29,12 @@
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <div class="mt-2 text-secondary small">Đang lấy thông tin...</div>
+            <div class="mt-2 text-secondary small">@Loc["LoadingOrderInfo"]</div>
         </div>
     }
     else if (order == null)
     {
-        <div class="alert alert-danger">Không tìm thấy thông tin đơn hàng!</div>
+        <div class="alert alert-danger">@Loc["OrderNotFound"]</div>
     }
     else
     {
@@ -44,8 +44,8 @@
                 <div class="d-flex align-items-center">
                     <span class="fs-4 me-2">⚠️</span>
                     <div>
-                        <h6 class="fw-bold mb-1 text-dark">Đơn hàng chưa được thanh toán</h6>
-                        <div class="small text-secondary">Vui lòng hoàn tất thanh toán chuyển khoản để bếp tiến hành pha chế.</div>
+                        <h6 class="fw-bold mb-1 text-dark">@Loc["OrderUnpaidTitle"]</h6>
+                        <div class="small text-secondary">@Loc["OrderUnpaidDesc"]</div>
                         @if (remainingSeconds > 0)
                         {
                             <div class="mt-1 fw-bold @(remainingSeconds <= 60 ? "text-danger" : "text-warning")" style="font-size:0.85rem;">
@@ -59,7 +59,7 @@
                     </div>
                 </div>
                 <a href="/payment/@order.OrderId" class="btn btn-warning fw-bold text-dark btn-sm rounded-pill px-3 ms-2 flex-shrink-0 shadow-sm">
-                    Thanh toán ngay
+                    @Loc["PayNowBtn"]
                 </a>
             </div>
         }
@@ -71,14 +71,14 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-bell-fill" viewBox="0 0 16 16"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 3.042-1.135 3.848-.318.404-.465.91-.35 1.408.114.498.487.892.986 1.037.498.145 1.036.035 1.458-.293C4.542 11.5 6.166 11 8 11s3.458.5 4.041 1.002c.422.328.96.438 1.458.293.499-.145.872-.539.986-1.037.115-.498-.032-1.004-.35-1.408C13.5 9.042 13 7.098 13 6c0-2.809-2.072-5.147-4.995-5.901z"/></svg>
                 </div>
                 <div>
-                    <h6 class="fw-bold mb-1 text-success" style="font-size: 1.05rem;">Đồ uống của bạn đã hoàn thành!</h6>
-                    <div class="small text-dark">Vui lòng đến quầy nhận nước hoặc đợi nhân viên mang tới bàn. Chúc bạn thưởng thức ngon miệng!</div>
+                    <h6 class="fw-bold mb-1 text-success" style="font-size: 1.05rem;">@Loc["OrderCompletedBannerTitle"]</h6>
+                    <div class="small text-dark">@Loc["OrderCompletedBannerDesc"]</div>
                 </div>
             </div>
         }
 
         <div class="tch-card p-4 mb-4">
-            <h6 class="fw-bold mb-4 text-center">Trạng thái đơn hàng</h6>
+            <h6 class="fw-bold mb-4 text-center">@Loc["OrderStatusTitle"]</h6>
             <div class="d-flex justify-content-between position-relative">
                 <div class="progress position-absolute" style="height: 3px; top: 15px; left: 10%; right: 10%; z-index: 0;">
                     <div class="progress-bar bg-success" role="progressbar" style="width: @(GetProgressWidth())%;" aria-valuenow="@GetProgressWidth()" aria-valuemin="0" aria-valuemax="100"></div>
@@ -88,28 +88,28 @@
                     <div class="rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-2 @(order.OrderStatus >= 0 ? "bg-success" : "bg-secondary")" style="width: 32px; height: 32px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-receipt" viewBox="0 0 16 16"><path d="M1.92.506a.5.5 0 0 1 .434.14L3 1.293l.646-.647a.5.5 0 0 1 .708 0L5 1.293l.646-.647a.5.5 0 0 1 .708 0L7 1.293l.646-.647a.5.5 0 0 1 .708 0L9 1.293l.646-.647a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .801.13l.5 1A.5.5 0 0 1 15 2v12a.5.5 0 0 1-.053.224l-.5 1a.5.5 0 0 1-.8.13L13 14.707l-.646.647a.5.5 0 0 1-.708 0L11 14.707l-.646.647a.5.5 0 0 1-.708 0L9 14.707l-.646.647a.5.5 0 0 1-.708 0L7 14.707l-.646.647a.5.5 0 0 1-.708 0L5 14.707l-.646.647a.5.5 0 0 1-.708 0L3 14.707l-.646.647a.5.5 0 0 1-.801-.13l-.5-1A.5.5 0 0 1 1 14V2a.5.5 0 0 1 .053-.224l.5-1a.5.5 0 0 1 .367-.27zm.217 1.338L2 2.118v11.764l.137.274.51-.51a.5.5 0 0 1 .707 0l.646.647.646-.646a.5.5 0 0 1 .708 0l.646.646.646-.646a.5.5 0 0 1 .708 0l.646.646.646-.646a.5.5 0 0 1 .708 0l.646.646.646-.646a.5.5 0 0 1 .708 0l.646.646.646-.646a.5.5 0 0 1 .708 0l.509.509.137-.274V2.118l-.137-.274-.51.51a.5.5 0 0 1-.707 0L12 1.707l-.646.647a.5.5 0 0 1-.708 0L10 1.707l-.646.647a.5.5 0 0 1-.708 0L8 1.707l-.646.647a.5.5 0 0 1-.708 0L6 1.707l-.646.647a.5.5 0 0 1-.708 0L4 1.707l-.646.647a.5.5 0 0 1-.708 0l-.509-.51zM3 4.5a.5.5 0 0 1 .5-.5h6a.5.5 0 1 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h6a.5.5 0 1 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h6a.5.5 0 1 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm8-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5z"/></svg>
                     </div>
-                    <div class="small fw-bold @(order.OrderStatus >= 0 ? "text-success" : "text-secondary")">Đã nhận</div>
+                    <div class="small fw-bold @(order.OrderStatus >= 0 ? "text-success" : "text-secondary")">@Loc["StatusReceived"]</div>
                 </div>
 
                 <div class="text-center" style="z-index: 1;">
                     <div class="rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-2 @(order.OrderStatus >= 1 ? "bg-success" : "bg-secondary")" style="width: 32px; height: 32px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cup-hot" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M.5 6a.5.5 0 0 0-.488.608l1.652 7.434A2.5 2.5 0 0 0 4.104 16h5.792a2.5 2.5 0 0 0 2.44-1.958l.131-.59a3 3 0 0 0 1.3-5.854l.221-1.006A.5.5 0 0 0 13.5 6H.5ZM13 12.5a2.01 2.01 0 0 1-.316-.025l.867-3.928A2 2 0 0 1 13 12.5Z"/><path d="M2.14 7h9.22l-1.14 5.144a1.5 1.5 0 0 1-1.464 1.176H4.744a1.5 1.5 0 0 1-1.464-1.176L2.14 7Z"/></svg>
                     </div>
-                    <div class="small fw-bold @(order.OrderStatus >= 1 ? "text-success" : "text-secondary")">Pha chế</div>
+                    <div class="small fw-bold @(order.OrderStatus >= 1 ? "text-success" : "text-secondary")">@Loc["StatusPreparing"]</div>
                 </div>
 
                 <div class="text-center" style="z-index: 1;">
                     <div class="rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-2 @(order.OrderStatus >= 2 ? "bg-success" : "bg-secondary")" style="width: 32px; height: 32px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-lg" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/></svg>
                     </div>
-                    <div class="small fw-bold @(order.OrderStatus >= 2 ? "text-success" : "text-secondary")">Hoàn thành</div>
+                    <div class="small fw-bold @(order.OrderStatus >= 2 ? "text-success" : "text-secondary")">@Loc["StatusCompleted"]</div>
                 </div>
             </div>
 
             @if (order.OrderStatus == 3)
             {
                 <div class="mt-4 text-center text-danger fw-bold">
-                    Đơn hàng này đã bị hủy.
+                    @Loc["OrderCancelledText"]
                 </div>
             }
         </div>
@@ -167,25 +167,25 @@
         }
 
         <div class="tch-card p-3 mb-4">
-            <h6 class="fw-bold mb-3 border-bottom pb-2">Thông tin nhận hàng</h6>
+            <h6 class="fw-bold mb-3 border-bottom pb-2">@Loc["FulfillmentInfoTitle"]</h6>
             <div class="d-flex mb-2">
-                <div class="text-secondary small" style="width: 100px;">Thời gian:</div>
+                <div class="text-secondary small" style="width: 100px;">@Loc["TimeLabel"]</div>
                 <div class="fw-bold">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</div>
             </div>
             <div class="d-flex mb-2">
-                <div class="text-secondary small" style="width: 100px;">Hình thức:</div>
-                <div class="fw-bold">@(string.IsNullOrEmpty(order.TableNumber) || order.TableNumber == "Quầy" ? "Nhận tại quầy" : $"Tại bàn ({order.TableNumber})")</div>
+                <div class="text-secondary small" style="width: 100px;">@Loc["FulfillmentTypeLabel"]</div>
+                <div class="fw-bold">@(string.IsNullOrEmpty(order.TableNumber) || order.TableNumber == "Quầy" ? Loc["PickupAtCounterText"] : string.Format(Loc["DineInTableText"].Value, order.TableNumber))</div>
             </div>
             <div class="d-flex mb-2">
-                <div class="text-secondary small" style="width: 100px;">Trạng thái:</div>
+                <div class="text-secondary small" style="width: 100px;">@Loc["PaymentStatusLabel"]</div>
                 <div>
                     @if (order.Payment != null && order.Payment.PaymentStatus == 1)
                     {
-                        <span class="badge bg-success">Đã thanh toán</span>
+                        <span class="badge bg-success">@Loc["PaidStatusBadge"]</span>
                     }
                     else
                     {
-                        <span class="badge bg-warning text-dark">Chưa thanh toán</span>
+                        <span class="badge bg-warning text-dark">@Loc["UnpaidStatusBadge"]</span>
                     }
                 </div>
             </div>
@@ -193,7 +193,7 @@
 
         <!-- Order Items -->
         <div class="tch-card p-3 mb-4">
-            <h6 class="fw-bold mb-3 border-bottom pb-2">Danh sách món</h6>
+            <h6 class="fw-bold mb-3 border-bottom pb-2">@Loc["OrderItemsListTitle"]</h6>
             @foreach (var item in order.Items)
             {
                 <div class="d-flex justify-content-between mb-3 align-items-center">
@@ -208,7 +208,7 @@
                                 }
                             </div>
                             <div class="small text-secondary">
-                                Đá: @item.IceLevel%, Đường: @item.SweetnessLevel%
+                                @Loc["IceOptionLabel"] @item.IceLevel%, @Loc["SweetnessOptionLabel"] @item.SweetnessLevel%
                                 @if (item.ToppingNames != null && item.ToppingNames.Any())
                                 {
                                     <span class="text-primary fw-medium"> · + @string.Join(", ", item.ToppingNames)</span>
@@ -216,7 +216,7 @@
                             </div>
                             @if (!string.IsNullOrEmpty(item.ItemNote))
                             {
-                                <div class="small text-secondary">Ghi chú: @item.ItemNote</div>
+                                <div class="small text-secondary">@Loc["ItemNoteLabel"] @item.ItemNote</div>
                             }
                         </div>
                     </div>
@@ -226,18 +226,18 @@
 
             <hr style="border-top: 1px dashed var(--tch-border);" />
             <div class="d-flex justify-content-between pt-1">
-                <span class="text-secondary">Tổng tiền hàng:</span>
+                <span class="text-secondary">@Loc["TotalGoodsAmountLabel"]</span>
                 <span>@order.TotalAmount.ToString("N0")đ</span>
             </div>
             @if (order.DiscountAmount > 0)
             {
                 <div class="d-flex justify-content-between pt-1">
-                    <span class="text-success">Khuyến mãi / Trừ điểm (@(order.PointsUsed > 0 ? $"{order.PointsUsed} điểm" : "Mã giảm giá")):</span>
+                    <span class="text-success">@Loc["DiscountAndPointsLabel"] (@(order.PointsUsed > 0 ? $"{order.PointsUsed} {Loc["PointsUnit"]}" : Loc["CouponDiscountTag"])):</span>
                     <span class="text-success fw-bold">-@order.DiscountAmount.ToString("N0")đ</span>
                 </div>
             }
             <div class="d-flex justify-content-between pt-2">
-                <span class="fw-bold">Thành tiền:</span>
+                <span class="fw-bold">@Loc["FinalAmountLabel"]</span>
                 <span class="fw-bold text-orange fs-5" style="color: var(--tch-orange);">@order.FinalAmount.ToString("N0")đ</span>
             </div>
         </div>
@@ -246,14 +246,14 @@
         @if (order.OrderStatus == 2)
         {
             <div class="tch-card p-3 mb-4">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: var(--tch-text-main);">Đánh giá đơn hàng</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: var(--tch-text-main);">@Loc["ReviewOrderSectionTitle"]</h6>
                 @if (order.IsReviewed)
                 {
                     <div class="alert alert-success mb-0 py-2 small text-center d-flex align-items-center justify-content-center" style="border-radius: 8px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill me-2" viewBox="0 0 16 16">
                           <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
                         </svg>
-                        Bạn đã gửi đánh giá cho đơn hàng này. Cảm ơn bạn!
+                        @Loc["ReviewAlreadySubmitted"]
                     </div>
                 }
                 else
@@ -264,12 +264,12 @@
                     }
                     @if (reviewSuccess)
                     {
-                        <div class="alert alert-success py-2 small" style="border-radius: 8px;">Gửi đánh giá thành công. Cảm ơn ý kiến của bạn!</div>
+                        <div class="alert alert-success py-2 small" style="border-radius: 8px;">@Loc["ReviewSuccessNotice"]</div>
                     }
                     else
                     {
                         <div class="mb-3 text-center">
-                            <label class="d-block text-secondary small mb-2">Mức độ hài lòng của bạn</label>
+                            <label class="d-block text-secondary small mb-2">@Loc["SatisfactionLevelLabel"]</label>
                             <div class="d-flex justify-content-center gap-2">
                                 @for (byte i = 1; i <= 5; i++)
                                 {
@@ -282,8 +282,8 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small text-secondary">Lời nhận xét</label>
-                            <textarea class="form-control" rows="3" placeholder="Chia sẻ trải nghiệm của bạn về nước uống và dịch vụ..." @bind="reviewComment" style="border-radius: 8px; font-size: 14px; border: 1px solid #e2e8f0;"></textarea>
+                            <label class="form-label small text-secondary">@Loc["ReviewCommentInputLabel"]</label>
+                            <textarea class="form-control" rows="3" placeholder="@Loc["ReviewPlaceholderText"]" @bind="reviewComment" style="border-radius: 8px; font-size: 14px; border: 1px solid #e2e8f0;"></textarea>
                         </div>
                         
                         <!-- Hiển thị danh sách ảnh xem trước -->
@@ -311,7 +311,7 @@
                                     <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
                                     <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
                                 </svg>
-                                Thêm ảnh
+                                @Loc["AddPhotoBtnText"]
                             </label>
 
                             <button class="btn btn-primary btn-sm px-4 fw-bold" style="border-radius: 20px; background-color: var(--tch-orange); border-color: var(--tch-orange);" 
@@ -320,7 +320,7 @@
                                 {
                                     <span class="spinner-border spinner-border-sm me-1"></span>
                                 }
-                                Gửi đánh giá
+                                @Loc["SubmitReviewBtnText"]
                             </button>
                         </div>
                     }
@@ -425,7 +425,7 @@
             var success = await OrderApi.CancelOrderAsync(order.OrderId, order.SessionId);
             if (!success)
             {
-                cancelError = "Không thể hủy đơn. Đơn có thể đã được pha chế.";
+                cancelError = Loc["CannotCancelOrderError"];
             }
             else
             {
@@ -519,7 +519,7 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Lỗi khi xử lý ảnh đánh giá");
-            reviewError = "Lỗi khi xử lý ảnh: " + ex.Message;
+            reviewError = $"{Loc["ImageProcessErrorPrefix"]} {ex.Message}";
         }
     }
 

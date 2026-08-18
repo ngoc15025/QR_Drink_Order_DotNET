@@ -261,4 +261,124 @@
   <data name="CancellingText" xml:space="preserve">
     <value>Cancelling order...</value>
   </data>
+  <data name="AiSuggestBtn" xml:space="preserve">
+    <value>Hey, give me suggestions!</value>
+  </data>
+  <data name="AiAnalyzingWeather" xml:space="preserve">
+    <value>Analyzing weather...</value>
+  </data>
+  <data name="TrackOrderPageTitle" xml:space="preserve">
+    <value>Track Order - Ngoc UwU Coffee</value>
+  </data>
+  <data name="OrderDetailHeader" xml:space="preserve">
+    <value>Order Details #{0}</value>
+  </data>
+  <data name="LoadingOrderInfo" xml:space="preserve">
+    <value>Loading order details...</value>
+  </data>
+  <data name="OrderNotFound" xml:space="preserve">
+    <value>Order details not found!</value>
+  </data>
+  <data name="OrderUnpaidTitle" xml:space="preserve">
+    <value>Order not yet paid</value>
+  </data>
+  <data name="OrderUnpaidDesc" xml:space="preserve">
+    <value>Please complete the payment so our barista can start preparing your order.</value>
+  </data>
+  <data name="PayNowBtn" xml:space="preserve">
+    <value>Pay Now</value>
+  </data>
+  <data name="OrderCompletedBannerTitle" xml:space="preserve">
+    <value>Your drink is ready!</value>
+  </data>
+  <data name="OrderCompletedBannerDesc" xml:space="preserve">
+    <value>Please pick up your drink at the counter or wait for staff to bring it to your table. Enjoy your drink!</value>
+  </data>
+  <data name="OrderStatusTitle" xml:space="preserve">
+    <value>Order Status</value>
+  </data>
+  <data name="StatusReceived" xml:space="preserve">
+    <value>Received</value>
+  </data>
+  <data name="OrderCancelledText" xml:space="preserve">
+    <value>This order has been cancelled.</value>
+  </data>
+  <data name="CannotCancelOrderError" xml:space="preserve">
+    <value>Cannot cancel order. The drink may already be in preparation.</value>
+  </data>
+  <data name="FulfillmentInfoTitle" xml:space="preserve">
+    <value>Delivery &amp; Pickup Info</value>
+  </data>
+  <data name="TimeLabel" xml:space="preserve">
+    <value>Time:</value>
+  </data>
+  <data name="FulfillmentTypeLabel" xml:space="preserve">
+    <value>Method:</value>
+  </data>
+  <data name="PickupAtCounterText" xml:space="preserve">
+    <value>Pickup at counter</value>
+  </data>
+  <data name="DineInTableText" xml:space="preserve">
+    <value>Table ({0})</value>
+  </data>
+  <data name="PaymentStatusLabel" xml:space="preserve">
+    <value>Status:</value>
+  </data>
+  <data name="PaidStatusBadge" xml:space="preserve">
+    <value>Paid</value>
+  </data>
+  <data name="UnpaidStatusBadge" xml:space="preserve">
+    <value>Unpaid</value>
+  </data>
+  <data name="OrderItemsListTitle" xml:space="preserve">
+    <value>Order Items</value>
+  </data>
+  <data name="IceOptionLabel" xml:space="preserve">
+    <value>Ice:</value>
+  </data>
+  <data name="SweetnessOptionLabel" xml:space="preserve">
+    <value>Sugar:</value>
+  </data>
+  <data name="ItemNoteLabel" xml:space="preserve">
+    <value>Note:</value>
+  </data>
+  <data name="TotalGoodsAmountLabel" xml:space="preserve">
+    <value>Subtotal:</value>
+  </data>
+  <data name="DiscountAndPointsLabel" xml:space="preserve">
+    <value>Discount / Points</value>
+  </data>
+  <data name="PointsUnit" xml:space="preserve">
+    <value>pts</value>
+  </data>
+  <data name="CouponDiscountTag" xml:space="preserve">
+    <value>Coupon</value>
+  </data>
+  <data name="ReviewOrderSectionTitle" xml:space="preserve">
+    <value>Rate Your Order</value>
+  </data>
+  <data name="ReviewAlreadySubmitted" xml:space="preserve">
+    <value>You have submitted a review for this order. Thank you!</value>
+  </data>
+  <data name="ReviewSuccessNotice" xml:space="preserve">
+    <value>Review submitted successfully. Thank you for your feedback!</value>
+  </data>
+  <data name="SatisfactionLevelLabel" xml:space="preserve">
+    <value>Your satisfaction level</value>
+  </data>
+  <data name="ReviewCommentInputLabel" xml:space="preserve">
+    <value>Your Feedback</value>
+  </data>
+  <data name="ReviewPlaceholderText" xml:space="preserve">
+    <value>Share your experience about the drinks and service...</value>
+  </data>
+  <data name="AddPhotoBtnText" xml:space="preserve">
+    <value>Add Photos</value>
+  </data>
+  <data name="SubmitReviewBtnText" xml:space="preserve">
+    <value>Submit Review</value>
+  </data>
+  <data name="ImageProcessErrorPrefix" xml:space="preserve">
+    <value>Error processing image:</value>
+  </data>
 </root>
