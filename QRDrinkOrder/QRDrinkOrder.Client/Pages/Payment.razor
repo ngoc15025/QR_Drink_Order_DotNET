@@ -403,6 +403,8 @@
         var orderTime = order.OrderDate;
         var now = QRDrinkOrder.Shared.Helpers.TimeHelper.GetVietnamTime();
         var elapsedSeconds = (int)(now - orderTime).TotalSeconds;
+        if (elapsedSeconds < 0) elapsedSeconds = 0;
+
         int remaining = (15 * 60) - elapsedSeconds;
 
         if (remaining <= 0)
@@ -416,7 +418,7 @@
             {
                 try
                 {
-                    if (order != null)
+                    if (order != null && order.OrderStatus == (byte)OrderStatus.PendingPayment && order.Payment?.PaymentStatus != (byte)PaymentStatus.Success)
                     {
                         await OrderApi.CancelOrderAsync(order.OrderId, order.SessionId);
                     }
