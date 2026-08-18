@@ -93,7 +93,7 @@ else
                             @if (usePoints)
                             {
                                 <div class="d-flex align-items-center mt-2 gap-2">
-                                    <input type="number" class="form-control form-control-sm" style="width: 80px;" @bind="pointsToUse" @bind:event="oninput" min="1" max="@membership.Points" />
+                                    <input type="number" class="form-control form-control-sm" style="width: 80px;" value="@pointsToUse" @oninput="OnPointsInput" min="1" max="@GetMaxPointsUsable()" />
                                     <span class="small text-secondary">điểm để giảm <strong>@((pointsToUse * 1000).ToString("N0"))đ</strong></span>
                                 </div>
                             }
@@ -430,6 +430,30 @@ else
         }
     }
     
+    private int GetMaxPointsUsable()
+    {
+        if (membership == null) return 0;
+        int maxPointsForOrder = (int)(CartState.GetTotalAmount() / 1000);
+        return Math.Max(0, Math.Min(membership.Points, maxPointsForOrder));
+    }
+
+    private void OnPointsInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int val))
+        {
+            int maxAllowed = GetMaxPointsUsable();
+            if (val > maxAllowed) val = maxAllowed;
+            if (val < 0) val = 0;
+            pointsToUse = val;
+        }
+        else
+        {
+            pointsToUse = 0;
+        }
+        RecalculateCouponDiscount();
+        StateHasChanged();
+    }
+
     private decimal GetFinalAmount()
     {
         var total = CartState.GetTotalAmount();
@@ -481,18 +505,18 @@ else
                 {
                     membership = result;
                     verifiedAuthToken = savedToken;
-                    if (membership != null && pointsToUse > membership.Points)
+                    if (membership != null && pointsToUse > GetMaxPointsUsable())
                     {
-                        pointsToUse = membership.Points;
+                        pointsToUse = GetMaxPointsUsable();
                     }
                 }
                 else if (isEmployee)
                 {
                     // Nhân viên không cần xác thực PIN - load membership trực tiếp
                     membership = result;
-                    if (membership != null && pointsToUse > membership.Points)
+                    if (membership != null && pointsToUse > GetMaxPointsUsable())
                     {
-                        pointsToUse = membership.Points;
+                        pointsToUse = GetMaxPointsUsable();
                     }
                 }
                 else
@@ -540,7 +564,7 @@ else
             if (isEmployee)
             {
                 usePoints = true;
-                pointsToUse = membership.Points;
+                pointsToUse = GetMaxPointsUsable();
             }
             else
             {
@@ -553,7 +577,7 @@ else
                         verifiedAuthToken = savedToken;
 
                     usePoints = true;
-                    pointsToUse = membership.Points;
+                    pointsToUse = GetMaxPointsUsable();
                 }
                 else
                 {
@@ -778,7 +802,7 @@ else
         {
             pendingPointsToggle = false;
             usePoints = true;
-            pointsToUse = membership.Points;
+            pointsToUse = GetMaxPointsUsable();
             RecalculateCouponDiscount();
         }
         if (pendingOrderSubmit)

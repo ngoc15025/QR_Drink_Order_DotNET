@@ -103,7 +103,7 @@ public class OrderService : IOrderService
 
             // 4. Áp dụng Mã giảm giá (nếu có, tính trên discountBase)
             var (couponDiscount, coupon, isCouponApplied) = await CalculateCouponDiscountAsync(request.Phone, request.CouponCode, discountBase);
-            decimal discountAmount = couponDiscount;
+            decimal otherDiscount = couponDiscount;
 
             // 5. Áp dụng ưu đãi nhân viên (nếu nhân viên gọi món hộ và chưa dùng mã giảm giá khác)
             bool isEmployeeBenefitApplied = false;
@@ -117,7 +117,7 @@ public class OrderService : IOrderService
                     if (!hasUsedBenefit)
                     {
                         // Giảm 50% cho đơn hàng đầu tiên trong ngày của nhân viên (tính trên discountBase)
-                        discountAmount += discountBase * 0.50m;
+                        otherDiscount += discountBase * 0.50m;
                         isEmployeeBenefitApplied = true;
                     }
                     else
@@ -127,7 +127,11 @@ public class OrderService : IOrderService
                 }
             }
 
-            decimal finalAmount = totalAmount - discountAmount - pointDiscount;
+            // TỔNG TIỀN GIẢM GIÁ LƯU CƠ SỞ DỮ LIỆU = Điểm thưởng + Khuyến mãi/Coupon + Ưu đãi nhân viên
+            decimal totalDiscountAmount = pointDiscount + otherDiscount;
+            if (totalDiscountAmount > totalAmount) totalDiscountAmount = totalAmount;
+
+            decimal finalAmount = totalAmount - totalDiscountAmount;
             if (finalAmount < 0) finalAmount = 0;
 
             // 6. Tạo đơn hàng mới
@@ -137,7 +141,7 @@ public class OrderService : IOrderService
                 EmployeeId = request.EmployeeId,
                 TableNumber = request.TableNumber,
                 TotalAmount = totalAmount,
-                DiscountAmount = discountAmount,
+                DiscountAmount = totalDiscountAmount,
                 FinalAmount = finalAmount,
                 PointsUsed = pointsUsed > 0 ? pointsUsed : null,
                 OrderStatus = (byte)OrderStatus.PendingPayment,
@@ -158,7 +162,10 @@ public class OrderService : IOrderService
                 
                 if (item.ToppingIds != null)
                 {
-                    foreach (var tId in item.ToppingIds) if (toppings.TryGetValue(tId, out var topping)) unitPrice += topping.Price;
+                    foreach (var tId in item.ToppingIds)
+                    {
+                        if (toppings.TryGetValue(tId, out var topping)) unitPrice += topping.Price;
+                    }
                 }
 
                 var orderItem = new OrderItem
@@ -168,9 +175,10 @@ public class OrderService : IOrderService
                     Quantity = item.Quantity,
                     SweetnessLevel = item.SweetnessLevel,
                     IceLevel = item.IceLevel,
-                    ItemNote = item.ItemNote,
                     SizeId = item.SizeId,
-                    UnitPrice = unitPrice
+                    ItemNote = item.ItemNote,
+                    UnitPrice = unitPrice,
+                    SubTotal = unitPrice * item.Quantity
                 };
 
                 if (item.ToppingIds != null)
@@ -208,38 +216,50 @@ public class OrderService : IOrderService
                     UsedAt = TimeHelper.GetVietnamTime()
                 };
                 _context.CouponUsages.Add(usage);
-                coupon.UsedCount += 1;
+                coupon.UsedCount = (coupon.UsedCount ?? 0) + 1;
             }
 
-            // Ghi nhận phúc lợi nhân viên
+            // Lưu vết ưu đãi nhân viên
             if (isEmployeeBenefitApplied && request.EmployeeId.HasValue)
             {
-                var benefit = new StaffBenefit
+                _context.StaffBenefits.Add(new StaffBenefit
                 {
                     EmployeeId = request.EmployeeId.Value,
                     OrderId = order.OrderId,
                     UsedDate = DateOnly.FromDateTime(TimeHelper.GetVietnamTime())
-                };
-                _context.StaffBenefits.Add(benefit);
+                });
             }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            var result = await GetOrderByIdAsync(order.OrderId);
-
-            // Gửi thông báo SignalR báo có đơn mới tới POS cho TẤT CẢ các phương thức thanh toán
-            if (result != null)
+            // Phát tín hiệu SignalR có đơn hàng mới tới màn hình nhân viên (POS/Barista)
+            try
             {
-                await _hubContext.Clients.Group("Staff").SendAsync("ReceiveNewOrder", result);
+                var orderDto = MapToOrderDto(order);
+                orderDto.Payment = new PaymentDto
+                {
+                    PaymentId = payment.PaymentId,
+                    OrderId = payment.OrderId,
+                    PaymentMethod = payment.PaymentMethod,
+                    PaymentMethodName = GetPaymentMethodName(payment.PaymentMethod),
+                    PaymentStatus = payment.PaymentStatus ?? 0,
+                    PaymentStatusName = GetPaymentStatusName(payment.PaymentStatus ?? 0),
+                    Amount = payment.Amount
+                };
+                await _hubContext.Clients.Group("Staff").SendAsync("ReceiveNewOrder", orderDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi SignalR thông báo đơn hàng mới #{OrderId}", order.OrderId);
             }
 
-            return result!;
+            return await GetOrderByIdAsync(order.OrderId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi xảy ra trong quá trình tạo đơn hàng");
             await transaction.RollbackAsync();
+            _logger.LogError(ex, "Lỗi khi tạo đơn hàng mới");
             throw;
         }
     }
@@ -308,7 +328,12 @@ public class OrderService : IOrderService
         order.OrderStatus = status;
         if (employeeId.HasValue)
         {
-            order.EmployeeId = employeeId;
+            // Kiểm tra xem employeeId truyền vào là EmployeeId hay AccountId
+            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == employeeId.Value || e.AccountId == employeeId.Value);
+            if (employee != null)
+            {
+                order.EmployeeId = employee.EmployeeId;
+            }
         }
 
         // Nếu trạng thái là Đã hủy hoặc Hoàn thành, cập nhật trạng thái thanh toán tương ứng
@@ -352,19 +377,26 @@ public class OrderService : IOrderService
         await _context.SaveChangesAsync();
 
         // Phát tín hiệu đồng bộ SignalR cập nhật trạng thái đơn
-        string statusName = GetStatusName(status);
-        await _hubContext.Clients.Group($"Customer_{order.SessionId}").SendAsync("ReceiveStatusUpdate", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
-        await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
-
-        // Gửi WebPush Notification cho khách hàng nếu có số điện thoại
-        if (order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
+        try
         {
-            string message = $"Đơn hàng #{orderId} của bạn đã được cập nhật thành: {statusName}.";
-            if (status == (byte)OrderStatus.Completed)
+            string statusName = GetStatusName(status);
+            await _hubContext.Clients.Group($"Customer_{order.SessionId}").SendAsync("ReceiveStatusUpdate", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
+            await _hubContext.Clients.Group("Staff").SendAsync("ReceiveStatusUpdateAtPOS", new { OrderId = orderId, Status = status, StatusName = statusName, PaymentStatus = order.Payment?.PaymentStatus });
+
+            // Gửi WebPush Notification cho khách hàng nếu có số điện thoại
+            if (order.Session != null && !string.IsNullOrEmpty(order.Session.Phone))
             {
-                message = $"Đồ uống của bạn đã sẵn sàng tại quầy (Đơn #{orderId}). Chúc bạn ngon miệng!";
+                string message = $"Đơn hàng #{orderId} của bạn đã được cập nhật thành: {statusName}.";
+                if (status == (byte)OrderStatus.Completed)
+                {
+                    message = $"Đồ uống của bạn đã sẵn sàng tại quầy (Đơn #{orderId}). Chúc bạn ngon miệng!";
+                }
+                await _notificationService.SendNotificationToPhoneAsync(order.Session.Phone, "Cập nhật đơn hàng", message, $"/track-order/{orderId}");
             }
-            await _notificationService.SendNotificationToPhoneAsync(order.Session.Phone, "Cập nhật đơn hàng", message, $"/track-order/{orderId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi gửi thông báo SignalR/WebPush cho đơn hàng #{OrderId}", orderId);
         }
 
         return true;
