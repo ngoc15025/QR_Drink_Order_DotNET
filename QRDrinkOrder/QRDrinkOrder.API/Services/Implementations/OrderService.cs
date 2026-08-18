@@ -7,6 +7,7 @@ using QRDrinkOrder.Shared.DTOs.Requests;
 using QRDrinkOrder.Shared.DTOs.Responses;
 using QRDrinkOrder.Shared.Enums;
 using QRDrinkOrder.Shared.Exceptions;
+using QRDrinkOrder.Shared.Helpers;
 using QRDrinkOrder.API.Models;
 
 namespace QRDrinkOrder.API.Services.Implementations;
@@ -40,7 +41,7 @@ public class OrderService : IOrderService
                     SessionId = sessionId,
                     Phone = request.Phone,
                     PreferredLanguage = "vi",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = TimeHelper.GetVietnamTime()
                 };
                 _context.CustomerSessions.Add(session);
             }
@@ -111,7 +112,7 @@ public class OrderService : IOrderService
                 var employee = await _context.Employees.FindAsync(request.EmployeeId.Value);
                 if (employee != null)
                 {
-                    var today = DateOnly.FromDateTime(DateTime.Today);
+                    var today = DateOnly.FromDateTime(TimeHelper.GetVietnamTime());
                     var hasUsedBenefit = await _context.StaffBenefits.AnyAsync(sb => sb.EmployeeId == employee.EmployeeId && sb.UsedDate == today);
                     if (!hasUsedBenefit)
                     {
@@ -141,7 +142,7 @@ public class OrderService : IOrderService
                 PointsUsed = pointsUsed > 0 ? pointsUsed : null,
                 OrderStatus = (byte)OrderStatus.PendingPayment,
                 CouponId = coupon?.CouponId,
-                OrderDate = DateTime.Now,
+                OrderDate = TimeHelper.GetVietnamTime(),
                 Note = request.Note
             };
 
@@ -204,7 +205,7 @@ public class OrderService : IOrderService
                     CouponId = coupon.CouponId,
                     Phone = request.Phone!,
                     OrderId = order.OrderId,
-                    UsedAt = DateTime.Now
+                    UsedAt = TimeHelper.GetVietnamTime()
                 };
                 _context.CouponUsages.Add(usage);
                 coupon.UsedCount += 1;
@@ -217,7 +218,7 @@ public class OrderService : IOrderService
                 {
                     EmployeeId = request.EmployeeId.Value,
                     OrderId = order.OrderId,
-                    UsedDate = DateOnly.FromDateTime(DateTime.Today)
+                    UsedDate = DateOnly.FromDateTime(TimeHelper.GetVietnamTime())
                 };
                 _context.StaffBenefits.Add(benefit);
             }
@@ -319,7 +320,7 @@ public class OrderService : IOrderService
         {
             // Đối với tiền mặt, khi hoàn thành đơn nghĩa là đã thanh toán tại quầy
             order.Payment.PaymentStatus = (byte)PaymentStatus.Success;
-            order.Payment.PaidAt = DateTime.Now;
+            order.Payment.PaidAt = TimeHelper.GetVietnamTime();
         }
 
         // Tích điểm khi đơn hàng hoàn thành
@@ -528,38 +529,38 @@ public class OrderService : IOrderService
             (byte)PaymentStatus.Pending => "Đang chờ",
             (byte)PaymentStatus.Success => "Thành công",
             (byte)PaymentStatus.Failed => "Thất bại",
+            (byte)PaymentStatus.Refunded => "Đã hoàn tiền",
             _ => "Không xác định"
         };
     }
 
-    private decimal CalculateTotalAmount(List<OrderItemRequest> items, Dictionary<int, Drink> drinks, Dictionary<int, Size> sizes, Dictionary<int, Topping> toppings)
+    private decimal CalculateTotalAmount(IEnumerable<OrderItemRequest> items, Dictionary<int, Drink> drinks, Dictionary<int, Size> sizes, Dictionary<int, Topping> toppings)
     {
-        decimal totalAmount = 0;
+        decimal total = 0;
         foreach (var item in items)
         {
-            if (!drinks.TryGetValue(item.DrinkId, out var drink))
-                throw new BusinessException($"Không tìm thấy sản phẩm với mã {item.DrinkId}.");
+            var drink = drinks[item.DrinkId];
+            decimal itemPrice = drink.BasePrice;
 
-            decimal unitPrice = drink.BasePrice;
             if (item.SizeId.HasValue && sizes.TryGetValue(item.SizeId.Value, out var size))
             {
-                unitPrice += size.PriceOffset;
+                itemPrice += size.PriceOffset;
             }
 
-            if (item.ToppingIds != null)
+            if (item.ToppingIds != null && item.ToppingIds.Any())
             {
-                foreach (var tId in item.ToppingIds)
+                foreach (var toppingId in item.ToppingIds)
                 {
-                    if (toppings.TryGetValue(tId, out var topping))
+                    if (toppings.TryGetValue(toppingId, out var topping))
                     {
-                        unitPrice += topping.Price;
+                        itemPrice += topping.Price;
                     }
                 }
             }
 
-            totalAmount += item.Quantity * unitPrice;
+            total += itemPrice * item.Quantity;
         }
-        return totalAmount;
+        return total;
     }
 
     private async Task<(decimal discountAmount, Coupon? coupon, bool isApplied)> CalculateCouponDiscountAsync(string? phone, string? couponCode, decimal totalAmount)
@@ -568,7 +569,8 @@ public class OrderService : IOrderService
         if (string.IsNullOrEmpty(phone)) throw new BusinessException("Yêu cầu nhập số điện thoại để áp dụng mã giảm giá.");
 
         var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponCode == couponCode && c.IsActive == true);
-        if (coupon == null || DateTime.Now < coupon.StartDate || DateTime.Now > coupon.EndDate)
+        var now = TimeHelper.GetVietnamTime();
+        if (coupon == null || now < coupon.StartDate || now > coupon.EndDate)
             throw new BusinessException(ErrorMessages.InvalidCoupon);
 
         if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
@@ -618,7 +620,7 @@ public class OrderService : IOrderService
             CouponId = order.CouponId,
             CouponCode = order.Coupon?.CouponCode,
             PointsUsed = order.PointsUsed,
-            OrderDate = order.OrderDate ?? DateTime.Now,
+            OrderDate = order.OrderDate ?? TimeHelper.GetVietnamTime(),
             Note = order.Note,
             CustomerPhone = order.Session?.Phone,
             IsReviewed = order.Review != null,
