@@ -227,12 +227,26 @@ else
                             @foreach (var c in availableCoupons)
                             {
                                 var eff = c.GetEffectiveDiscount();
-                                <span class="badge bg-light text-dark border border-warning p-2 me-1 mb-1 shadow-sm" 
-                                      style="cursor: pointer; border-radius: 8px; transition: all 0.2s;"
-                                      @onclick="() => SelectCoupon(c.CouponCode)">
-                                    <strong class="text-danger">🏷️ @c.CouponCode</strong> 
-                                    <span class="small text-muted ms-1">(@(eff.EffectiveType == 0 ? $"Giảm {eff.EffectiveValue.ToString("N0")}đ" : $"Giảm {eff.EffectiveValue.ToString("0.##")}%"))</span>
-                                </span>
+                                var currentTotal = CartState.GetTotalAmount();
+                                var isEligible = currentTotal >= c.MinOrderValue;
+
+                                if (isEligible)
+                                {
+                                    <span class="badge bg-light text-dark border border-warning p-2 me-1 mb-1 shadow-sm" 
+                                          style="cursor: pointer; border-radius: 8px; transition: all 0.2s;"
+                                          @onclick="() => SelectCoupon(c.CouponCode)">
+                                        <strong class="text-danger">🏷️ @c.CouponCode</strong> 
+                                        <span class="small text-muted ms-1">(@(eff.EffectiveType == 0 ? $"Giảm {eff.EffectiveValue.ToString("N0")}đ" : $"Giảm {eff.EffectiveValue.ToString("0.##")}%"))</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border border-secondary p-2 me-1 mb-1" 
+                                          style="cursor: not-allowed; opacity: 0.45; border-radius: 8px; filter: grayscale(80%); user-select: none; pointer-events: none;">
+                                        <strong class="text-secondary">🏷️ @c.CouponCode</strong> 
+                                        <span class="small text-muted ms-1">(@(eff.EffectiveType == 0 ? $"Giảm {eff.EffectiveValue.ToString("N0")}đ" : $"Giảm {eff.EffectiveValue.ToString("0.##")}%"))</span>
+                                    </span>
+                                }
                             }
                         </div>
                     </div>
@@ -661,6 +675,11 @@ else
 
     private async Task SelectCoupon(string code)
     {
+        var targetCoupon = availableCoupons.FirstOrDefault(c => c.CouponCode == code);
+        if (targetCoupon != null && CartState.GetTotalAmount() < targetCoupon.MinOrderValue)
+        {
+            return;
+        }
         couponCode = code;
         await ApplyCoupon();
     }
